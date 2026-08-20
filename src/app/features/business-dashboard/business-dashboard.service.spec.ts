@@ -1,0 +1,263 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { API_BASE_URL } from '../../shared/api-base-url.token';
+import { AuthService } from '../auth/auth.service';
+import { BusinessDashboardService } from './business-dashboard.service';
+
+describe('BusinessDashboardService', () => {
+  const businessId = 'e0482e03-8902-46ba-a9e2-04994f601afe';
+  let service: BusinessDashboardService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessDashboardService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: '/api' },
+        { provide: AuthService, useValue: { businessId } },
+      ],
+    });
+
+    service = TestBed.inject(BusinessDashboardService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  it('should create a branch through the business API', () => {
+    const payload = {
+      name: 'Centro',
+      address: 'Calle 1',
+      phone: '',
+      active: true,
+    };
+
+    service.createBranch(payload).subscribe((branch) => {
+      expect(branch.id).toBe('branch-1');
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/branches`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+
+    request.flush({ id: 'branch-1', ...payload });
+  });
+
+  it('should list branches from paginated API responses', () => {
+    service.listBranches().subscribe((branches) => {
+      expect(branches).toEqual([
+        {
+          id: 'branch-1',
+          name: 'Centro',
+          address: 'Calle 1',
+          phone: undefined,
+          active: true,
+        },
+      ]);
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/branches`);
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+      results: [{ id: 'branch-1', name: 'Centro', address: 'Calle 1', status: 'ACTIVE' }],
+    });
+  });
+
+  it('should create a service offering through the business API', () => {
+    const payload = {
+      name: 'Corte',
+      durationMinutes: 30,
+      price: 1200,
+      active: true,
+    };
+
+    service.createService(payload).subscribe((serviceOffering) => {
+      expect(serviceOffering.id).toBe('service-1');
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+
+    request.flush({ id: 'service-1', ...payload });
+  });
+
+  it('should create a resource through the branch API', () => {
+    const payload = {
+      name: 'Sandra',
+      branchId: 'branch-1',
+      serviceOfferingIds: ['service-1'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY' as const,
+          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+        },
+      ],
+      active: true,
+    };
+
+    service.createResource(payload).subscribe((resource) => {
+      expect(resource.id).toBe('resource-1');
+    });
+
+    const request = httpTesting.expectOne('/api/branches/branch-1/resources');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      visibleName: 'Sandra',
+      type: 'EMPLOYEE',
+      status: 'ACTIVE',
+      serviceOfferingIds: ['service-1'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY',
+          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+        },
+      ],
+      absences: [],
+    });
+
+    request.flush({
+      id: 'resource-1',
+      branchId: 'branch-1',
+      visibleName: 'Sandra',
+      type: 'EMPLOYEE',
+      status: 'ACTIVE',
+      serviceOfferingIds: ['service-1'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY',
+          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+        },
+      ],
+      absences: [],
+    });
+  });
+
+  it('should update and delete resources through the resource API', () => {
+    const payload = {
+      name: 'Sandra',
+      branchId: 'branch-1',
+      serviceOfferingIds: ['service-1', 'service-2'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'TUESDAY' as const,
+          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+        },
+      ],
+      active: false,
+    };
+
+    service.updateResource('resource-1', payload).subscribe((resource) => {
+      expect(resource.id).toBe('resource-1');
+      expect(resource.active).toBe(false);
+    });
+
+    const updateRequest = httpTesting.expectOne('/api/resources/resource-1');
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({
+      visibleName: 'Sandra',
+      type: 'EMPLOYEE',
+      status: 'INACTIVE',
+      serviceOfferingIds: ['service-1', 'service-2'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'TUESDAY',
+          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+        },
+      ],
+      absences: [],
+    });
+
+    updateRequest.flush({
+      id: 'resource-1',
+      branchId: 'branch-1',
+      visibleName: 'Sandra',
+      type: 'EMPLOYEE',
+      status: 'INACTIVE',
+      serviceOfferingIds: ['service-1', 'service-2'],
+      weeklySchedule: [
+        {
+          dayOfWeek: 'TUESDAY',
+          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+        },
+      ],
+      absences: [],
+    });
+
+    service.deleteResource('branch-1', 'resource-1').subscribe();
+
+    const deleteRequest = httpTesting.expectOne('/api/resources/resource-1');
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+  });
+
+  it('should request bookings by selected date', () => {
+    service.listBookings('2026-08-17').subscribe((bookings) => {
+      expect(bookings[0].customerName).toBe('Juan Perez');
+      expect(bookings[0].customerPhone).toBe('+54 11 5555-1234');
+      expect(bookings[0].serviceName).toBe('Afeitar barba');
+      expect(bookings[0].branchId).toBe('branch-1');
+      expect(bookings[1].customerName).toBe('Maria Gomez');
+      expect(bookings[1].customerPhone).toBe('1133334444');
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/bookings?page=0&size=20`);
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+      results: [
+        {
+          id: 'booking-1',
+          customerId: 'customer-1',
+          customerName: 'Juan Perez',
+          customerPhone: '+54 11 5555-1234',
+          serviceName: 'Afeitar barba',
+          resourceName: 'Felipe Fernandez',
+          branchId: 'branch-1',
+          startsAt: '2026-08-26T15:00:00Z',
+          status: 'CONFIRMED',
+        },
+        {
+          id: 'booking-2',
+          customerNameSnapshot: 'Maria Gomez',
+          customerPhoneSnapshot: '1133334444',
+          serviceName: 'Corte',
+          branchId: 'branch-1',
+          startsAt: '2026-08-26T16:00:00Z',
+          status: 'CONFIRMED',
+        },
+      ],
+    });
+  });
+
+  it('should cancel bookings through the cancel endpoint', () => {
+    service.cancelBooking('booking-1').subscribe((booking) => {
+      expect(booking.status).toBe('CANCELLED');
+    });
+
+    const request = httpTesting.expectOne('/api/bookings/booking-1/cancel');
+    expect(request.request.method).toBe('POST');
+
+    request.flush({
+      id: 'booking-1',
+      customerName: 'Cliente',
+      serviceName: 'Corte',
+      startsAt: '2026-08-17T10:00:00',
+      status: 'CANCELLED',
+    });
+  });
+});

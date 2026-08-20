@@ -1,0 +1,57 @@
+.search-page {
+  display: grid;
+  gap: 18px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 1.75rem;
+}
+
+p {
+  margin: 0;
+}
+
+.search-form {
+  display: grid;
+  gap: 12px;
+}
+
+.results {
+  display: grid;
+  gap: 12px;
+}
+
+.result-card {
+  overflow: hidden;
+}
+
+.service-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+}
+
+.price {
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (min-width: 760px) {
+  .search-form {
+    grid-template-columns: 1.2fr 1.2fr 170px 1fr 140px 140px auto;
+    align-items: center;
+  }
+}

@@ -1,0 +1,97 @@
+:host {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--mat-sys-surface);
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 24px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: color-mix(in srgb, var(--mat-sys-surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mat-sys-on-surface);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logout-button {
+  margin-left: auto;
+}
+
+.active-link {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1120px;
+  flex: 1;
+  margin: 0 auto;
+  padding: 32px 24px 88px;
+}
+
+.mobile-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: none;
+  justify-content: space-around;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+  padding: 8px;
+}
+
+@media (max-width: 720px) {
+  .app-toolbar {
+    justify-content: center;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .shell {
+    padding: 20px 12px 88px;
+  }
+
+  .mobile-nav {
+    display: flex;
+  }
+
+  .mobile-nav a {
+    min-width: 0;
+    flex: 1;
+    padding-inline: 4px;
+    font-size: 0.78rem;
+  }
+}

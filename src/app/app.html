@@ -1,0 +1,44 @@
+<mat-toolbar class="app-toolbar">
+  <a class="brand" routerLink="/public-search" aria-label="HallarTurno inicio">
+    <span class="brand-mark">H</span>
+    <span>HallarTurno</span>
+  </a>
+
+  <nav class="desktop-nav" aria-label="Principal">
+    @for (item of navItems; track item.path) {
+      <a
+        mat-button
+        [routerLink]="item.path"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: item.path === '/public-search' }"
+      >
+        {{ item.label }}
+      </a>
+    }
+  </nav>
+
+  @if (session$ | async) {
+    <button mat-button type="button" class="logout-button" (click)="logout()">Salir</button>
+  }
+</mat-toolbar>
+
+<main class="shell">
+  <router-outlet />
+</main>
+
+<nav class="mobile-nav" aria-label="Principal movil">
+  @for (item of navItems; track item.path) {
+    <a
+      mat-button
+      [routerLink]="item.path"
+      routerLinkActive="active-link"
+      [routerLinkActiveOptions]="{ exact: item.path === '/public-search' }"
+    >
+      {{ item.label }}
+    </a>
+  }
+
+  @if (session$ | async) {
+    <button mat-button type="button" (click)="logout()">Salir</button>
+  }
+</nav>
