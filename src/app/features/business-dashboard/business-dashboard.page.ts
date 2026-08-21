@@ -16,6 +16,7 @@ import { dashboardErrorMessage } from './dashboard-error';
 import {
   Booking,
   Branch,
+  BranchSchedule,
   DayOfWeek,
   EntityCollection,
   Resource,
@@ -72,10 +73,74 @@ import {
                     <mat-error>La direccion es obligatoria.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
-                    <mat-label>Telefono</mat-label>
-                    <input matInput formControlName="phone" />
+                    <mat-label>Localidad</mat-label>
+                    <input matInput formControlName="locality" />
+                    <mat-error>La localidad es obligatoria.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Provincia</mat-label>
+                    <input matInput formControlName="province" />
+                    <mat-error>La provincia es obligatoria.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Pais</mat-label>
+                    <input matInput formControlName="country" />
+                    <mat-error>El pais es obligatorio.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Latitud</mat-label>
+                    <input matInput type="number" formControlName="latitude" />
+                    <mat-error>La latitud es obligatoria.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Longitud</mat-label>
+                    <input matInput type="number" formControlName="longitude" />
+                    <mat-error>La longitud es obligatoria.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Zona horaria</mat-label>
+                    <input matInput formControlName="zoneId" />
+                    <mat-error>La zona horaria es obligatoria.</mat-error>
                   </mat-form-field>
                   <mat-checkbox formControlName="active">Activa</mat-checkbox>
+                  <section class="schedule-editor" aria-label="Agenda semanal de la sucursal">
+                    <h3>Agenda semanal</h3>
+                    <div class="schedule-grid">
+                      @for (day of branchSchedule(); track day.dayOfWeek) {
+                        <div class="schedule-row">
+                          <mat-checkbox
+                            [checked]="day.active"
+                            (change)="setBranchScheduleDayActive(day.dayOfWeek, $event.checked)"
+                          >
+                            {{ day.label }}
+                          </mat-checkbox>
+                          <mat-form-field appearance="outline">
+                            <mat-label>Abre</mat-label>
+                            <input
+                              matInput
+                              type="time"
+                              [value]="day.opensAt"
+                              [disabled]="!day.active"
+                              (input)="setBranchScheduleTime(day.dayOfWeek, 'opensAt', $event)"
+                            />
+                          </mat-form-field>
+                          <mat-form-field appearance="outline">
+                            <mat-label>Cierra</mat-label>
+                            <input
+                              matInput
+                              type="time"
+                              [value]="day.closesAt"
+                              [disabled]="!day.active"
+                              (input)="setBranchScheduleTime(day.dayOfWeek, 'closesAt', $event)"
+                            />
+                          </mat-form-field>
+                        </div>
+                      }
+                    </div>
+                    @if (branchScheduleInvalid()) {
+                      <p class="form-error">Selecciona al menos un dia y un rango horario valido.</p>
+                    }
+                  </section>
                   <div class="form-actions">
                     <button
                       mat-flat-button
@@ -95,9 +160,9 @@ import {
                   <div>
                     <strong>{{ branch.name }}</strong>
                     <span>{{ branch.address }}</span>
-                    @if (branch.phone) {
-                      <small>{{ branch.phone }}</small>
-                    }
+                    <small>{{ branch.locality }}, {{ branch.province }}</small>
+                    <small>{{ branch.zoneId }}</small>
+                    <small>{{ branchScheduleLabel(branch) }}</small>
                   </div>
                   <div class="row-actions">
                     <button mat-button type="button" (click)="editBranch(branch)">Editar</button>
@@ -373,13 +438,20 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly editingBranchId = signal('');
   protected readonly editingServiceId = signal('');
   protected readonly editingResourceId = signal('');
+  protected readonly branchSchedule = signal<BranchScheduleDay[]>(this.defaultBranchScheduleDays());
+  protected readonly branchScheduleInvalid = signal(false);
   protected readonly resourceSchedule = signal<ResourceScheduleDay[]>(this.defaultSchedule());
   protected readonly scheduleInvalid = signal(false);
 
   protected readonly branchForm = this.formBuilder.nonNullable.group({
     name: ['', Validators.required],
     address: ['', Validators.required],
-    phone: [''],
+    locality: ['Los Polvorines', Validators.required],
+    province: ['Buenos Aires', Validators.required],
+    country: ['Argentina', Validators.required],
+    latitude: [-35.6037, Validators.required],
+    longitude: [-58.3816, Validators.required],
+    zoneId: ['America/Argentina/Buenos_Aires', Validators.required],
     active: [true],
   });
   protected readonly serviceForm = this.formBuilder.nonNullable.group({
@@ -425,15 +497,20 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected saveBranch(): void {
-    if (this.branchForm.invalid) {
+    if (this.branchForm.invalid || !this.validBranchSchedule().length) {
       this.branchForm.markAllAsTouched();
+      this.branchScheduleInvalid.set(true);
       return;
     }
 
     const editingBranchId = this.editingBranchId();
+    const branchPayload = {
+      ...this.branchForm.getRawValue(),
+      weeklySchedule: this.validBranchSchedule(),
+    };
     const request = editingBranchId
-      ? this.dashboardService.updateBranch(editingBranchId, this.branchForm.getRawValue())
-      : this.dashboardService.createBranch(this.branchForm.getRawValue());
+      ? this.dashboardService.updateBranch(editingBranchId, branchPayload)
+      : this.dashboardService.createBranch(branchPayload);
 
     this.saveEntity(request, () => this.resetBranchForm());
   }
@@ -443,14 +520,33 @@ export class BusinessDashboardPage implements OnInit {
     this.branchForm.setValue({
       name: branch.name,
       address: branch.address,
-      phone: branch.phone ?? '',
+      locality: branch.locality,
+      province: branch.province,
+      country: branch.country,
+      latitude: branch.latitude,
+      longitude: branch.longitude,
+      zoneId: branch.zoneId,
       active: branch.active,
     });
+    this.branchSchedule.set(this.scheduleDaysFromBranch(branch.weeklySchedule));
+    this.branchScheduleInvalid.set(false);
   }
 
   protected resetBranchForm(): void {
     this.editingBranchId.set('');
-    this.branchForm.reset({ name: '', address: '', phone: '', active: true });
+    this.branchForm.reset({
+      name: '',
+      address: '',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      active: true,
+    });
+    this.branchSchedule.set(this.defaultBranchScheduleDays());
+    this.branchScheduleInvalid.set(false);
   }
 
   protected saveService(): void {
@@ -518,6 +614,26 @@ export class BusinessDashboardPage implements OnInit {
     this.resourceForm.reset({ name: '', branchId: '', serviceOfferingIds: [], active: true });
     this.resourceSchedule.set(this.defaultSchedule());
     this.scheduleInvalid.set(false);
+  }
+
+  protected setBranchScheduleDayActive(dayOfWeek: DayOfWeek, active: boolean): void {
+    this.branchSchedule.update((days) =>
+      days.map((day) => (day.dayOfWeek === dayOfWeek ? { ...day, active } : day)),
+    );
+    this.branchScheduleInvalid.set(false);
+  }
+
+  protected setBranchScheduleTime(
+    dayOfWeek: DayOfWeek,
+    field: 'opensAt' | 'closesAt',
+    event: Event,
+  ): void {
+    const value = (event.target as HTMLInputElement).value;
+
+    this.branchSchedule.update((days) =>
+      days.map((day) => (day.dayOfWeek === dayOfWeek ? { ...day, [field]: value } : day)),
+    );
+    this.branchScheduleInvalid.set(false);
   }
 
   protected setScheduleDayActive(dayOfWeek: DayOfWeek, active: boolean): void {
@@ -616,6 +732,14 @@ export class BusinessDashboardPage implements OnInit {
     return booking.customerPhone ?? 'Sin telefono';
   }
 
+  protected branchScheduleLabel(branch: Branch): string {
+    const days = this.scheduleDaysFromBranch(branch.weeklySchedule)
+      .filter((day) => day.active)
+      .map((day) => `${day.label} ${day.opensAt}-${day.closesAt}`);
+
+    return days.length ? days.join(', ') : 'Sin agenda semanal';
+  }
+
   protected resourceServicesLabel(resource: Resource): string {
     const serviceNames = resource.serviceOfferingIds
       .map((serviceId) => this.services().find((service) => service.id === serviceId)?.name)
@@ -673,6 +797,20 @@ export class BusinessDashboardPage implements OnInit {
     return value;
   }
 
+  private validBranchSchedule(): BranchSchedule[] {
+    return this.branchSchedule()
+      .filter((day) => day.active && day.opensAt && day.closesAt && day.opensAt < day.closesAt)
+      .map((day) => ({
+        dayOfWeek: day.dayOfWeek,
+        intervals: [
+          {
+            opensAt: day.opensAt,
+            closesAt: day.closesAt,
+          },
+        ],
+      }));
+  }
+
   private validResourceSchedule(): ResourceSchedule[] {
     return this.resourceSchedule()
       .filter((day) => day.active && day.startsAt && day.endsAt && day.startsAt < day.endsAt)
@@ -685,6 +823,15 @@ export class BusinessDashboardPage implements OnInit {
           },
         ],
       }));
+  }
+
+  private defaultBranchScheduleDays(): BranchScheduleDay[] {
+    return RESOURCE_WEEK_DAYS.map((day) => ({
+      ...day,
+      active: day.dayOfWeek !== 'SUNDAY',
+      opensAt: '09:00',
+      closesAt: '14:00',
+    }));
   }
 
   private defaultSchedule(): ResourceScheduleDay[] {
@@ -714,6 +861,24 @@ export class BusinessDashboardPage implements OnInit {
     });
   }
 
+  private scheduleDaysFromBranch(schedule: BranchSchedule[]): BranchScheduleDay[] {
+    return this.defaultBranchScheduleDays().map((day) => {
+      const savedDay = schedule.find((item) => item.dayOfWeek === day.dayOfWeek);
+      const interval = savedDay?.intervals[0];
+
+      if (!interval) {
+        return { ...day, active: false };
+      }
+
+      return {
+        ...day,
+        active: true,
+        opensAt: interval.opensAt.slice(0, 5),
+        closesAt: interval.closesAt.slice(0, 5),
+      };
+    });
+  }
+
   private saveEntity<T>(request: Observable<T>, reset?: () => void): void {
     this.saving.set(true);
     this.errorMessage.set('');
@@ -730,6 +895,14 @@ export class BusinessDashboardPage implements OnInit {
       complete: () => this.saving.set(false),
     });
   }
+}
+
+interface BranchScheduleDay {
+  dayOfWeek: DayOfWeek;
+  label: string;
+  active: boolean;
+  opensAt: string;
+  closesAt: string;
 }
 
 interface ResourceScheduleDay {

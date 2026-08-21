@@ -2,8 +2,24 @@ export interface Branch {
   id: string;
   name: string;
   address: string;
-  phone?: string;
+  locality: string;
+  province: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  zoneId: string;
+  weeklySchedule: BranchSchedule[];
   active: boolean;
+}
+
+export interface BranchSchedule {
+  dayOfWeek: DayOfWeek;
+  intervals: BranchScheduleInterval[];
+}
+
+export interface BranchScheduleInterval {
+  opensAt: string;
+  closesAt: string;
 }
 
 export interface ServiceCatalogItem {

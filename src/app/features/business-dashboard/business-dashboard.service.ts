@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import {
   Booking,
   Branch,
+  BranchSchedule,
   DayOfWeek,
   Resource,
   ResourceSchedule,
@@ -27,17 +28,17 @@ export class BusinessDashboardService {
   }
 
   createBranch(payload: Omit<Branch, 'id'>): Observable<Branch> {
-    return this.http.post<Branch>(
+    return this.http.post<BranchResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches`),
-      payload,
-    );
+      this.toBranchRequest(payload),
+    ).pipe(map((branch) => this.toBranch(branch)));
   }
 
   updateBranch(id: string, payload: Omit<Branch, 'id'>): Observable<Branch> {
-    return this.http.put<Branch>(
+    return this.http.put<BranchResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches/${id}`),
-      payload,
-    );
+      this.toBranchRequest(payload),
+    ).pipe(map((branch) => this.toBranch(branch)));
   }
 
   deleteBranch(id: string): Observable<void> {
@@ -154,8 +155,29 @@ export class BusinessDashboardService {
       id: branch.id,
       name: branch.name,
       address: branch.address,
-      phone: branch.phone,
+      locality: branch.locality,
+      province: branch.province,
+      country: branch.country,
+      latitude: Number(branch.latitude),
+      longitude: Number(branch.longitude),
+      zoneId: branch.zoneId,
+      weeklySchedule: branch.weeklySchedule ?? [],
       active: branch.active ?? branch.status === 'ACTIVE',
+    };
+  }
+
+  private toBranchRequest(branch: Omit<Branch, 'id'>): BranchRequest {
+    return {
+      name: branch.name,
+      address: branch.address,
+      locality: branch.locality,
+      province: branch.province,
+      country: branch.country,
+      latitude: branch.latitude,
+      longitude: branch.longitude,
+      zoneId: branch.zoneId,
+      status: branch.active ? 'ACTIVE' : 'INACTIVE',
+      weeklySchedule: branch.weeklySchedule,
     };
   }
 
@@ -233,9 +255,28 @@ interface BranchResponse {
   id: string;
   name: string;
   address: string;
-  phone?: string;
+  locality: string;
+  province: string;
+  country: string;
+  latitude: number | string;
+  longitude: number | string;
+  zoneId: string;
+  weeklySchedule?: BranchSchedule[];
   active?: boolean;
   status?: string;
+}
+
+interface BranchRequest {
+  name: string;
+  address: string;
+  locality: string;
+  province: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  zoneId: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  weeklySchedule: BranchSchedule[];
 }
 
 interface ServiceOfferingResponse {

@@ -128,6 +128,10 @@ p {
   color: var(--mat-sys-error);
 }
 
+.form-hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .list {
   display: grid;
   gap: 10px;
@@ -179,6 +183,10 @@ p {
   }
 
   .schedule-editor {
+    grid-column: 1 / -1;
+  }
+
+  .form-hint {
     grid-column: 1 / -1;
   }
 }

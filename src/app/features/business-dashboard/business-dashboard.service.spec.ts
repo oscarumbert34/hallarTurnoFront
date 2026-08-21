@@ -33,7 +33,18 @@ describe('BusinessDashboardService', () => {
     const payload = {
       name: 'Centro',
       address: 'Calle 1',
-      phone: '',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY' as const,
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+      ],
       active: true,
     };
 
@@ -43,21 +54,43 @@ describe('BusinessDashboardService', () => {
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/branches`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual(payload);
+    expect(request.request.body).toEqual({
+      name: 'Centro',
+      address: 'Calle 1',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      status: 'ACTIVE',
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+      ],
+    });
 
-    request.flush({ id: 'branch-1', ...payload });
+    request.flush({ id: 'branch-1', status: 'ACTIVE', ...payload });
   });
 
   it('should list branches from paginated API responses', () => {
     service.listBranches().subscribe((branches) => {
       expect(branches).toEqual([
         {
-          id: 'branch-1',
-          name: 'Centro',
-          address: 'Calle 1',
-          phone: undefined,
-          active: true,
-        },
+            id: 'branch-1',
+            name: 'Centro',
+            address: 'Calle 1',
+            locality: 'Los Polvorines',
+            province: 'Buenos Aires',
+            country: 'Argentina',
+            latitude: -35.6037,
+            longitude: -58.3816,
+            zoneId: 'America/Argentina/Buenos_Aires',
+            weeklySchedule: [],
+            active: true,
+          },
       ]);
     });
 
@@ -69,7 +102,21 @@ describe('BusinessDashboardService', () => {
       size: 20,
       totalElements: 1,
       totalPages: 1,
-      results: [{ id: 'branch-1', name: 'Centro', address: 'Calle 1', status: 'ACTIVE' }],
+      results: [
+        {
+          id: 'branch-1',
+          name: 'Centro',
+          address: 'Calle 1',
+          locality: 'Los Polvorines',
+          province: 'Buenos Aires',
+          country: 'Argentina',
+          latitude: -35.6037,
+          longitude: -58.3816,
+          zoneId: 'America/Argentina/Buenos_Aires',
+          weeklySchedule: [],
+          status: 'ACTIVE',
+        },
+      ],
     });
   });
 

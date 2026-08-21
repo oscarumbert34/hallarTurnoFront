@@ -11,7 +11,21 @@ describe('BusinessDashboardPage', () => {
   beforeEach(async () => {
     dashboardService = {
       listBranches: vi.fn(() =>
-        of([{ id: 'branch-1', name: 'Centro', address: 'Calle 1', active: true }]),
+        of([
+          {
+            id: 'branch-1',
+            name: 'Centro',
+            address: 'Calle 1',
+            locality: 'Los Polvorines',
+            province: 'Buenos Aires',
+            country: 'Argentina',
+            latitude: -35.6037,
+            longitude: -58.3816,
+            zoneId: 'America/Argentina/Buenos_Aires',
+            weeklySchedule: [],
+            active: true,
+          },
+        ]),
       ),
       listServices: vi.fn(() =>
         of([{ id: 'service-1', name: 'Corte', durationMinutes: 30, price: 1200, active: true }]),
@@ -49,7 +63,19 @@ describe('BusinessDashboardPage', () => {
 
   it('should create a branch and refresh dashboard data', () => {
     dashboardService.createBranch.mockReturnValue(
-      of({ id: 'branch-2', name: 'Norte', address: 'Calle 2', phone: '', active: true }),
+      of({
+        id: 'branch-2',
+        name: 'Norte',
+        address: 'Calle 2',
+        locality: 'Los Polvorines',
+        province: 'Buenos Aires',
+        country: 'Argentina',
+        latitude: -35.6037,
+        longitude: -58.3816,
+        zoneId: 'America/Argentina/Buenos_Aires',
+        weeklySchedule: [],
+        active: true,
+      }),
     );
 
     const component = fixture.componentInstance as unknown as {
@@ -57,7 +83,12 @@ describe('BusinessDashboardPage', () => {
         setValue: (value: {
           name: string;
           address: string;
-          phone: string;
+          locality: string;
+          province: string;
+          country: string;
+          latitude: number;
+          longitude: number;
+          zoneId: string;
           active: boolean;
         }) => void;
       };
@@ -67,7 +98,12 @@ describe('BusinessDashboardPage', () => {
     component.branchForm.setValue({
       name: 'Norte',
       address: 'Calle 2',
-      phone: '',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
       active: true,
     });
     component.saveBranch();
@@ -75,10 +111,116 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.createBranch).toHaveBeenCalledWith({
       name: 'Norte',
       address: 'Calle 2',
-      phone: '',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      weeklySchedule: [
+        {
+          dayOfWeek: 'MONDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+        {
+          dayOfWeek: 'TUESDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+        {
+          dayOfWeek: 'WEDNESDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+        {
+          dayOfWeek: 'THURSDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+        {
+          dayOfWeek: 'FRIDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+        {
+          dayOfWeek: 'SATURDAY',
+          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+        },
+      ],
       active: true,
     });
     expect(dashboardService.listBranches).toHaveBeenCalledTimes(2);
+  });
+
+  it('should create a branch with the selected weekly schedule', () => {
+    dashboardService.createBranch.mockReturnValue(
+      of({
+        id: 'branch-2',
+        name: 'Norte',
+        address: 'Calle 2',
+        locality: 'Los Polvorines',
+        province: 'Buenos Aires',
+        country: 'Argentina',
+        latitude: -35.6037,
+        longitude: -58.3816,
+        zoneId: 'America/Argentina/Buenos_Aires',
+        weeklySchedule: [],
+        active: true,
+      }),
+    );
+
+    const component = fixture.componentInstance as unknown as {
+      branchForm: {
+        setValue: (value: {
+          name: string;
+          address: string;
+          locality: string;
+          province: string;
+          country: string;
+          latitude: number;
+          longitude: number;
+          zoneId: string;
+          active: boolean;
+        }) => void;
+      };
+      setBranchScheduleDayActive: (dayOfWeek: string, active: boolean) => void;
+      setBranchScheduleTime: (dayOfWeek: string, field: 'opensAt' | 'closesAt', event: Event) => void;
+      saveBranch: () => void;
+    };
+
+    component.branchForm.setValue({
+      name: 'Norte',
+      address: 'Calle 2',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      active: true,
+    });
+
+    for (const day of ['TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']) {
+      component.setBranchScheduleDayActive(day, false);
+    }
+    component.setBranchScheduleTime(
+      'MONDAY',
+      'opensAt',
+      { target: { value: '10:30' } } as unknown as Event,
+    );
+    component.setBranchScheduleTime(
+      'MONDAY',
+      'closesAt',
+      { target: { value: '16:00' } } as unknown as Event,
+    );
+    component.saveBranch();
+
+    expect(dashboardService.createBranch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        weeklySchedule: [
+          {
+            dayOfWeek: 'MONDAY',
+            intervals: [{ opensAt: '10:30', closesAt: '16:00' }],
+          },
+        ],
+      }),
+    );
   });
 
   it('should create a resource with selected service offerings', () => {
@@ -175,7 +317,21 @@ describe('BusinessDashboardPage', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Cargando...');
 
-    branches.next([{ id: 'branch-1', name: 'Centro', address: 'Calle 1', active: true }]);
+    branches.next([
+      {
+        id: 'branch-1',
+        name: 'Centro',
+        address: 'Calle 1',
+        locality: 'Los Polvorines',
+        province: 'Buenos Aires',
+        country: 'Argentina',
+        latitude: -35.6037,
+        longitude: -58.3816,
+        zoneId: 'America/Argentina/Buenos_Aires',
+        weeklySchedule: [],
+        active: true,
+      },
+    ]);
     branches.complete();
     fixture.detectChanges();
     await fixture.whenStable();
