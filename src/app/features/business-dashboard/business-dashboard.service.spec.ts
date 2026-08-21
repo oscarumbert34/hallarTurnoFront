@@ -11,6 +11,8 @@ describe('BusinessDashboardService', () => {
   let httpTesting: HttpTestingController;
 
   beforeEach(() => {
+    localStorage.clear();
+
     TestBed.configureTestingModule({
       providers: [
         BusinessDashboardService,
@@ -27,6 +29,7 @@ describe('BusinessDashboardService', () => {
 
   afterEach(() => {
     httpTesting.verify();
+    localStorage.clear();
   });
 
   it('should create a branch through the business API', () => {
@@ -131,19 +134,102 @@ describe('BusinessDashboardService', () => {
 
     service.createService(payload).subscribe((serviceOffering) => {
       expect(serviceOffering.id).toBe('service-1');
+      expect(serviceOffering.branchIds).toEqual(['branch-1']);
     });
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       name: 'Corte',
+      branchId: 'branch-1',
       branchIds: ['branch-1'],
       durationMinutes: 30,
       price: 1200,
       status: 'ACTIVE',
     });
 
-    request.flush({ id: 'service-1', ...payload });
+    request.flush({
+      id: 'service-1',
+      name: 'Corte',
+      durationMinutes: 30,
+      price: 1200,
+      status: 'ACTIVE',
+    });
+  });
+
+  it('should keep stored service branches when the list response omits them', () => {
+    const payload = {
+      name: 'Corte',
+      branchIds: ['branch-1'],
+      durationMinutes: 30,
+      price: 1200,
+      active: true,
+    };
+
+    service.createService(payload).subscribe();
+
+    const createRequest = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
+    createRequest.flush({
+      id: 'service-1',
+      name: 'Corte',
+      durationMinutes: 30,
+      price: 1200,
+      status: 'ACTIVE',
+    });
+
+    service.listServices().subscribe((services) => {
+      expect(services[0].branchIds).toEqual(['branch-1']);
+    });
+
+    const listRequest = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
+    listRequest.flush({
+      results: [
+        {
+          id: 'service-1',
+          name: 'Corte',
+          durationMinutes: 30,
+          price: 1200,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+  });
+
+  it('should read service branches from alternate API response shapes', () => {
+    service.listServices().subscribe((services) => {
+      expect(services.map((item) => item.branchIds)).toEqual([
+        ['branch-1'],
+        ['branch-2'],
+        ['branch-3'],
+      ]);
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
+    request.flush({
+      results: [
+        {
+          id: 'service-1',
+          name: 'Corte',
+          branchId: 'branch-1',
+          durationMinutes: 30,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'service-2',
+          name: 'Color',
+          branch: { id: 'branch-2' },
+          durationMinutes: 45,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'service-3',
+          name: 'Peinado',
+          branches: [{ id: 'branch-3' }],
+          durationMinutes: 60,
+          status: 'ACTIVE',
+        },
+      ],
+    });
   });
 
   it('should create a resource through the branch API', () => {

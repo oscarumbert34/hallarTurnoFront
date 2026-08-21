@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
 import { AuthService } from '../auth/auth.service';
 import {
@@ -18,6 +18,7 @@ export class BusinessDashboardService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
   private readonly authService = inject(AuthService);
+  private readonly serviceBranchesStorageKey = 'hallarTurno.serviceBranches';
 
   listBranches(): Observable<Branch[]> {
     return this.http
@@ -52,14 +53,23 @@ export class BusinessDashboardService {
       .get<EntityListResponse<ServiceOfferingResponse>>(
         this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
       )
-      .pipe(map((response) => this.getResults(response).map((service) => this.toService(service))));
+      .pipe(
+        map((response) =>
+          this.getResults(response).map((service) =>
+            this.toService(service, this.storedServiceBranchIds(service.id)),
+          ),
+        ),
+      );
   }
 
   createService(payload: Omit<ServiceCatalogItem, 'id'>): Observable<ServiceCatalogItem> {
     return this.http.post<ServiceOfferingResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
       this.toServiceRequest(payload),
-    ).pipe(map((service) => this.toService(service)));
+    ).pipe(
+      tap((service) => this.storeServiceBranchIds(service.id, payload.branchIds)),
+      map((service) => this.toService(service, payload.branchIds)),
+    );
   }
 
   updateService(
@@ -69,13 +79,16 @@ export class BusinessDashboardService {
     return this.http.put<ServiceOfferingResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings/${id}`),
       this.toServiceRequest(payload),
-    ).pipe(map((service) => this.toService(service)));
+    ).pipe(
+      tap((service) => this.storeServiceBranchIds(service.id, payload.branchIds)),
+      map((service) => this.toService(service, payload.branchIds)),
+    );
   }
 
   deleteService(id: string): Observable<void> {
     return this.http.delete<void>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings/${id}`),
-    );
+    ).pipe(tap(() => this.removeStoredServiceBranchIds(id)));
   }
 
   listResources(): Observable<Resource[]> {
@@ -181,11 +194,13 @@ export class BusinessDashboardService {
     };
   }
 
-  private toService(service: ServiceOfferingResponse): ServiceCatalogItem {
+  private toService(service: ServiceOfferingResponse, fallbackBranchIds: string[] = []): ServiceCatalogItem {
+    const branchIds = this.serviceBranchIds(service);
+
     return {
       id: service.id,
       name: service.name,
-      branchIds: service.branchIds ?? [],
+      branchIds: branchIds.length ? branchIds : fallbackBranchIds,
       durationMinutes: service.durationMinutes ?? service.duration ?? 30,
       price: service.price,
       active: service.active ?? service.status === 'ACTIVE',
@@ -195,6 +210,7 @@ export class BusinessDashboardService {
   private toServiceRequest(service: Omit<ServiceCatalogItem, 'id'>): ServiceOfferingRequest {
     return {
       name: service.name,
+      branchId: service.branchIds[0],
       branchIds: service.branchIds,
       durationMinutes: service.durationMinutes,
       price: service.price,
@@ -258,6 +274,54 @@ export class BusinessDashboardService {
   private firstText(...values: Array<string | undefined>): string | undefined {
     return values.find((value) => value?.trim())?.trim();
   }
+
+  private serviceBranchIds(service: ServiceOfferingResponse): string[] {
+    if (service.branchIds?.length) {
+      return service.branchIds;
+    }
+
+    if (service.branchId) {
+      return [service.branchId];
+    }
+
+    if (service.branches?.length) {
+      return service.branches.map((branch) => branch.id).filter((id): id is string => Boolean(id));
+    }
+
+    return service.branch?.id ? [service.branch.id] : [];
+  }
+
+  private storedServiceBranchIds(serviceId: string): string[] {
+    return this.serviceBranchIdsStorage()[serviceId] ?? [];
+  }
+
+  private storeServiceBranchIds(serviceId: string, branchIds: string[]): void {
+    const storage = this.serviceBranchIdsStorage();
+    storage[serviceId] = branchIds;
+    localStorage.setItem(this.serviceBranchesStorageKey, JSON.stringify(storage));
+  }
+
+  private removeStoredServiceBranchIds(serviceId: string): void {
+    const storage = this.serviceBranchIdsStorage();
+    delete storage[serviceId];
+    localStorage.setItem(this.serviceBranchesStorageKey, JSON.stringify(storage));
+  }
+
+  private serviceBranchIdsStorage(): Record<string, string[]> {
+    const raw = localStorage.getItem(this.serviceBranchesStorageKey);
+
+    if (!raw) {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Record<string, string[]>;
+
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
 }
 
 type EntityListResponse<T> = T[] | { results?: T[] };
@@ -293,7 +357,10 @@ interface BranchRequest {
 interface ServiceOfferingResponse {
   id: string;
   name: string;
+  branchId?: string;
   branchIds?: string[];
+  branch?: { id?: string };
+  branches?: Array<{ id?: string }>;
   durationMinutes?: number;
   duration?: number;
   price?: number;
@@ -303,6 +370,7 @@ interface ServiceOfferingResponse {
 
 interface ServiceOfferingRequest {
   name: string;
+  branchId?: string;
   branchIds: string[];
   durationMinutes: number;
   price?: number;
