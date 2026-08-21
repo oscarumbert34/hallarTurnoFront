@@ -126,7 +126,7 @@ describe('BusinessDashboardService', () => {
   it('should create a service offering through the business API', () => {
     const payload = {
       name: 'Corte',
-      branchIds: ['branch-1'],
+      branchId: 'branch-1',
       durationMinutes: 30,
       price: 1200,
       active: true,
@@ -134,7 +134,7 @@ describe('BusinessDashboardService', () => {
 
     service.createService(payload).subscribe((serviceOffering) => {
       expect(serviceOffering.id).toBe('service-1');
-      expect(serviceOffering.branchIds).toEqual(['branch-1']);
+      expect(serviceOffering.branchId).toBe('branch-1');
     });
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
@@ -142,7 +142,6 @@ describe('BusinessDashboardService', () => {
     expect(request.request.body).toEqual({
       name: 'Corte',
       branchId: 'branch-1',
-      branchIds: ['branch-1'],
       durationMinutes: 30,
       price: 1200,
       status: 'ACTIVE',
@@ -151,57 +150,16 @@ describe('BusinessDashboardService', () => {
     request.flush({
       id: 'service-1',
       name: 'Corte',
+      branchId: 'branch-1',
       durationMinutes: 30,
       price: 1200,
       status: 'ACTIVE',
-    });
-  });
-
-  it('should keep stored service branches when the list response omits them', () => {
-    const payload = {
-      name: 'Corte',
-      branchIds: ['branch-1'],
-      durationMinutes: 30,
-      price: 1200,
-      active: true,
-    };
-
-    service.createService(payload).subscribe();
-
-    const createRequest = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
-    createRequest.flush({
-      id: 'service-1',
-      name: 'Corte',
-      durationMinutes: 30,
-      price: 1200,
-      status: 'ACTIVE',
-    });
-
-    service.listServices().subscribe((services) => {
-      expect(services[0].branchIds).toEqual(['branch-1']);
-    });
-
-    const listRequest = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
-    listRequest.flush({
-      results: [
-        {
-          id: 'service-1',
-          name: 'Corte',
-          durationMinutes: 30,
-          price: 1200,
-          status: 'ACTIVE',
-        },
-      ],
     });
   });
 
   it('should read service branches from alternate API response shapes', () => {
     service.listServices().subscribe((services) => {
-      expect(services.map((item) => item.branchIds)).toEqual([
-        ['branch-1'],
-        ['branch-2'],
-        ['branch-3'],
-      ]);
+      expect(services.map((item) => item.branchId)).toEqual(['branch-1', 'branch-2', 'branch-3']);
     });
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);

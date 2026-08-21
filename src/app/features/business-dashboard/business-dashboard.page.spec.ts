@@ -32,7 +32,7 @@ describe('BusinessDashboardPage', () => {
           {
             id: 'service-1',
             name: 'Corte',
-            branchIds: ['branch-1'],
+            branchId: 'branch-1',
             durationMinutes: 30,
             price: 1200,
             active: true,
@@ -232,12 +232,12 @@ describe('BusinessDashboardPage', () => {
     );
   });
 
-  it('should create a service for selected branches', () => {
+  it('should create a service for the selected branch', () => {
     dashboardService.createService.mockReturnValue(
       of({
         id: 'service-2',
         name: 'Manicura',
-        branchIds: ['branch-1'],
+        branchId: 'branch-1',
         durationMinutes: 45,
         price: 3000,
         active: true,
@@ -248,7 +248,7 @@ describe('BusinessDashboardPage', () => {
       serviceForm: {
         setValue: (value: {
           name: string;
-          branchIds: string[];
+          branchId: string;
           durationMinutes: number;
           price: number;
           active: boolean;
@@ -259,7 +259,7 @@ describe('BusinessDashboardPage', () => {
 
     component.serviceForm.setValue({
       name: 'Manicura',
-      branchIds: ['branch-1'],
+      branchId: 'branch-1',
       durationMinutes: 45,
       price: 3000,
       active: true,
@@ -268,7 +268,7 @@ describe('BusinessDashboardPage', () => {
 
     expect(dashboardService.createService).toHaveBeenCalledWith({
       name: 'Manicura',
-      branchIds: ['branch-1'],
+      branchId: 'branch-1',
       durationMinutes: 45,
       price: 3000,
       active: true,

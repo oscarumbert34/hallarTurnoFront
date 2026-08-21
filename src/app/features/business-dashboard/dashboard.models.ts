@@ -25,7 +25,7 @@ export interface BranchScheduleInterval {
 export interface ServiceCatalogItem {
   id: string;
   name: string;
-  branchIds: string[];
+  branchId: string;
   durationMinutes: number;
   price?: number;
   active: boolean;
