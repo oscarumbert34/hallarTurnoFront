@@ -50,7 +50,7 @@ describe('BookingService', () => {
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10',
+      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10&maxSlotsPerService=10',
     );
 
     expect(request.request.method).toBe('GET');
@@ -119,7 +119,7 @@ describe('BookingService', () => {
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=10&limit=5&businessId=business-1',
+      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=10&limit=5&maxSlotsPerService=5&businessId=business-1',
     );
 
     expect(request.request.method).toBe('GET');
@@ -181,6 +181,61 @@ describe('BookingService', () => {
           durationMinutes: 30,
           price: 5000,
           status: 'ACTIVE',
+        },
+      ],
+    });
+  });
+
+  it('should list more slots for a selected service and branch', () => {
+    service
+      .listAvailabilitySlots(
+        {
+          branchId: 'branch-1',
+          serviceId: 'service-1',
+        },
+        {
+          service: 'Corte',
+          date: '2026-08-17',
+          zone: 'Centro',
+          timeFrom: '09:00',
+          timeTo: '18:00',
+        },
+        { offset: 10, limit: 10 },
+      )
+      .subscribe((page) => {
+        expect(page.serviceOfferingId).toBe('service-1');
+        expect(page.branchId).toBe('branch-1');
+        expect(page.offset).toBe(10);
+        expect(page.limit).toBe(10);
+        expect(page.totalAvailableSlots).toBe(24);
+        expect(page.hasMore).toBe(true);
+        expect(page.slots[0]).toEqual({
+          id: 'service-1-resource-1-15:00:00',
+          startsAt: '2026-08-17T15:00:00',
+          endsAt: '2026-08-17T15:30:00',
+          resourceId: 'resource-1',
+          resourceName: 'Juan Perez',
+        });
+      });
+
+    const request = httpTesting.expectOne(
+      '/api/public/availability/service-1/slots?branchId=branch-1&date=2026-08-17&startsFrom=09:00&startsTo=18:00&offset=10&limit=10',
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      serviceOfferingId: 'service-1',
+      branchId: 'branch-1',
+      offset: 10,
+      limit: 10,
+      totalAvailableSlots: 24,
+      hasMore: true,
+      slots: [
+        {
+          startsAt: '15:00:00',
+          endsAt: '15:30:00',
+          resourceId: 'resource-1',
+          resourceName: 'Juan Perez',
         },
       ],
     });

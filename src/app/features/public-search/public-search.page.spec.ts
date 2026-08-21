@@ -11,6 +11,7 @@ describe('PublicSearchPage', () => {
     listBusinesses: ReturnType<typeof vi.fn>;
     listServiceOfferings: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
+    listAvailabilitySlots: ReturnType<typeof vi.fn>;
   };
   let router: {
     navigate: ReturnType<typeof vi.fn>;
@@ -61,6 +62,23 @@ describe('PublicSearchPage', () => {
                   endsAt: '2026-08-17T10:30:00',
                 },
               ],
+            },
+          ],
+        }),
+      ),
+      listAvailabilitySlots: vi.fn(() =>
+        of({
+          serviceOfferingId: 'service-1',
+          branchId: 'branch-1',
+          offset: 10,
+          limit: 10,
+          totalAvailableSlots: 11,
+          hasMore: false,
+          slots: [
+            {
+              id: 'slot-2',
+              startsAt: '2026-08-17T11:00:00',
+              endsAt: '2026-08-17T11:30:00',
             },
           ],
         }),
@@ -216,7 +234,7 @@ describe('PublicSearchPage', () => {
         business: 'Turnos SA',
         businessId: 'business-1',
       }),
-      { offset: 0, limit: 10 },
+      { offset: 0, limit: 10, maxSlotsPerService: 10 },
     );
   });
 
@@ -259,11 +277,11 @@ describe('PublicSearchPage', () => {
       expect.objectContaining({
         date: '2026-08-28',
       }),
-      { offset: 0, limit: 10 },
+      { offset: 0, limit: 10, maxSlotsPerService: 10 },
     );
   });
 
-  it('should request the next 5 slots and append them when loading more', () => {
+  it('should request the next 10 services and append them when loading more services', () => {
     bookingService.searchAvailability
       .mockReturnValueOnce(
         of({
@@ -282,11 +300,7 @@ describe('PublicSearchPage', () => {
               serviceName: 'Corte',
               durationMinutes: 30,
               slots: [
-                {
-                  id: 'slot-1',
-                  startsAt: '2026-08-17T10:00:00',
-                  endsAt: '2026-08-17T10:30:00',
-                },
+                { id: 'slot-1', startsAt: '2026-08-17T10:00:00', endsAt: '2026-08-17T10:30:00' },
               ],
             },
           ],
@@ -295,7 +309,7 @@ describe('PublicSearchPage', () => {
       .mockReturnValueOnce(
         of({
           offset: 10,
-          limit: 5,
+          limit: 10,
           totalAvailableSlots: 12,
           hasMore: false,
           results: [
@@ -305,15 +319,11 @@ describe('PublicSearchPage', () => {
               branchId: 'branch-1',
               branchName: 'Centro',
               address: 'Calle 1',
-              serviceId: 'service-1',
-              serviceName: 'Corte',
+              serviceId: 'service-2',
+              serviceName: 'Color',
               durationMinutes: 30,
               slots: [
-                {
-                  id: 'slot-2',
-                  startsAt: '2026-08-17T11:00:00',
-                  endsAt: '2026-08-17T11:30:00',
-                },
+                { id: 'slot-2', startsAt: '2026-08-17T11:00:00', endsAt: '2026-08-17T11:30:00' },
               ],
             },
           ],
@@ -324,16 +334,16 @@ describe('PublicSearchPage', () => {
         patchValue: (value: { service: string; date: string; zone: string }) => void;
       };
       search: () => void;
-      loadMore: () => void;
+      loadMoreServices: () => void;
     };
 
     component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
     component.search();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Ver 5 mas');
+    expect(fixture.nativeElement.textContent).toContain('Ver mas servicios');
 
-    component.loadMore();
+    component.loadMoreServices();
     fixture.detectChanges();
 
     expect(bookingService.searchAvailability).toHaveBeenLastCalledWith(
@@ -341,11 +351,94 @@ describe('PublicSearchPage', () => {
         service: 'Corte',
         date: '2026-08-17',
       }),
-      { offset: 10, limit: 5 },
+      { offset: 10, limit: 10, maxSlotsPerService: 10 },
     );
     expect(fixture.nativeElement.textContent).toContain('10:00');
     expect(fixture.nativeElement.textContent).toContain('11:00');
-    expect(fixture.nativeElement.textContent).not.toContain('Ver 5 mas');
+    expect(fixture.nativeElement.textContent).toContain('Color');
+    expect(fixture.nativeElement.textContent).not.toContain('Ver mas servicios');
+  });
+
+  it('should request and append more slots for a single service', () => {
+    const firstSlots = Array.from({ length: 10 }, (_, index) => ({
+      id: `slot-${index}`,
+      startsAt: `2026-08-17T${String(9 + index).padStart(2, '0')}:00:00`,
+      endsAt: `2026-08-17T${String(9 + index).padStart(2, '0')}:30:00`,
+    }));
+    bookingService.searchAvailability.mockReturnValueOnce(
+      of({
+        offset: 0,
+        limit: 10,
+        totalAvailableSlots: 10,
+        hasMore: false,
+        results: [
+          {
+            businessId: 'business-1',
+            businessName: 'Turnos SA',
+            branchId: 'branch-1',
+            branchName: 'Centro',
+            address: 'Calle 1',
+            serviceId: 'service-1',
+            serviceName: 'Corte',
+            durationMinutes: 30,
+            slots: firstSlots,
+          },
+        ],
+      }),
+    );
+    bookingService.listAvailabilitySlots.mockReturnValueOnce(
+      of({
+        serviceOfferingId: 'service-1',
+        branchId: 'branch-1',
+        offset: 10,
+        limit: 10,
+        totalAvailableSlots: 11,
+        hasMore: false,
+        slots: [
+          {
+            id: 'slot-10',
+            startsAt: '2026-08-17T19:00:00',
+            endsAt: '2026-08-17T19:30:00',
+          },
+        ],
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: { service: string; date: string; zone: string }) => void;
+      };
+      results: () => Array<{
+        businessId: string;
+        branchId: string;
+        serviceId: string;
+        slots: unknown[];
+      }>;
+      search: () => void;
+      loadMoreSlots: (business: unknown) => void;
+    };
+
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.search();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Ver mas horarios');
+
+    component.loadMoreSlots(component.results()[0]);
+    fixture.detectChanges();
+
+    expect(bookingService.listAvailabilitySlots).toHaveBeenCalledWith(
+      expect.objectContaining({
+        branchId: 'branch-1',
+        serviceId: 'service-1',
+      }),
+      expect.objectContaining({
+        date: '2026-08-17',
+        service: 'Corte',
+      }),
+      { offset: 10, limit: 10 },
+    );
+    expect(fixture.nativeElement.textContent).toContain('07:00');
+    expect(fixture.nativeElement.textContent).not.toContain('Ver mas horarios');
   });
 
   it('should load service offerings for the service autocomplete', () => {

@@ -7,6 +7,8 @@ import {
   AvailabilityPage,
   AvailabilityPagination,
   AvailabilitySearch,
+  AvailabilitySlot,
+  AvailabilitySlotPage,
   BusinessSummary,
   BusinessAvailability,
   BusinessDetail,
@@ -31,7 +33,8 @@ export class BookingService {
       .set('startsFrom', search.timeFrom)
       .set('startsTo', search.timeTo)
       .set('offset', pagination.offset)
-      .set('limit', pagination.limit);
+      .set('limit', pagination.limit)
+      .set('maxSlotsPerService', pagination.maxSlotsPerService ?? pagination.limit);
 
     if (search.businessId) {
       params = params.set('businessId', search.businessId);
@@ -43,6 +46,30 @@ export class BookingService {
         context: this.publicHttpContext(),
       })
       .pipe(map((response) => this.toAvailabilityPage(response, search.date, search.service)));
+  }
+
+  listAvailabilitySlots(
+    availability: Pick<BusinessAvailability, 'branchId' | 'serviceId'>,
+    search: AvailabilitySearch,
+    pagination: AvailabilityPagination,
+  ): Observable<AvailabilitySlotPage> {
+    const params = new HttpParams()
+      .set('branchId', availability.branchId)
+      .set('date', search.date)
+      .set('startsFrom', search.timeFrom)
+      .set('startsTo', search.timeTo)
+      .set('offset', pagination.offset)
+      .set('limit', pagination.limit);
+
+    return this.http
+      .get<AvailabilitySlotsResponse>(
+        this.apiUrl.build(`/public/availability/${availability.serviceId}/slots`),
+        {
+          params,
+          context: this.publicHttpContext(),
+        },
+      )
+      .pipe(map((response) => this.toAvailabilitySlotPage(response, search.date)));
   }
 
   listBusinesses(): Observable<BusinessSummary[]> {
@@ -104,6 +131,21 @@ export class BookingService {
     return new HttpContext().set(SKIP_AUTH, true);
   }
 
+  private toAvailabilitySlotPage(
+    response: AvailabilitySlotsResponse,
+    date: string,
+  ): AvailabilitySlotPage {
+    return {
+      serviceOfferingId: response.serviceOfferingId,
+      branchId: response.branchId,
+      offset: response.offset,
+      limit: response.limit,
+      totalAvailableSlots: response.totalAvailableSlots,
+      hasMore: response.hasMore,
+      slots: this.toSlots(response.serviceOfferingId, response.slots ?? [], date),
+    };
+  }
+
   private toAvailabilityResults(
     response: AvailabilityResponse,
     date: string,
@@ -126,16 +168,24 @@ export class BookingService {
             serviceName: service.name,
             price: service.price,
             durationMinutes: service.durationMinutes,
-            slots: (service.slots ?? []).map((slot) => ({
-              id: `${service.id}-${slot.resourceId}-${slot.startsAt}`,
-              startsAt: `${date}T${slot.startsAt}`,
-              endsAt: `${date}T${slot.endsAt}`,
-              resourceId: slot.resourceId,
-              resourceName: slot.resourceName,
-            })),
+            slots: this.toSlots(service.id, service.slots ?? [], date),
           })),
       ),
     );
+  }
+
+  private toSlots(
+    serviceId: string,
+    slots: AvailabilitySlotResponse[],
+    date: string,
+  ): AvailabilitySlot[] {
+    return slots.map((slot) => ({
+      id: `${serviceId}-${slot.resourceId}-${slot.startsAt}`,
+      startsAt: `${date}T${slot.startsAt}`,
+      endsAt: `${date}T${slot.endsAt}`,
+      resourceId: slot.resourceId,
+      resourceName: slot.resourceName,
+    }));
   }
 
   private toBusinesses(response: BusinessListResponse): BusinessSummary[] {
@@ -192,6 +242,16 @@ interface AvailabilityResponse {
   totalElements?: number;
   totalPages?: number;
   results: AvailabilityBusinessResponse[];
+}
+
+interface AvailabilitySlotsResponse {
+  serviceOfferingId: string;
+  branchId: string;
+  offset: number;
+  limit: number;
+  totalAvailableSlots: number;
+  hasMore: boolean;
+  slots: AvailabilitySlotResponse[];
 }
 
 interface AvailabilityBusinessResponse {

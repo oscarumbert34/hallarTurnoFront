@@ -149,6 +149,20 @@ import { BookingService } from '../booking/booking.service';
                   <p>No hay horarios disponibles para este negocio.</p>
                 }
               </div>
+
+              @if (showLoadMoreSlots(business)) {
+                <div class="card-actions">
+                  <button
+                    mat-stroked-button
+                    class="load-more-slots"
+                    type="button"
+                    [disabled]="slotLoading(business)"
+                    (click)="loadMoreSlots(business)"
+                  >
+                    {{ slotLoading(business) ? 'Cargando...' : 'Ver mas horarios' }}
+                  </button>
+                </div>
+              }
             </mat-card-content>
           </mat-card>
         } @empty {
@@ -157,15 +171,16 @@ import { BookingService } from '../booking/booking.service';
           }
         }
 
-        @if (showLoadMore()) {
+        @if (showLoadMoreServices()) {
           <div class="load-more">
             <button
-              mat-stroked-button
+              mat-flat-button
+              class="load-more-services"
               type="button"
-              [disabled]="loadingMore()"
-              (click)="loadMore()"
+              [disabled]="loadingMoreServices()"
+              (click)="loadMoreServices()"
             >
-              {{ loadingMore() ? 'Cargando...' : 'Ver 5 mas' }}
+              {{ loadingMoreServices() ? 'Cargando...' : 'Ver mas servicios' }}
             </button>
           </div>
         }
@@ -175,9 +190,8 @@ import { BookingService } from '../booking/booking.service';
   styleUrl: './public-search.page.scss',
 })
 export class PublicSearchPage implements OnInit {
-  private readonly initialAvailabilityLimit = 10;
-  private readonly loadMoreAvailabilityLimit = 5;
-  private readonly maxAvailabilityOptions = 50;
+  private readonly servicesPageLimit = 10;
+  private readonly slotsPageLimit = 10;
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
@@ -187,7 +201,7 @@ export class PublicSearchPage implements OnInit {
   protected readonly serviceOfferings = signal<ServiceOfferingSummary[]>([]);
   protected readonly selectedBusinessId = signal('');
   protected readonly loading = signal(false);
-  protected readonly loadingMore = signal(false);
+  protected readonly loadingMoreServices = signal(false);
   protected readonly searched = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly results = signal<BusinessAvailability[]>([]);
@@ -196,6 +210,7 @@ export class PublicSearchPage implements OnInit {
   > | null>(null);
   protected readonly nextOffset = signal(0);
   protected readonly hasMore = signal(false);
+  protected readonly slotPagination = signal<Record<string, SlotPaginationState>>({});
   protected readonly form = this.formBuilder.nonNullable.group({
     business: [''],
     service: ['', Validators.required],
@@ -251,10 +266,15 @@ export class PublicSearchPage implements OnInit {
     this.currentSearch.set(search);
     this.nextOffset.set(0);
     this.hasMore.set(false);
+    this.slotPagination.set({});
     sessionStorage.setItem('turnero.search', JSON.stringify(search));
 
     this.bookingService
-      .searchAvailability(search, { offset: 0, limit: this.initialAvailabilityLimit })
+      .searchAvailability(search, {
+        offset: 0,
+        limit: this.servicesPageLimit,
+        maxSlotsPerService: this.slotsPageLimit,
+      })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (page) => this.applyAvailabilityPage(page, false),
@@ -262,29 +282,57 @@ export class PublicSearchPage implements OnInit {
       });
   }
 
-  protected loadMore(): void {
+  protected loadMoreServices(): void {
     const search = this.currentSearch();
 
-    if (!search || !this.showLoadMore()) {
+    if (!search || !this.showLoadMoreServices()) {
       return;
     }
 
-    const remainingOptions = this.maxAvailabilityOptions - this.loadedOptions();
-    const limit = Math.min(this.loadMoreAvailabilityLimit, remainingOptions);
-
-    if (limit <= 0) {
-      this.hasMore.set(false);
-      return;
-    }
-
-    this.loadingMore.set(true);
+    this.loadingMoreServices.set(true);
     this.errorMessage.set('');
 
     this.bookingService
-      .searchAvailability(search, { offset: this.nextOffset(), limit })
-      .pipe(finalize(() => this.loadingMore.set(false)))
+      .searchAvailability(search, {
+        offset: this.nextOffset(),
+        limit: this.servicesPageLimit,
+        maxSlotsPerService: this.slotsPageLimit,
+      })
+      .pipe(finalize(() => this.loadingMoreServices.set(false)))
       .subscribe({
         next: (page) => this.applyAvailabilityPage(page, true),
+        error: (error) => this.errorMessage.set(bookingErrorMessage(error)),
+      });
+  }
+
+  protected loadMoreSlots(business: BusinessAvailability): void {
+    const search = this.currentSearch();
+
+    if (!search || !this.showLoadMoreSlots(business)) {
+      return;
+    }
+
+    const key = this.availabilityKey(business);
+    const state = this.slotState(business);
+
+    this.setSlotState(key, { ...state, loading: true });
+    this.errorMessage.set('');
+
+    this.bookingService
+      .listAvailabilitySlots(business, search, {
+        offset: state.nextOffset,
+        limit: this.slotsPageLimit,
+      })
+      .pipe(finalize(() => this.setSlotState(key, { ...this.slotState(business), loading: false })))
+      .subscribe({
+        next: (page) => {
+          this.appendSlots(business, page.slots);
+          this.setSlotState(key, {
+            nextOffset: page.offset + page.limit,
+            hasMore: page.hasMore,
+            loading: false,
+          });
+        },
         error: (error) => this.errorMessage.set(bookingErrorMessage(error)),
       });
   }
@@ -370,13 +418,16 @@ export class PublicSearchPage implements OnInit {
     return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  protected showLoadMore(): boolean {
-    return (
-      this.searched() &&
-      !this.loading() &&
-      this.hasMore() &&
-      this.loadedOptions() < this.maxAvailabilityOptions
-    );
+  protected showLoadMoreServices(): boolean {
+    return this.searched() && !this.loading() && this.hasMore();
+  }
+
+  protected showLoadMoreSlots(business: BusinessAvailability): boolean {
+    return this.slotState(business).hasMore;
+  }
+
+  protected slotLoading(business: BusinessAvailability): boolean {
+    return this.slotState(business).loading;
   }
 
   private availabilitySearch() {
@@ -392,7 +443,8 @@ export class PublicSearchPage implements OnInit {
 
     this.results.set(results);
     this.nextOffset.set(page.offset + page.limit);
-    this.hasMore.set(page.hasMore && this.loadedOptions(results) < this.maxAvailabilityOptions);
+    this.hasMore.set(page.hasMore);
+    this.syncSlotPagination(results, append);
   }
 
   private mergeAvailability(
@@ -427,8 +479,67 @@ export class PublicSearchPage implements OnInit {
     return merged;
   }
 
-  private loadedOptions(results = this.results()): number {
-    return results.reduce((total, business) => total + business.slots.length, 0);
+  private appendSlots(business: BusinessAvailability, slots: AvailabilitySlot[]): void {
+    const key = this.availabilityKey(business);
+
+    this.results.update((results) =>
+      results.map((result) => {
+        if (this.availabilityKey(result) !== key) {
+          return result;
+        }
+
+        const existingSlotIds = new Set(result.slots.map((slot) => slot.id));
+
+        return {
+          ...result,
+          slots: [...result.slots, ...slots.filter((slot) => !existingSlotIds.has(slot.id))],
+        };
+      }),
+    );
+  }
+
+  private syncSlotPagination(results: BusinessAvailability[], append: boolean): void {
+    const current = append ? this.slotPagination() : {};
+    const nextState = { ...current };
+
+    for (const result of results) {
+      const key = this.availabilityKey(result);
+
+      if (nextState[key]) {
+        continue;
+      }
+
+      nextState[key] = {
+        nextOffset: result.slots.length,
+        hasMore: result.slots.length >= this.slotsPageLimit,
+        loading: false,
+      };
+    }
+
+    this.slotPagination.set(nextState);
+  }
+
+  private slotState(business: BusinessAvailability): SlotPaginationState {
+    return (
+      this.slotPagination()[this.availabilityKey(business)] ?? {
+        nextOffset: business.slots.length,
+        hasMore: business.slots.length >= this.slotsPageLimit,
+        loading: false,
+      }
+    );
+  }
+
+  private setSlotState(key: string, state: SlotPaginationState): void {
+    this.slotPagination.update((pagination) => ({
+      ...pagination,
+      [key]: state,
+    }));
+  }
+
+  private availabilityKey(
+    business: Pick<BusinessAvailability, 'businessId' | 'branchId' | 'serviceId'>,
+  ): string {
+    return `${business.businessId}:${business.branchId}:${business.serviceId}`;
   }
 
   private resetPagination(): void {
@@ -439,6 +550,7 @@ export class PublicSearchPage implements OnInit {
     this.currentSearch.set(null);
     this.nextOffset.set(0);
     this.hasMore.set(false);
+    this.slotPagination.set({});
     this.results.set([]);
     this.searched.set(false);
     this.errorMessage.set('');
@@ -507,4 +619,10 @@ export class PublicSearchPage implements OnInit {
 
     this.selectedBusinessId.set(selected?.id ?? '');
   }
+}
+
+interface SlotPaginationState {
+  nextOffset: number;
+  hasMore: boolean;
+  loading: boolean;
 }

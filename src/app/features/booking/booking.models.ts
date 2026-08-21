@@ -11,6 +11,7 @@ export interface AvailabilitySearch {
 export interface AvailabilityPagination {
   offset: number;
   limit: number;
+  maxSlotsPerService?: number;
 }
 
 export interface AvailabilityPage {
@@ -19,6 +20,16 @@ export interface AvailabilityPage {
   totalAvailableSlots: number;
   hasMore: boolean;
   results: BusinessAvailability[];
+}
+
+export interface AvailabilitySlotPage {
+  serviceOfferingId: string;
+  branchId: string;
+  offset: number;
+  limit: number;
+  totalAvailableSlots: number;
+  hasMore: boolean;
+  slots: AvailabilitySlot[];
 }
 
 export interface BusinessSummary {

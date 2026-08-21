@@ -45,6 +45,17 @@ p {
   gap: 8px;
 }
 
+.card-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 12px;
+}
+
+.load-more-slots {
+  border-color: var(--mat-sys-tertiary);
+  color: var(--mat-sys-tertiary);
+}
+
 .empty {
   color: var(--mat-sys-on-surface-variant);
 }
@@ -53,6 +64,10 @@ p {
   display: flex;
   justify-content: center;
   padding: 4px 0;
+}
+
+.load-more-services {
+  background: var(--mat-sys-primary);
 }
 
 @media (min-width: 760px) {
