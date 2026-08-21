@@ -199,6 +199,15 @@ import {
                     <mat-error>La duracion minima es 5 minutos.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
+                    <mat-label>Sucursales</mat-label>
+                    <mat-select formControlName="branchIds" multiple>
+                      @for (branch of branches(); track branch.id) {
+                        <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                      }
+                    </mat-select>
+                    <mat-error>Selecciona al menos una sucursal.</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
                     <mat-label>Precio</mat-label>
                     <input matInput type="number" min="0" formControlName="price" />
                   </mat-form-field>
@@ -221,6 +230,7 @@ import {
                 <article class="row-card">
                   <div>
                     <strong>{{ service.name }}</strong>
+                    <small>{{ serviceBranchesLabel(service) }}</small>
                     <span>{{ service.durationMinutes }} min</span>
                     @if (service.price !== undefined && service.price !== null) {
                       <small>{{ service.price }}</small>
@@ -456,6 +466,7 @@ export class BusinessDashboardPage implements OnInit {
   });
   protected readonly serviceForm = this.formBuilder.nonNullable.group({
     name: ['', Validators.required],
+    branchIds: [[] as string[], Validators.required],
     durationMinutes: [30, [Validators.required, Validators.min(5)]],
     price: [0, [Validators.min(0)]],
     active: [true],
@@ -567,6 +578,7 @@ export class BusinessDashboardPage implements OnInit {
     this.editingServiceId.set(service.id);
     this.serviceForm.setValue({
       name: service.name,
+      branchIds: service.branchIds,
       durationMinutes: service.durationMinutes,
       price: service.price ?? 0,
       active: service.active,
@@ -575,7 +587,13 @@ export class BusinessDashboardPage implements OnInit {
 
   protected resetServiceForm(): void {
     this.editingServiceId.set('');
-    this.serviceForm.reset({ name: '', durationMinutes: 30, price: 0, active: true });
+    this.serviceForm.reset({
+      name: '',
+      branchIds: [],
+      durationMinutes: 30,
+      price: 0,
+      active: true,
+    });
   }
 
   protected saveResource(): void {
@@ -746,6 +764,14 @@ export class BusinessDashboardPage implements OnInit {
       .filter((name): name is string => Boolean(name));
 
     return serviceNames.length ? serviceNames.join(', ') : 'Sin servicios asignados';
+  }
+
+  protected serviceBranchesLabel(service: ServiceCatalogItem): string {
+    const branchNames = service.branchIds
+      .map((branchId) => this.branches().find((branch) => branch.id === branchId)?.name)
+      .filter((name): name is string => Boolean(name));
+
+    return branchNames.length ? branchNames.join(', ') : 'Sin sucursales asignadas';
   }
 
   protected resourceScheduleLabel(resource: Resource): string {

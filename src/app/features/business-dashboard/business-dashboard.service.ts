@@ -56,20 +56,20 @@ export class BusinessDashboardService {
   }
 
   createService(payload: Omit<ServiceCatalogItem, 'id'>): Observable<ServiceCatalogItem> {
-    return this.http.post<ServiceCatalogItem>(
+    return this.http.post<ServiceOfferingResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
-      payload,
-    );
+      this.toServiceRequest(payload),
+    ).pipe(map((service) => this.toService(service)));
   }
 
   updateService(
     id: string,
     payload: Omit<ServiceCatalogItem, 'id'>,
   ): Observable<ServiceCatalogItem> {
-    return this.http.put<ServiceCatalogItem>(
+    return this.http.put<ServiceOfferingResponse>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings/${id}`),
-      payload,
-    );
+      this.toServiceRequest(payload),
+    ).pipe(map((service) => this.toService(service)));
   }
 
   deleteService(id: string): Observable<void> {
@@ -185,9 +185,20 @@ export class BusinessDashboardService {
     return {
       id: service.id,
       name: service.name,
+      branchIds: service.branchIds ?? [],
       durationMinutes: service.durationMinutes ?? service.duration ?? 30,
       price: service.price,
       active: service.active ?? service.status === 'ACTIVE',
+    };
+  }
+
+  private toServiceRequest(service: Omit<ServiceCatalogItem, 'id'>): ServiceOfferingRequest {
+    return {
+      name: service.name,
+      branchIds: service.branchIds,
+      durationMinutes: service.durationMinutes,
+      price: service.price,
+      status: service.active ? 'ACTIVE' : 'INACTIVE',
     };
   }
 
@@ -282,11 +293,20 @@ interface BranchRequest {
 interface ServiceOfferingResponse {
   id: string;
   name: string;
+  branchIds?: string[];
   durationMinutes?: number;
   duration?: number;
   price?: number;
   active?: boolean;
   status?: string;
+}
+
+interface ServiceOfferingRequest {
+  name: string;
+  branchIds: string[];
+  durationMinutes: number;
+  price?: number;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 interface ResourceResponse {

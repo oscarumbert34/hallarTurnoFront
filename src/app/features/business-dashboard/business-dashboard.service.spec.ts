@@ -123,6 +123,7 @@ describe('BusinessDashboardService', () => {
   it('should create a service offering through the business API', () => {
     const payload = {
       name: 'Corte',
+      branchIds: ['branch-1'],
       durationMinutes: 30,
       price: 1200,
       active: true,
@@ -134,7 +135,13 @@ describe('BusinessDashboardService', () => {
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual(payload);
+    expect(request.request.body).toEqual({
+      name: 'Corte',
+      branchIds: ['branch-1'],
+      durationMinutes: 30,
+      price: 1200,
+      status: 'ACTIVE',
+    });
 
     request.flush({ id: 'service-1', ...payload });
   });

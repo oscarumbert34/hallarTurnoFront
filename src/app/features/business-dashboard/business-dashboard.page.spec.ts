@@ -28,7 +28,16 @@ describe('BusinessDashboardPage', () => {
         ]),
       ),
       listServices: vi.fn(() =>
-        of([{ id: 'service-1', name: 'Corte', durationMinutes: 30, price: 1200, active: true }]),
+        of([
+          {
+            id: 'service-1',
+            name: 'Corte',
+            branchIds: ['branch-1'],
+            durationMinutes: 30,
+            price: 1200,
+            active: true,
+          },
+        ]),
       ),
       listResources: vi.fn(() => of([])),
       listBookings: vi.fn(() => of([])),
@@ -221,6 +230,49 @@ describe('BusinessDashboardPage', () => {
         ],
       }),
     );
+  });
+
+  it('should create a service for selected branches', () => {
+    dashboardService.createService.mockReturnValue(
+      of({
+        id: 'service-2',
+        name: 'Manicura',
+        branchIds: ['branch-1'],
+        durationMinutes: 45,
+        price: 3000,
+        active: true,
+      }),
+    );
+
+    const component = fixture.componentInstance as unknown as {
+      serviceForm: {
+        setValue: (value: {
+          name: string;
+          branchIds: string[];
+          durationMinutes: number;
+          price: number;
+          active: boolean;
+        }) => void;
+      };
+      saveService: () => void;
+    };
+
+    component.serviceForm.setValue({
+      name: 'Manicura',
+      branchIds: ['branch-1'],
+      durationMinutes: 45,
+      price: 3000,
+      active: true,
+    });
+    component.saveService();
+
+    expect(dashboardService.createService).toHaveBeenCalledWith({
+      name: 'Manicura',
+      branchIds: ['branch-1'],
+      durationMinutes: 45,
+      price: 3000,
+      active: true,
+    });
   });
 
   it('should create a resource with selected service offerings', () => {
