@@ -49,6 +49,12 @@ p {
   color: var(--mat-sys-on-surface-variant);
 }
 
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
 @media (min-width: 760px) {
   .search-form {
     grid-template-columns: 1.2fr 1.2fr 170px 1fr 140px 140px auto;

@@ -1,10 +1,10 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { vi } from 'vitest';
-import { authInterceptor } from './auth.interceptor';
+import { authInterceptor, SKIP_AUTH } from './auth.interceptor';
 import { AuthService } from './auth.service';
 
 describe('authInterceptor', () => {
@@ -78,6 +78,40 @@ describe('authInterceptor', () => {
     });
 
     const request = httpTesting.expectOne('/api/public/businesses/business-1');
+
+    expect(request.request.headers.has('Authorization')).toBe(false);
+
+    request.flush({}, { status: 401, statusText: 'Unauthorized' });
+
+    expect(authService.handleUnauthorized).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should not attach stale tokens or redirect for public booking requests', () => {
+    http.get('/api/public/businesses/business-1').subscribe({
+      error: () => undefined,
+    });
+
+    const request = httpTesting.expectOne('/api/public/businesses/business-1');
+
+    expect(request.request.headers.has('Authorization')).toBe(false);
+
+    request.flush({}, { status: 401, statusText: 'Unauthorized' });
+
+    expect(authService.handleUnauthorized).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should not attach stale tokens or redirect when auth is explicitly skipped', () => {
+    http
+      .get('/api/businesses', {
+        context: new HttpContext().set(SKIP_AUTH, true),
+      })
+      .subscribe({
+        error: () => undefined,
+      });
+
+    const request = httpTesting.expectOne('/api/businesses');
 
     expect(request.request.headers.has('Authorization')).toBe(false);
 

@@ -28,17 +28,21 @@ export class BusinessDashboardService {
   }
 
   createBranch(payload: Omit<Branch, 'id'>): Observable<Branch> {
-    return this.http.post<BranchResponse>(
-      this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches`),
-      this.toBranchRequest(payload),
-    ).pipe(map((branch) => this.toBranch(branch)));
+    return this.http
+      .post<BranchResponse>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches`),
+        this.toBranchRequest(payload),
+      )
+      .pipe(map((branch) => this.toBranch(branch)));
   }
 
   updateBranch(id: string, payload: Omit<Branch, 'id'>): Observable<Branch> {
-    return this.http.put<BranchResponse>(
-      this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches/${id}`),
-      this.toBranchRequest(payload),
-    ).pipe(map((branch) => this.toBranch(branch)));
+    return this.http
+      .put<BranchResponse>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches/${id}`),
+        this.toBranchRequest(payload),
+      )
+      .pipe(map((branch) => this.toBranch(branch)));
   }
 
   deleteBranch(id: string): Observable<void> {
@@ -62,20 +66,24 @@ export class BusinessDashboardService {
   }
 
   createService(payload: Omit<ServiceCatalogItem, 'id'>): Observable<ServiceCatalogItem> {
-    return this.http.post<ServiceOfferingResponse>(
-      this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
-      this.toServiceRequest(payload),
-    ).pipe(map((service) => this.toService(service, payload.branchId)));
+    return this.http
+      .post<ServiceOfferingResponse>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
+        this.toServiceRequest(payload),
+      )
+      .pipe(map((service) => this.toService(service, payload.branchId)));
   }
 
   updateService(
     id: string,
     payload: Omit<ServiceCatalogItem, 'id'>,
   ): Observable<ServiceCatalogItem> {
-    return this.http.put<ServiceOfferingResponse>(
-      this.apiUrl.build(`/service-offerings/${id}`),
-      this.toServiceRequest(payload),
-    ).pipe(map((service) => this.toService(service, payload.branchId)));
+    return this.http
+      .put<ServiceOfferingResponse>(
+        this.apiUrl.build(`/service-offerings/${id}`),
+        this.toServiceRequest(payload),
+      )
+      .pipe(map((service) => this.toService(service, payload.branchId)));
   }
 
   deleteService(id: string): Observable<void> {
@@ -111,19 +119,20 @@ export class BusinessDashboardService {
   createResource(payload: Omit<Resource, 'id'>): Observable<Resource> {
     const branchId = this.requireBranchId(payload);
 
-    return this.http.post<ResourceResponse>(
-      this.apiUrl.build(`/branches/${branchId}/resources`),
-      this.toResourceRequest(payload),
-    ).pipe(map((resource) => this.toResource(resource, branchId)));
+    return this.http
+      .post<ResourceResponse>(
+        this.apiUrl.build(`/branches/${branchId}/resources`),
+        this.toResourceRequest(payload),
+      )
+      .pipe(map((resource) => this.toResource(resource, branchId)));
   }
 
   updateResource(id: string, payload: Omit<Resource, 'id'>): Observable<Resource> {
     const branchId = this.requireBranchId(payload);
 
-    return this.http.put<ResourceResponse>(
-      this.apiUrl.build(`/resources/${id}`),
-      this.toResourceRequest(payload),
-    ).pipe(map((resource) => this.toResource(resource, branchId)));
+    return this.http
+      .put<ResourceResponse>(this.apiUrl.build(`/resources/${id}`), this.toResourceRequest(payload))
+      .pipe(map((resource) => this.toResource(resource, branchId)));
   }
 
   deleteResource(branchId: string, id: string): Observable<void> {
@@ -131,7 +140,7 @@ export class BusinessDashboardService {
   }
 
   listBookings(date: string): Observable<Booking[]> {
-    const params = new HttpParams().set('page', 0).set('size', 20);
+    const params = new HttpParams().set('date', date).set('page', 0).set('size', 20);
 
     return this.http
       .get<BookingsResponse>(this.apiUrl.build(`/businesses/${this.currentBusinessId}/bookings`), {

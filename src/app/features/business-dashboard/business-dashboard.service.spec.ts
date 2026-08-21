@@ -82,18 +82,18 @@ describe('BusinessDashboardService', () => {
     service.listBranches().subscribe((branches) => {
       expect(branches).toEqual([
         {
-            id: 'branch-1',
-            name: 'Centro',
-            address: 'Calle 1',
-            locality: 'Los Polvorines',
-            province: 'Buenos Aires',
-            country: 'Argentina',
-            latitude: -35.6037,
-            longitude: -58.3816,
-            zoneId: 'America/Argentina/Buenos_Aires',
-            weeklySchedule: [],
-            active: true,
-          },
+          id: 'branch-1',
+          name: 'Centro',
+          address: 'Calle 1',
+          locality: 'Los Polvorines',
+          province: 'Buenos Aires',
+          country: 'Argentina',
+          latitude: -35.6037,
+          longitude: -58.3816,
+          zoneId: 'America/Argentina/Buenos_Aires',
+          weeklySchedule: [],
+          active: true,
+        },
       ]);
     });
 
@@ -366,7 +366,9 @@ describe('BusinessDashboardService', () => {
       expect(bookings[1].customerPhone).toBe('1133334444');
     });
 
-    const request = httpTesting.expectOne(`/api/businesses/${businessId}/bookings?page=0&size=20`);
+    const request = httpTesting.expectOne(
+      `/api/businesses/${businessId}/bookings?date=2026-08-17&page=0&size=20`,
+    );
     expect(request.request.method).toBe('GET');
 
     request.flush({

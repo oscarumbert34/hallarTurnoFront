@@ -1,8 +1,11 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
+import { SKIP_AUTH } from '../auth/auth.interceptor';
 import {
+  AvailabilityPage,
+  AvailabilityPagination,
   AvailabilitySearch,
   BusinessSummary,
   BusinessAvailability,
@@ -17,12 +20,18 @@ export class BookingService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
 
-  searchAvailability(search: AvailabilitySearch): Observable<BusinessAvailability[]> {
+  searchAvailability(
+    search: AvailabilitySearch,
+    pagination: AvailabilityPagination,
+  ): Observable<AvailabilityPage> {
     let params = new HttpParams()
       .set('date', search.date)
       .set('locality', search.zone)
+      .set('service', search.service)
       .set('startsFrom', search.timeFrom)
-      .set('startsTo', search.timeTo);
+      .set('startsTo', search.timeTo)
+      .set('offset', pagination.offset)
+      .set('limit', pagination.limit);
 
     if (search.businessId) {
       params = params.set('businessId', search.businessId);
@@ -31,13 +40,16 @@ export class BookingService {
     return this.http
       .get<AvailabilityResponse>(this.apiUrl.build('/public/availability'), {
         params,
+        context: this.publicHttpContext(),
       })
-      .pipe(map((response) => this.toAvailability(response, search.date, search.service)));
+      .pipe(map((response) => this.toAvailabilityPage(response, search.date, search.service)));
   }
 
   listBusinesses(): Observable<BusinessSummary[]> {
     return this.http
-      .get<BusinessListResponse>(this.apiUrl.build('/businesses'))
+      .get<BusinessListResponse>(this.apiUrl.build('/businesses'), {
+        context: this.publicHttpContext(),
+      })
       .pipe(map((response) => this.toBusinesses(response)));
   }
 
@@ -45,19 +57,54 @@ export class BookingService {
     return this.http
       .get<ServiceOfferingListResponse>(
         this.apiUrl.build(`/businesses/${businessId}/service-offerings`),
+        {
+          context: this.publicHttpContext(),
+        },
       )
       .pipe(map((response) => this.toServiceOfferings(response)));
   }
 
   getBusiness(businessId: string): Observable<BusinessDetail> {
-    return this.http.get<BusinessDetail>(this.apiUrl.build(`/public/businesses/${businessId}`));
+    return this.http.get<BusinessDetail>(this.apiUrl.build(`/public/businesses/${businessId}`), {
+      context: this.publicHttpContext(),
+    });
   }
 
   createBooking(request: CreateBookingRequest): Observable<CustomerBooking> {
-    return this.http.post<CustomerBooking>(this.apiUrl.build('/public/bookings'), request);
+    return this.http.post<CustomerBooking>(this.apiUrl.build('/public/bookings'), request, {
+      context: this.publicHttpContext(),
+    });
   }
 
-  private toAvailability(
+  private toAvailabilityPage(
+    response: AvailabilityResponse,
+    date: string,
+    serviceFilter: string,
+  ): AvailabilityPage {
+    const offset = response.offset ?? response.page ?? 0;
+    const limit = response.limit ?? response.size ?? 0;
+    const totalAvailableSlots = response.totalAvailableSlots ?? response.totalElements ?? 0;
+    const results = this.toAvailabilityResults(response, date, serviceFilter);
+
+    return {
+      offset,
+      limit,
+      totalAvailableSlots,
+      hasMore:
+        response.hasMore ??
+        (response.totalPages !== undefined
+          ? (response.page ?? 0) + 1 < response.totalPages
+          : offset + results.reduce((total, business) => total + business.slots.length, 0) <
+            totalAvailableSlots),
+      results,
+    };
+  }
+
+  private publicHttpContext(): HttpContext {
+    return new HttpContext().set(SKIP_AUTH, true);
+  }
+
+  private toAvailabilityResults(
     response: AvailabilityResponse,
     date: string,
     serviceFilter: string,
@@ -117,8 +164,7 @@ export class BookingService {
 
 type BusinessListResponse = BusinessResponse[] | { results?: BusinessResponse[] };
 type ServiceOfferingListResponse =
-  | ServiceOfferingResponse[]
-  | { results?: ServiceOfferingResponse[] };
+  ServiceOfferingResponse[] | { results?: ServiceOfferingResponse[] };
 
 interface BusinessResponse {
   id: string;
@@ -137,10 +183,14 @@ interface ServiceOfferingResponse {
 }
 
 interface AvailabilityResponse {
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
+  offset?: number;
+  limit?: number;
+  totalAvailableSlots?: number;
+  hasMore?: boolean;
+  page?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
   results: AvailabilityBusinessResponse[];
 }
 

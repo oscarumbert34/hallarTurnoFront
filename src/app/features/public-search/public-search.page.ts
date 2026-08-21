@@ -14,6 +14,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { bookingErrorMessage } from '../booking/booking-error';
 import {
+  AvailabilityPage,
   AvailabilitySlot,
   BusinessAvailability,
   BusinessSummary,
@@ -155,12 +156,28 @@ import { BookingService } from '../booking/booking.service';
             <p class="empty">No encontramos disponibilidad con esos filtros.</p>
           }
         }
+
+        @if (showLoadMore()) {
+          <div class="load-more">
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              {{ loadingMore() ? 'Cargando...' : 'Ver 5 mas' }}
+            </button>
+          </div>
+        }
       </section>
     </section>
   `,
   styleUrl: './public-search.page.scss',
 })
 export class PublicSearchPage implements OnInit {
+  private readonly initialAvailabilityLimit = 10;
+  private readonly loadMoreAvailabilityLimit = 5;
+  private readonly maxAvailabilityOptions = 50;
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
@@ -170,9 +187,15 @@ export class PublicSearchPage implements OnInit {
   protected readonly serviceOfferings = signal<ServiceOfferingSummary[]>([]);
   protected readonly selectedBusinessId = signal('');
   protected readonly loading = signal(false);
+  protected readonly loadingMore = signal(false);
   protected readonly searched = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly results = signal<BusinessAvailability[]>([]);
+  protected readonly currentSearch = signal<ReturnType<
+    PublicSearchPage['availabilitySearch']
+  > | null>(null);
+  protected readonly nextOffset = signal(0);
+  protected readonly hasMore = signal(false);
   protected readonly form = this.formBuilder.nonNullable.group({
     business: [''],
     service: ['', Validators.required],
@@ -207,6 +230,10 @@ export class PublicSearchPage implements OnInit {
         }
       });
 
+    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.resetPagination();
+    });
+
     this.loadBusinesses();
   }
 
@@ -216,22 +243,48 @@ export class PublicSearchPage implements OnInit {
       return;
     }
 
-    const search = {
-      ...this.form.getRawValue(),
-      date: this.dateValue(this.form.controls.date.value),
-      businessId: this.selectedBusinessId(),
-    };
+    const search = this.availabilitySearch();
     this.loading.set(true);
     this.searched.set(true);
     this.errorMessage.set('');
     this.results.set([]);
+    this.currentSearch.set(search);
+    this.nextOffset.set(0);
+    this.hasMore.set(false);
     sessionStorage.setItem('turnero.search', JSON.stringify(search));
 
     this.bookingService
-      .searchAvailability(search)
+      .searchAvailability(search, { offset: 0, limit: this.initialAvailabilityLimit })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (results) => this.results.set(results),
+        next: (page) => this.applyAvailabilityPage(page, false),
+        error: (error) => this.errorMessage.set(bookingErrorMessage(error)),
+      });
+  }
+
+  protected loadMore(): void {
+    const search = this.currentSearch();
+
+    if (!search || !this.showLoadMore()) {
+      return;
+    }
+
+    const remainingOptions = this.maxAvailabilityOptions - this.loadedOptions();
+    const limit = Math.min(this.loadMoreAvailabilityLimit, remainingOptions);
+
+    if (limit <= 0) {
+      this.hasMore.set(false);
+      return;
+    }
+
+    this.loadingMore.set(true);
+    this.errorMessage.set('');
+
+    this.bookingService
+      .searchAvailability(search, { offset: this.nextOffset(), limit })
+      .pipe(finalize(() => this.loadingMore.set(false)))
+      .subscribe({
+        next: (page) => this.applyAvailabilityPage(page, true),
         error: (error) => this.errorMessage.set(bookingErrorMessage(error)),
       });
   }
@@ -315,6 +368,80 @@ export class PublicSearchPage implements OnInit {
 
   protected timeLabel(value: string): string {
     return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  protected showLoadMore(): boolean {
+    return (
+      this.searched() &&
+      !this.loading() &&
+      this.hasMore() &&
+      this.loadedOptions() < this.maxAvailabilityOptions
+    );
+  }
+
+  private availabilitySearch() {
+    return {
+      ...this.form.getRawValue(),
+      date: this.dateValue(this.form.controls.date.value),
+      businessId: this.selectedBusinessId(),
+    };
+  }
+
+  private applyAvailabilityPage(page: AvailabilityPage, append: boolean): void {
+    const results = append ? this.mergeAvailability(this.results(), page.results) : page.results;
+
+    this.results.set(results);
+    this.nextOffset.set(page.offset + page.limit);
+    this.hasMore.set(page.hasMore && this.loadedOptions(results) < this.maxAvailabilityOptions);
+  }
+
+  private mergeAvailability(
+    currentResults: BusinessAvailability[],
+    nextResults: BusinessAvailability[],
+  ): BusinessAvailability[] {
+    const merged = currentResults.map((business) => ({
+      ...business,
+      slots: [...business.slots],
+    }));
+
+    for (const next of nextResults) {
+      const existing = merged.find(
+        (business) =>
+          business.businessId === next.businessId &&
+          business.branchId === next.branchId &&
+          business.serviceId === next.serviceId,
+      );
+
+      if (!existing) {
+        merged.push({
+          ...next,
+          slots: [...next.slots],
+        });
+        continue;
+      }
+
+      const existingSlotIds = new Set(existing.slots.map((slot) => slot.id));
+      existing.slots.push(...next.slots.filter((slot) => !existingSlotIds.has(slot.id)));
+    }
+
+    return merged;
+  }
+
+  private loadedOptions(results = this.results()): number {
+    return results.reduce((total, business) => total + business.slots.length, 0);
+  }
+
+  private resetPagination(): void {
+    if (!this.searched()) {
+      return;
+    }
+
+    this.currentSearch.set(null);
+    this.nextOffset.set(0);
+    this.hasMore.set(false);
+    this.results.set([]);
+    this.searched.set(false);
+    this.errorMessage.set('');
   }
 
   private dateValue(value: Date | string): string {

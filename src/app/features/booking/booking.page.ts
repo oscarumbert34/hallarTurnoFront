@@ -9,12 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { bookingErrorMessage } from './booking-error';
-import {
-  BusinessAvailability,
-  BusinessDetail,
-  CustomerBooking,
-  SelectedSlot,
-} from './booking.models';
+import { BusinessDetail, CustomerBooking, SelectedSlot } from './booking.models';
 import { BookingService } from './booking.service';
 
 @Component({
@@ -128,11 +123,7 @@ export class BookingPage implements OnInit {
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
     customerPhone: [
       '',
-      [
-        Validators.required,
-        Validators.maxLength(40),
-        Validators.pattern(/^[0-9+()\-\s]{6,40}$/),
-      ],
+      [Validators.required, Validators.maxLength(40), Validators.pattern(/^[0-9+()\-\s]{6,40}$/)],
     ],
   });
 
@@ -236,9 +227,9 @@ export class BookingPage implements OnInit {
       timeTo: string;
     };
 
-    this.bookingService.searchAvailability(parsedSearch).subscribe({
-      next: (results: BusinessAvailability[]) => {
-        sessionStorage.setItem('turnero.lastAvailability', JSON.stringify(results));
+    this.bookingService.searchAvailability(parsedSearch, { offset: 0, limit: 10 }).subscribe({
+      next: (page) => {
+        sessionStorage.setItem('turnero.lastAvailability', JSON.stringify(page.results));
       },
       error: () => undefined,
     });

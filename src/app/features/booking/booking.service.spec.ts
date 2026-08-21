@@ -28,22 +28,29 @@ describe('BookingService', () => {
 
   it('should search public availability with filters', () => {
     service
-      .searchAvailability({
-        service: 'Corte',
-        date: '2026-08-17',
-        zone: 'Centro',
-        timeFrom: '09:00',
-        timeTo: '18:00',
-      })
-      .subscribe((results) => {
-        expect(results.length).toBe(1);
-        expect(results[0].businessName).toBe('Barberia pepito');
-        expect(results[0].serviceName).toBe('Corte de pelo');
-        expect(results[0].slots[0].id).toBe('service-1-resource-1-09:00:00');
+      .searchAvailability(
+        {
+          service: 'Corte',
+          date: '2026-08-17',
+          zone: 'Centro',
+          timeFrom: '09:00',
+          timeTo: '18:00',
+        },
+        { offset: 0, limit: 10 },
+      )
+      .subscribe((page) => {
+        expect(page.offset).toBe(0);
+        expect(page.limit).toBe(10);
+        expect(page.totalAvailableSlots).toBe(1);
+        expect(page.hasMore).toBe(false);
+        expect(page.results.length).toBe(1);
+        expect(page.results[0].businessName).toBe('Barberia pepito');
+        expect(page.results[0].serviceName).toBe('Corte de pelo');
+        expect(page.results[0].slots[0].id).toBe('service-1-resource-1-09:00:00');
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&startsFrom=09:00&startsTo=18:00',
+      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10',
     );
 
     expect(request.request.method).toBe('GET');
@@ -94,21 +101,25 @@ describe('BookingService', () => {
 
   it('should search public availability with a selected business', () => {
     service
-      .searchAvailability({
-        business: 'Barberia pepito',
-        businessId: 'business-1',
-        service: 'Corte',
-        date: '2026-08-17',
-        zone: 'Centro',
-        timeFrom: '09:00',
-        timeTo: '18:00',
-      })
-      .subscribe((results) => {
-        expect(results).toEqual([]);
+      .searchAvailability(
+        {
+          business: 'Barberia pepito',
+          businessId: 'business-1',
+          service: 'Corte',
+          date: '2026-08-17',
+          zone: 'Centro',
+          timeFrom: '09:00',
+          timeTo: '18:00',
+        },
+        { offset: 10, limit: 5 },
+      )
+      .subscribe((page) => {
+        expect(page.results).toEqual([]);
+        expect(page.hasMore).toBe(false);
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&startsFrom=09:00&startsTo=18:00&businessId=business-1',
+      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=10&limit=5&businessId=business-1',
     );
 
     expect(request.request.method).toBe('GET');
@@ -201,5 +212,4 @@ describe('BookingService', () => {
       status: 'CONFIRMED',
     });
   });
-
 });

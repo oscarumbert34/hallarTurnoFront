@@ -70,6 +70,118 @@ describe('BusinessDashboardPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Centro');
   });
 
+  it('should keep entity forms collapsed until create or edit is selected', () => {
+    const component = fixture.componentInstance as unknown as {
+      branchFormExpanded: () => boolean;
+      serviceFormExpanded: () => boolean;
+      resourceFormExpanded: () => boolean;
+      startCreateBranch: () => void;
+      startCreateService: () => void;
+      startCreateResource: () => void;
+      resetBranchForm: () => void;
+      resetServiceForm: () => void;
+      resetResourceForm: () => void;
+    };
+
+    expect(component.branchFormExpanded()).toBe(false);
+    expect(component.serviceFormExpanded()).toBe(false);
+    expect(component.resourceFormExpanded()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Crear sucursal');
+
+    component.startCreateBranch();
+    component.startCreateService();
+    component.startCreateResource();
+
+    expect(component.branchFormExpanded()).toBe(true);
+    expect(component.serviceFormExpanded()).toBe(true);
+    expect(component.resourceFormExpanded()).toBe(true);
+
+    component.resetBranchForm();
+    component.resetServiceForm();
+    component.resetResourceForm();
+
+    expect(component.branchFormExpanded()).toBe(false);
+    expect(component.serviceFormExpanded()).toBe(false);
+    expect(component.resourceFormExpanded()).toBe(false);
+  });
+
+  it('should expand the matching form when editing an existing entity', () => {
+    const component = fixture.componentInstance as unknown as {
+      branchFormExpanded: () => boolean;
+      serviceFormExpanded: () => boolean;
+      resourceFormExpanded: () => boolean;
+      editingBranchId: () => string;
+      editingServiceId: () => string;
+      editingResourceId: () => string;
+      editBranch: (branch: {
+        id: string;
+        name: string;
+        address: string;
+        locality: string;
+        province: string;
+        country: string;
+        latitude: number;
+        longitude: number;
+        zoneId: string;
+        weeklySchedule: [];
+        active: boolean;
+      }) => void;
+      editService: (service: {
+        id: string;
+        name: string;
+        branchId: string;
+        durationMinutes: number;
+        price: number;
+        active: boolean;
+      }) => void;
+      editResource: (resource: {
+        id: string;
+        name: string;
+        branchId: string;
+        serviceOfferingIds: string[];
+        weeklySchedule: [];
+        active: boolean;
+      }) => void;
+    };
+
+    component.editBranch({
+      id: 'branch-1',
+      name: 'Centro',
+      address: 'Calle 1',
+      locality: 'Los Polvorines',
+      province: 'Buenos Aires',
+      country: 'Argentina',
+      latitude: -35.6037,
+      longitude: -58.3816,
+      zoneId: 'America/Argentina/Buenos_Aires',
+      weeklySchedule: [],
+      active: true,
+    });
+    component.editService({
+      id: 'service-1',
+      name: 'Corte',
+      branchId: 'branch-1',
+      durationMinutes: 30,
+      price: 1200,
+      active: true,
+    });
+    component.editResource({
+      id: 'resource-1',
+      name: 'Sandra',
+      branchId: 'branch-1',
+      serviceOfferingIds: ['service-1'],
+      weeklySchedule: [],
+      active: true,
+    });
+
+    expect(component.branchFormExpanded()).toBe(true);
+    expect(component.serviceFormExpanded()).toBe(true);
+    expect(component.resourceFormExpanded()).toBe(true);
+    expect(component.editingBranchId()).toBe('branch-1');
+    expect(component.editingServiceId()).toBe('service-1');
+    expect(component.editingResourceId()).toBe('resource-1');
+  });
+
   it('should create a branch and refresh dashboard data', () => {
     dashboardService.createBranch.mockReturnValue(
       of({
@@ -189,7 +301,11 @@ describe('BusinessDashboardPage', () => {
         }) => void;
       };
       setBranchScheduleDayActive: (dayOfWeek: string, active: boolean) => void;
-      setBranchScheduleTime: (dayOfWeek: string, field: 'opensAt' | 'closesAt', event: Event) => void;
+      setBranchScheduleTime: (
+        dayOfWeek: string,
+        field: 'opensAt' | 'closesAt',
+        event: Event,
+      ) => void;
       saveBranch: () => void;
     };
 
@@ -208,16 +324,12 @@ describe('BusinessDashboardPage', () => {
     for (const day of ['TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']) {
       component.setBranchScheduleDayActive(day, false);
     }
-    component.setBranchScheduleTime(
-      'MONDAY',
-      'opensAt',
-      { target: { value: '10:30' } } as unknown as Event,
-    );
-    component.setBranchScheduleTime(
-      'MONDAY',
-      'closesAt',
-      { target: { value: '16:00' } } as unknown as Event,
-    );
+    component.setBranchScheduleTime('MONDAY', 'opensAt', {
+      target: { value: '10:30' },
+    } as unknown as Event);
+    component.setBranchScheduleTime('MONDAY', 'closesAt', {
+      target: { value: '16:00' },
+    } as unknown as Event);
     component.saveBranch();
 
     expect(dashboardService.createBranch).toHaveBeenCalledWith(
@@ -395,10 +507,7 @@ describe('BusinessDashboardPage', () => {
 
   it('should format booking rows without exposing technical ids', () => {
     const component = fixture.componentInstance as unknown as {
-      bookingTitle: (booking: {
-        customerName: string;
-        serviceName: string;
-      }) => string;
+      bookingTitle: (booking: { customerName: string; serviceName: string }) => string;
       bookingBranchName: (booking: { branchId?: string; branchName?: string }) => string;
       dateTimeLabel: (value: string) => string;
       statusLabel: (status: string) => string;
@@ -456,10 +565,7 @@ describe('BusinessDashboardPage', () => {
 
   it('should expose customer name and phone for booking rows', () => {
     const component = fixture.componentInstance as unknown as {
-      bookingTitle: (booking: {
-        customerName: string;
-        serviceName: string;
-      }) => string;
+      bookingTitle: (booking: { customerName: string; serviceName: string }) => string;
       bookingCustomerPhone: (booking: { customerPhone?: string }) => string;
     };
 

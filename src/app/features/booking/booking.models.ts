@@ -8,6 +8,19 @@ export interface AvailabilitySearch {
   timeTo: string;
 }
 
+export interface AvailabilityPagination {
+  offset: number;
+  limit: number;
+}
+
+export interface AvailabilityPage {
+  offset: number;
+  limit: number;
+  totalAvailableSlots: number;
+  hasMore: boolean;
+  results: BusinessAvailability[];
+}
+
 export interface BusinessSummary {
   id: string;
   name: string;

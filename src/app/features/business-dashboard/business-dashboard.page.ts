@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -31,6 +32,7 @@ import {
     MatCardModule,
     MatCheckboxModule,
     MatDatepickerModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -54,14 +56,25 @@ import {
       <mat-tab-group class="dashboard-tabs" mat-stretch-tabs="false">
         <mat-tab label="Sucursales">
           <section class="tab-panel">
-            <mat-card appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>{{
-                  editingBranchId() ? 'Editar sucursal' : 'Nueva sucursal'
-                }}</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <form class="form-grid" [formGroup]="branchForm" (ngSubmit)="saveBranch()">
+            <div class="entity-toolbar">
+              <button mat-flat-button type="button" (click)="startCreateBranch()">
+                Crear sucursal
+              </button>
+            </div>
+
+            <mat-accordion>
+              <mat-expansion-panel [expanded]="branchFormExpanded()" (closed)="resetBranchForm()">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>{{
+                    editingBranchId() ? 'Editar sucursal' : 'Nueva sucursal'
+                  }}</mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <form
+                  class="form-grid expansion-form"
+                  [formGroup]="branchForm"
+                  (ngSubmit)="saveBranch()"
+                >
                   <mat-form-field appearance="outline">
                     <mat-label>Nombre</mat-label>
                     <input matInput formControlName="name" />
@@ -138,7 +151,9 @@ import {
                       }
                     </div>
                     @if (branchScheduleInvalid()) {
-                      <p class="form-error">Selecciona al menos un dia y un rango horario valido.</p>
+                      <p class="form-error">
+                        Selecciona al menos un dia y un rango horario valido.
+                      </p>
                     }
                   </section>
                   <div class="form-actions">
@@ -152,8 +167,8 @@ import {
                     <button mat-button type="button" (click)="resetBranchForm()">Cancelar</button>
                   </div>
                 </form>
-              </mat-card-content>
-            </mat-card>
+              </mat-expansion-panel>
+            </mat-accordion>
             <div class="list">
               @for (branch of branches(); track branch.id) {
                 <article class="row-card">
@@ -180,14 +195,25 @@ import {
 
         <mat-tab label="Servicios">
           <section class="tab-panel">
-            <mat-card appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>{{
-                  editingServiceId() ? 'Editar servicio' : 'Nuevo servicio'
-                }}</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <form class="form-grid" [formGroup]="serviceForm" (ngSubmit)="saveService()">
+            <div class="entity-toolbar">
+              <button mat-flat-button type="button" (click)="startCreateService()">
+                Crear servicio
+              </button>
+            </div>
+
+            <mat-accordion>
+              <mat-expansion-panel [expanded]="serviceFormExpanded()" (closed)="resetServiceForm()">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>{{
+                    editingServiceId() ? 'Editar servicio' : 'Nuevo servicio'
+                  }}</mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <form
+                  class="form-grid expansion-form"
+                  [formGroup]="serviceForm"
+                  (ngSubmit)="saveService()"
+                >
                   <mat-form-field appearance="outline">
                     <mat-label>Nombre</mat-label>
                     <input matInput formControlName="name" />
@@ -223,8 +249,8 @@ import {
                     <button mat-button type="button" (click)="resetServiceForm()">Cancelar</button>
                   </div>
                 </form>
-              </mat-card-content>
-            </mat-card>
+              </mat-expansion-panel>
+            </mat-accordion>
             <div class="list">
               @for (service of services(); track service.id) {
                 <article class="row-card">
@@ -252,14 +278,28 @@ import {
 
         <mat-tab label="Recursos">
           <section class="tab-panel">
-            <mat-card appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>{{
-                  editingResourceId() ? 'Editar recurso' : 'Nuevo recurso'
-                }}</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <form class="form-grid" [formGroup]="resourceForm" (ngSubmit)="saveResource()">
+            <div class="entity-toolbar">
+              <button mat-flat-button type="button" (click)="startCreateResource()">
+                Crear recurso
+              </button>
+            </div>
+
+            <mat-accordion>
+              <mat-expansion-panel
+                [expanded]="resourceFormExpanded()"
+                (closed)="resetResourceForm()"
+              >
+                <mat-expansion-panel-header>
+                  <mat-panel-title>{{
+                    editingResourceId() ? 'Editar recurso' : 'Nuevo recurso'
+                  }}</mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <form
+                  class="form-grid expansion-form"
+                  [formGroup]="resourceForm"
+                  (ngSubmit)="saveResource()"
+                >
                   <mat-form-field appearance="outline">
                     <mat-label>Nombre</mat-label>
                     <input matInput formControlName="name" />
@@ -319,7 +359,9 @@ import {
                       }
                     </div>
                     @if (scheduleInvalid()) {
-                      <p class="form-error">Selecciona al menos un dia y un rango horario valido.</p>
+                      <p class="form-error">
+                        Selecciona al menos un dia y un rango horario valido.
+                      </p>
                     }
                   </section>
                   <div class="form-actions">
@@ -333,8 +375,8 @@ import {
                     <button mat-button type="button" (click)="resetResourceForm()">Cancelar</button>
                   </div>
                 </form>
-              </mat-card-content>
-            </mat-card>
+              </mat-expansion-panel>
+            </mat-accordion>
             <div class="list">
               @for (resource of resources(); track resource.id) {
                 <article class="row-card">
@@ -411,8 +453,7 @@ import {
                     <span>{{ bookingCustomerPhone(booking) }}</span>
                     <span>{{ dateTimeLabel(booking.startsAt) }}</span>
                     <small
-                      >{{ bookingBranchName(booking) }} ·
-                      {{ statusLabel(booking.status) }}</small
+                      >{{ bookingBranchName(booking) }} · {{ statusLabel(booking.status) }}</small
                     >
                   </div>
                   @if (booking.status !== 'CANCELLED') {
@@ -448,6 +489,9 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly editingBranchId = signal('');
   protected readonly editingServiceId = signal('');
   protected readonly editingResourceId = signal('');
+  protected readonly branchFormExpanded = signal(false);
+  protected readonly serviceFormExpanded = signal(false);
+  protected readonly resourceFormExpanded = signal(false);
   protected readonly branchSchedule = signal<BranchScheduleDay[]>(this.defaultBranchScheduleDays());
   protected readonly branchScheduleInvalid = signal(false);
   protected readonly resourceSchedule = signal<ResourceScheduleDay[]>(this.defaultSchedule());
@@ -526,8 +570,14 @@ export class BusinessDashboardPage implements OnInit {
     this.saveEntity(request, () => this.resetBranchForm());
   }
 
+  protected startCreateBranch(): void {
+    this.resetBranchFields();
+    this.branchFormExpanded.set(true);
+  }
+
   protected editBranch(branch: Branch): void {
     this.editingBranchId.set(branch.id);
+    this.branchFormExpanded.set(true);
     this.branchForm.setValue({
       name: branch.name,
       address: branch.address,
@@ -544,6 +594,11 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected resetBranchForm(): void {
+    this.resetBranchFields();
+    this.branchFormExpanded.set(false);
+  }
+
+  private resetBranchFields(): void {
     this.editingBranchId.set('');
     this.branchForm.reset({
       name: '',
@@ -574,8 +629,14 @@ export class BusinessDashboardPage implements OnInit {
     this.saveEntity(request, () => this.resetServiceForm());
   }
 
+  protected startCreateService(): void {
+    this.resetServiceFields();
+    this.serviceFormExpanded.set(true);
+  }
+
   protected editService(service: ServiceCatalogItem): void {
     this.editingServiceId.set(service.id);
+    this.serviceFormExpanded.set(true);
     this.serviceForm.setValue({
       name: service.name,
       branchId: service.branchId,
@@ -586,6 +647,11 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected resetServiceForm(): void {
+    this.resetServiceFields();
+    this.serviceFormExpanded.set(false);
+  }
+
+  private resetServiceFields(): void {
     this.editingServiceId.set('');
     this.serviceForm.reset({
       name: '',
@@ -615,8 +681,14 @@ export class BusinessDashboardPage implements OnInit {
     this.saveEntity(request, () => this.resetResourceForm());
   }
 
+  protected startCreateResource(): void {
+    this.resetResourceFields();
+    this.resourceFormExpanded.set(true);
+  }
+
   protected editResource(resource: Resource): void {
     this.editingResourceId.set(resource.id);
+    this.resourceFormExpanded.set(true);
     this.resourceForm.setValue({
       name: resource.name,
       branchId: resource.branchId ?? '',
@@ -628,6 +700,11 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected resetResourceForm(): void {
+    this.resetResourceFields();
+    this.resourceFormExpanded.set(false);
+  }
+
+  private resetResourceFields(): void {
     this.editingResourceId.set('');
     this.resourceForm.reset({ name: '', branchId: '', serviceOfferingIds: [], active: true });
     this.resourceSchedule.set(this.defaultSchedule());

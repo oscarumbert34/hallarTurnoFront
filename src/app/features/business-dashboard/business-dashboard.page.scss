@@ -95,6 +95,15 @@ p {
   gap: 12px;
 }
 
+.entity-toolbar {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.expansion-form {
+  padding-top: 8px;
+}
+
 .form-actions {
   display: flex;
   flex-wrap: wrap;
@@ -215,6 +224,7 @@ p {
   }
 
   .dashboard-header button,
+  .entity-toolbar button,
   .booking-filter button,
   .form-actions button {
     width: 100%;
