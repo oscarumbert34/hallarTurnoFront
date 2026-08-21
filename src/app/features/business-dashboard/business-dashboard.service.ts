@@ -52,7 +52,13 @@ export class BusinessDashboardService {
       .get<EntityListResponse<ServiceOfferingResponse>>(
         this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings`),
       )
-      .pipe(map((response) => this.getResults(response).map((service) => this.toService(service))));
+      .pipe(
+        map((response) =>
+          this.getResults(response)
+            .map((service) => this.toService(service))
+            .filter((service) => service.active),
+        ),
+      );
   }
 
   createService(payload: Omit<ServiceCatalogItem, 'id'>): Observable<ServiceCatalogItem> {
@@ -67,15 +73,13 @@ export class BusinessDashboardService {
     payload: Omit<ServiceCatalogItem, 'id'>,
   ): Observable<ServiceCatalogItem> {
     return this.http.put<ServiceOfferingResponse>(
-      this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings/${id}`),
+      this.apiUrl.build(`/service-offerings/${id}`),
       this.toServiceRequest(payload),
     ).pipe(map((service) => this.toService(service, payload.branchId)));
   }
 
   deleteService(id: string): Observable<void> {
-    return this.http.delete<void>(
-      this.apiUrl.build(`/businesses/${this.currentBusinessId}/service-offerings/${id}`),
-    );
+    return this.http.delete<void>(this.apiUrl.build(`/service-offerings/${id}`));
   }
 
   listResources(): Observable<Resource[]> {

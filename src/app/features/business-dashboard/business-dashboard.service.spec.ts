@@ -190,6 +190,63 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should list only active service offerings', () => {
+    service.listServices().subscribe((services) => {
+      expect(services.map((item) => item.id)).toEqual(['service-active']);
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/service-offerings`);
+    request.flush({
+      results: [
+        {
+          id: 'service-active',
+          name: 'Corte',
+          branchId: 'branch-1',
+          durationMinutes: 30,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'service-inactive',
+          name: 'Color',
+          branchId: 'branch-1',
+          durationMinutes: 45,
+          status: 'INACTIVE',
+        },
+      ],
+    });
+  });
+
+  it('should update and delete service offerings through the service endpoint', () => {
+    const payload = {
+      name: 'Corte',
+      branchId: 'branch-1',
+      durationMinutes: 30,
+      price: 1200,
+      active: true,
+    };
+
+    service.updateService('service-1', payload).subscribe((serviceOffering) => {
+      expect(serviceOffering.id).toBe('service-1');
+    });
+
+    const updateRequest = httpTesting.expectOne('/api/service-offerings/service-1');
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({
+      name: 'Corte',
+      branchId: 'branch-1',
+      durationMinutes: 30,
+      price: 1200,
+      status: 'ACTIVE',
+    });
+    updateRequest.flush({ id: 'service-1', ...payload, status: 'ACTIVE' });
+
+    service.deleteService('service-1').subscribe();
+
+    const deleteRequest = httpTesting.expectOne('/api/service-offerings/service-1');
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+  });
+
   it('should create a resource through the branch API', () => {
     const payload = {
       name: 'Sandra',
