@@ -300,6 +300,31 @@ describe('PublicSearchPage', () => {
     );
   });
 
+  it('should not request availability again when filters did not change', () => {
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: {
+          business?: string;
+          service: string;
+          date: string;
+          branchId?: string;
+        }) => void;
+      };
+      search: () => void;
+    };
+
+    component.form.patchValue({
+      business: 'Turnos SA',
+      branchId: 'branch-1',
+      service: 'Corte',
+      date: '2026-08-17',
+    });
+    component.search();
+    component.search();
+
+    expect(bookingService.searchAvailability).toHaveBeenCalledTimes(1);
+  });
+
   it('should keep the selected calendar day when setting the search date', () => {
     const component = fixture.componentInstance as unknown as {
       form: {

@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, forkJoin, finalize, Observable, of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -436,6 +437,15 @@ import {
                       <mat-option value="ALL">Todas</mat-option>
                     </mat-select>
                   </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Sucursal</mat-label>
+                    <mat-select formControlName="branchId">
+                      <mat-option value="">Todas</mat-option>
+                      @for (branch of branches(); track branch.id) {
+                        <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
                   <button
                     mat-flat-button
                     type="submit"
@@ -501,6 +511,7 @@ import {
 })
 export class BusinessDashboardPage implements OnInit {
   private readonly dashboardService = inject(BusinessDashboardService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
 
   protected readonly branches = signal<Branch[]>([]);
@@ -555,9 +566,14 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingForm = this.formBuilder.nonNullable.group({
     date: [new Date() as Date | string, Validators.required],
     status: ['ACTIVE' as BookingStatusFilter],
+    branchId: [''],
   });
 
   ngOnInit(): void {
+    this.bookingForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.bookingPage.set(0);
+    });
+
     this.refreshAll();
     this.loadBookings();
   }
@@ -813,6 +829,7 @@ export class BusinessDashboardPage implements OnInit {
         this.dateValue(this.bookingForm.controls.date.value),
         this.bookingPage(),
         this.bookingPageSize(),
+        this.bookingForm.controls.branchId.value,
       )
       .pipe(finalize(() => this.loadingBookings.set(false)))
       .subscribe({

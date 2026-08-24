@@ -272,6 +272,11 @@ export class PublicSearchPage implements OnInit {
     }
 
     const search = this.availabilitySearch();
+
+    if (this.isCurrentSearch(search)) {
+      return;
+    }
+
     this.loading.set(true);
     this.searched.set(true);
     this.errorMessage.set('');
@@ -457,6 +462,24 @@ export class PublicSearchPage implements OnInit {
       date: this.dateValue(this.form.controls.date.value),
       businessId: this.selectedBusinessId(),
     };
+  }
+
+  private isCurrentSearch(search: ReturnType<PublicSearchPage['availabilitySearch']>): boolean {
+    const currentSearch = this.currentSearch();
+
+    return !!currentSearch && this.searchKey(currentSearch) === this.searchKey(search);
+  }
+
+  private searchKey(search: ReturnType<PublicSearchPage['availabilitySearch']>): string {
+    return JSON.stringify({
+      business: search.business.trim(),
+      businessId: search.businessId,
+      branchId: search.branchId,
+      service: search.service.trim(),
+      date: search.date,
+      timeFrom: search.timeFrom,
+      timeTo: search.timeTo,
+    });
   }
 
   private applyAvailabilityPage(page: AvailabilityPage, append: boolean): void {

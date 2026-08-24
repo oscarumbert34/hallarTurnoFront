@@ -570,7 +570,35 @@ describe('BusinessDashboardPage', () => {
     component.bookingForm.controls.date.setValue(new Date(2026, 7, 28));
     component.loadBookings();
 
-    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20);
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20, '');
+  });
+
+  it('should request bookings with the selected branch filter', () => {
+    dashboardService.listBookingsPage.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          date: {
+            setValue: (value: Date) => void;
+          };
+        };
+      };
+      loadBookings: () => void;
+    };
+
+    component.bookingForm.controls.date.setValue(new Date(2026, 7, 25));
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.loadBookings();
+
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
+      '2026-08-25',
+      0,
+      20,
+      'branch-1',
+    );
   });
 
   it('should expose customer name and phone for booking rows', () => {

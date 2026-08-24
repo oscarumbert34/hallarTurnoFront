@@ -144,11 +144,20 @@ export class BusinessDashboardService {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
   }
 
-  listBookingsPage(date: string, page = 0, size = 20): Observable<BookingListPage> {
-    const params = new HttpParams()
+  listBookingsPage(
+    date: string,
+    page = 0,
+    size = 20,
+    branchId = '',
+  ): Observable<BookingListPage> {
+    let params = new HttpParams()
       .set('date', date)
       .set('page', page)
       .set('size', Math.min(size, 50));
+
+    if (branchId) {
+      params = params.set('branchId', branchId);
+    }
 
     return this.http
       .get<BookingsResponse>(this.apiUrl.build(`/businesses/${this.currentBusinessId}/bookings`), {
