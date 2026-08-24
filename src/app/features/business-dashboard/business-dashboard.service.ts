@@ -5,6 +5,7 @@ import { ApiUrlService } from '../../shared/api-url.service';
 import { AuthService } from '../auth/auth.service';
 import {
   Booking,
+  BookingListPage,
   Branch,
   BranchSchedule,
   DayOfWeek,
@@ -140,13 +141,20 @@ export class BusinessDashboardService {
   }
 
   listBookings(date: string): Observable<Booking[]> {
-    const params = new HttpParams().set('date', date).set('page', 0).set('size', 20);
+    return this.listBookingsPage(date).pipe(map((page) => page.results));
+  }
+
+  listBookingsPage(date: string, page = 0, size = 20): Observable<BookingListPage> {
+    const params = new HttpParams()
+      .set('date', date)
+      .set('page', page)
+      .set('size', Math.min(size, 50));
 
     return this.http
       .get<BookingsResponse>(this.apiUrl.build(`/businesses/${this.currentBusinessId}/bookings`), {
         params,
       })
-      .pipe(map((response) => this.toBookings(response)));
+      .pipe(map((response) => this.toBookingPage(response)));
   }
 
   cancelBooking(id: string): Observable<Booking> {
@@ -264,6 +272,37 @@ export class BusinessDashboardService {
     }));
   }
 
+  private toBookingPage(response: BookingsResponse): BookingListPage {
+    const results = this.toBookings(response);
+
+    if (Array.isArray(response)) {
+      return {
+        page: 0,
+        size: results.length,
+        totalElements: results.length,
+        totalPages: results.length ? 1 : 0,
+        hasMore: false,
+        results,
+      };
+    }
+
+    const page = response.page ?? 0;
+    const size = response.size ?? results.length;
+    const totalElements = response.totalElements ?? results.length;
+    const totalPages =
+      response.totalPages ?? (size > 0 ? Math.ceil(totalElements / size) : results.length ? 1 : 0);
+
+    return {
+      page,
+      size,
+      maxSize: response.maxSize,
+      totalElements,
+      totalPages,
+      hasMore: response.hasMore ?? page + 1 < totalPages,
+      results,
+    };
+  }
+
   private getResults<T>(response: EntityListResponse<T>): T[] {
     return Array.isArray(response) ? response : (response.results ?? []);
   }
@@ -366,7 +405,17 @@ interface ResourceIntervalRequest {
   endsAt: string;
 }
 
-type BookingsResponse = EntityListResponse<BookingResponse>;
+type BookingsResponse =
+  | BookingResponse[]
+  | {
+      page?: number;
+      size?: number;
+      maxSize?: number;
+      totalElements?: number;
+      totalPages?: number;
+      hasMore?: boolean;
+      results?: BookingResponse[];
+    };
 
 interface BookingResponse {
   id: string;

@@ -9,6 +9,7 @@ import {
   AvailabilitySearch,
   AvailabilitySlot,
   AvailabilitySlotPage,
+  BranchSummary,
   BusinessSummary,
   BusinessAvailability,
   BusinessDetail,
@@ -28,7 +29,6 @@ export class BookingService {
   ): Observable<AvailabilityPage> {
     let params = new HttpParams()
       .set('date', search.date)
-      .set('locality', search.zone)
       .set('service', search.service)
       .set('startsFrom', search.timeFrom)
       .set('startsTo', search.timeTo)
@@ -38,6 +38,10 @@ export class BookingService {
 
     if (search.businessId) {
       params = params.set('businessId', search.businessId);
+    }
+
+    if (search.branchId) {
+      params = params.set('branchId', search.branchId);
     }
 
     return this.http
@@ -78,6 +82,14 @@ export class BookingService {
         context: this.publicHttpContext(),
       })
       .pipe(map((response) => this.toBusinesses(response)));
+  }
+
+  listBranches(businessId: string): Observable<BranchSummary[]> {
+    return this.http
+      .get<BranchListResponse>(this.apiUrl.build(`/businesses/${businessId}/branches`), {
+        context: this.publicHttpContext(),
+      })
+      .pipe(map((response) => this.toBranches(response)));
   }
 
   listServiceOfferings(businessId: string): Observable<ServiceOfferingSummary[]> {
@@ -199,6 +211,18 @@ export class BookingService {
     }));
   }
 
+  private toBranches(response: BranchListResponse): BranchSummary[] {
+    const branches = Array.isArray(response) ? response : (response.results ?? []);
+
+    return branches.map((branch) => ({
+      id: branch.id,
+      name: branch.name,
+      address: branch.address,
+      locality: branch.locality,
+      status: branch.status,
+    }));
+  }
+
   private toServiceOfferings(response: ServiceOfferingListResponse): ServiceOfferingSummary[] {
     const serviceOfferings = Array.isArray(response) ? response : (response.results ?? []);
 
@@ -213,6 +237,7 @@ export class BookingService {
 }
 
 type BusinessListResponse = BusinessResponse[] | { results?: BusinessResponse[] };
+type BranchListResponse = BranchResponse[] | { results?: BranchResponse[] };
 type ServiceOfferingListResponse =
   ServiceOfferingResponse[] | { results?: ServiceOfferingResponse[] };
 
@@ -220,6 +245,14 @@ interface BusinessResponse {
   id: string;
   name: string;
   shortDescription?: string;
+  status?: string;
+}
+
+interface BranchResponse {
+  id: string;
+  name: string;
+  address?: string;
+  locality?: string;
   status?: string;
 }
 

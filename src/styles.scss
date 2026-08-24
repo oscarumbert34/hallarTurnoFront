@@ -41,3 +41,18 @@ body {
 .placeholder {
   max-width: 680px;
 }
+
+.search-autocomplete-panel,
+.search-select-panel {
+  min-width: 280px;
+
+  .mat-mdc-option {
+    min-height: 56px;
+    padding-block: 8px;
+  }
+
+  .mdc-list-item__primary-text {
+    line-height: 1.35;
+    white-space: normal;
+  }
+}

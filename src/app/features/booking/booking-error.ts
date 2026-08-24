@@ -14,7 +14,7 @@ export function bookingErrorMessage(error: unknown): string {
   }
 
   if (error.status === 403) {
-    return 'No tenes permisos para realizar esta accion.';
+    return 'No tenés permisos para realizar esta acción.';
   }
 
   if (error.status === 409) {

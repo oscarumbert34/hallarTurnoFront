@@ -41,6 +41,16 @@ describe('BusinessDashboardPage', () => {
       ),
       listResources: vi.fn(() => of([])),
       listBookings: vi.fn(() => of([])),
+      listBookingsPage: vi.fn(() =>
+        of({
+          page: 0,
+          size: 20,
+          totalElements: 0,
+          totalPages: 0,
+          hasMore: false,
+          results: [],
+        }),
+      ),
       createBranch: vi.fn(),
       updateBranch: vi.fn(),
       deleteBranch: vi.fn(),
@@ -66,7 +76,7 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.listBranches).toHaveBeenCalled();
     expect(dashboardService.listServices).toHaveBeenCalled();
     expect(dashboardService.listResources).toHaveBeenCalled();
-    expect(dashboardService.listBookings).toHaveBeenCalled();
+    expect(dashboardService.listBookingsPage).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Centro');
   });
 
@@ -545,7 +555,7 @@ describe('BusinessDashboardPage', () => {
   });
 
   it('should request bookings with the selected calendar day as a local date string', () => {
-    dashboardService.listBookings.mockClear();
+    dashboardService.listBookingsPage.mockClear();
     const component = fixture.componentInstance as unknown as {
       bookingForm: {
         controls: {
@@ -560,7 +570,7 @@ describe('BusinessDashboardPage', () => {
     component.bookingForm.controls.date.setValue(new Date(2026, 7, 28));
     component.loadBookings();
 
-    expect(dashboardService.listBookings).toHaveBeenCalledWith('2026-08-28');
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20);
   });
 
   it('should expose customer name and phone for booking rows', () => {
@@ -578,7 +588,7 @@ describe('BusinessDashboardPage', () => {
     expect(component.bookingCustomerPhone({ customerPhone: '+54 11 5555-1234' })).toBe(
       '+54 11 5555-1234',
     );
-    expect(component.bookingCustomerPhone({})).toBe('Sin telefono');
+    expect(component.bookingCustomerPhone({})).toBe('Sin teléfono');
   });
 
   it('should filter cancelled bookings from the active booking view', () => {

@@ -16,6 +16,7 @@ import { bookingErrorMessage } from '../booking/booking-error';
 import {
   AvailabilityPage,
   AvailabilitySlot,
+  BranchSummary,
   BusinessAvailability,
   BusinessSummary,
   ServiceOfferingSummary,
@@ -40,7 +41,7 @@ import { BookingService } from '../booking/booking.service';
     <section class="search-page">
       <header>
         <h1>Buscar turno</h1>
-        <p>Encontrá disponibilidad por servicio, fecha y zona.</p>
+        <p>Encontrá disponibilidad por servicio, fecha y sucursal.</p>
       </header>
 
       <mat-card appearance="outlined">
@@ -56,6 +57,8 @@ import { BookingService } from '../booking/booking.service';
               />
               <mat-autocomplete
                 #businessAutocomplete="matAutocomplete"
+                class="search-autocomplete-panel"
+                [panelWidth]="320"
                 (optionSelected)="selectBusiness($event.option.value)"
               >
                 @for (business of filteredBusinesses(); track business.id) {
@@ -74,7 +77,11 @@ import { BookingService } from '../booking/booking.service';
                 [matAutocomplete]="serviceAutocomplete"
                 placeholder="Corte, consulta, limpieza"
               />
-              <mat-autocomplete #serviceAutocomplete="matAutocomplete">
+              <mat-autocomplete
+                #serviceAutocomplete="matAutocomplete"
+                class="search-autocomplete-panel"
+                [panelWidth]="320"
+              >
                 @for (service of filteredServiceOfferings(); track service.id) {
                   <mat-option [value]="service.name">{{ service.name }}</mat-option>
                 } @empty {
@@ -98,8 +105,13 @@ import { BookingService } from '../booking/booking.service';
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Zona</mat-label>
-              <input matInput formControlName="zone" placeholder="Centro, Palermo, online" />
+              <mat-label>Sucursal</mat-label>
+              <mat-select formControlName="branchId" panelClass="search-select-panel">
+                <mat-option value="">Todas</mat-option>
+                @for (branch of branches(); track branch.id) {
+                  <mat-option [value]="branch.id">{{ branchLabel(branch) }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -143,7 +155,7 @@ import { BookingService } from '../booking/booking.service';
               <div class="slots" aria-label="Turnos disponibles">
                 @for (slot of business.slots; track slot.id) {
                   <button mat-stroked-button type="button" (click)="selectSlot(business, slot)">
-                    {{ timeLabel(slot.startsAt) }}
+                    {{ slotLabel(slot) }}
                   </button>
                 } @empty {
                   <p>No hay horarios disponibles para este negocio.</p>
@@ -159,7 +171,7 @@ import { BookingService } from '../booking/booking.service';
                     [disabled]="slotLoading(business)"
                     (click)="loadMoreSlots(business)"
                   >
-                    {{ slotLoading(business) ? 'Cargando...' : 'Ver mas horarios' }}
+                    {{ slotLoading(business) ? 'Cargando...' : 'Ver más horarios' }}
                   </button>
                 </div>
               }
@@ -180,7 +192,7 @@ import { BookingService } from '../booking/booking.service';
               [disabled]="loadingMoreServices()"
               (click)="loadMoreServices()"
             >
-              {{ loadingMoreServices() ? 'Cargando...' : 'Ver mas servicios' }}
+              {{ loadingMoreServices() ? 'Cargando...' : 'Ver más servicios' }}
             </button>
           </div>
         }
@@ -198,6 +210,7 @@ export class PublicSearchPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly businesses = signal<BusinessSummary[]>([]);
+  protected readonly branches = signal<BranchSummary[]>([]);
   protected readonly serviceOfferings = signal<ServiceOfferingSummary[]>([]);
   protected readonly selectedBusinessId = signal('');
   protected readonly loading = signal(false);
@@ -213,9 +226,9 @@ export class PublicSearchPage implements OnInit {
   protected readonly slotPagination = signal<Record<string, SlotPaginationState>>({});
   protected readonly form = this.formBuilder.nonNullable.group({
     business: [''],
+    branchId: [''],
     service: ['', Validators.required],
     date: [new Date() as Date | string, Validators.required],
-    zone: [''],
     timeFrom: ['09:00'],
     timeTo: ['18:00'],
   });
@@ -241,7 +254,7 @@ export class PublicSearchPage implements OnInit {
         this.syncBusinessSelection(value);
 
         if (this.selectedBusinessId() !== previousBusinessId) {
-          this.syncServiceOfferings();
+          this.syncBusinessOptions();
         }
       });
 
@@ -359,7 +372,7 @@ export class PublicSearchPage implements OnInit {
 
   protected selectBusiness(name: string): void {
     this.syncBusinessSelection(name);
-    this.syncServiceOfferings();
+    this.syncBusinessOptions();
   }
 
   protected setSearchDate(value: Date | null): void {
@@ -416,6 +429,14 @@ export class PublicSearchPage implements OnInit {
 
   protected timeLabel(value: string): string {
     return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  protected slotLabel(slot: AvailabilitySlot): string {
+    return [this.timeLabel(slot.startsAt), slot.resourceName].filter(Boolean).join(' · ');
+  }
+
+  protected branchLabel(branch: BranchSummary): string {
+    return [branch.name, branch.locality].filter(Boolean).join(' · ');
   }
 
   protected showLoadMoreServices(): boolean {
@@ -587,21 +608,35 @@ export class PublicSearchPage implements OnInit {
       next: (businesses) => {
         this.businesses.set(businesses);
         this.syncBusinessSelection(this.form.controls.business.value);
-        this.syncServiceOfferings();
+        this.syncBusinessOptions(false);
       },
       error: () => this.businesses.set([]),
     });
   }
 
-  private syncServiceOfferings(): void {
+  private syncBusinessOptions(resetBranch = true): void {
     const businessId = this.selectedBusinessId();
 
     if (!businessId) {
+      this.branches.set([]);
       this.serviceOfferings.set([]);
+      this.form.controls.branchId.setValue('', { emitEvent: false });
       return;
     }
 
+    if (resetBranch) {
+      this.form.controls.branchId.setValue('', { emitEvent: false });
+    }
+
+    this.loadBranches(businessId);
     this.loadServiceOfferings(businessId);
+  }
+
+  private loadBranches(businessId: string): void {
+    this.bookingService.listBranches(businessId).subscribe({
+      next: (branches) => this.branches.set(branches),
+      error: () => this.branches.set([]),
+    });
   }
 
   private loadServiceOfferings(businessId: string): void {

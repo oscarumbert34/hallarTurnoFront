@@ -81,9 +81,9 @@ import {
                     <mat-error>El nombre es obligatorio.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
-                    <mat-label>Direccion</mat-label>
+                    <mat-label>Dirección</mat-label>
                     <input matInput formControlName="address" />
-                    <mat-error>La direccion es obligatoria.</mat-error>
+                    <mat-error>La dirección es obligatoria.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
                     <mat-label>Localidad</mat-label>
@@ -96,9 +96,9 @@ import {
                     <mat-error>La provincia es obligatoria.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
-                    <mat-label>Pais</mat-label>
+                    <mat-label>País</mat-label>
                     <input matInput formControlName="country" />
-                    <mat-error>El pais es obligatorio.</mat-error>
+                    <mat-error>El país es obligatorio.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
                     <mat-label>Latitud</mat-label>
@@ -152,7 +152,7 @@ import {
                     </div>
                     @if (branchScheduleInvalid()) {
                       <p class="form-error">
-                        Selecciona al menos un dia y un rango horario valido.
+                        Selecciona al menos un día y un rango horario válido.
                       </p>
                     }
                   </section>
@@ -220,9 +220,9 @@ import {
                     <mat-error>El nombre es obligatorio.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
-                    <mat-label>Duracion minutos</mat-label>
+                    <mat-label>Duración minutos</mat-label>
                     <input matInput type="number" min="5" formControlName="durationMinutes" />
-                    <mat-error>La duracion minima es 5 minutos.</mat-error>
+                    <mat-error>La duración mínima es 5 minutos.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
                     <mat-label>Sucursal</mat-label>
@@ -360,7 +360,7 @@ import {
                     </div>
                     @if (scheduleInvalid()) {
                       <p class="form-error">
-                        Selecciona al menos un dia y un rango horario valido.
+                        Selecciona al menos un día y un rango horario válido.
                       </p>
                     }
                   </section>
@@ -410,7 +410,11 @@ import {
           <section class="tab-panel">
             <mat-card appearance="outlined">
               <mat-card-content>
-                <form class="booking-filter" [formGroup]="bookingForm" (ngSubmit)="loadBookings()">
+                <form
+                  class="booking-filter"
+                  [formGroup]="bookingForm"
+                  (ngSubmit)="loadBookings(true)"
+                >
                   <mat-form-field appearance="outline">
                     <mat-label>Fecha</mat-label>
                     <input
@@ -466,6 +470,28 @@ import {
                 <p class="empty">No hay reservas para la fecha seleccionada.</p>
               }
             </div>
+
+            @if (showBookingPager()) {
+              <div class="load-more">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="!canLoadPreviousBookings() || loadingBookings()"
+                  (click)="loadPreviousBookings()"
+                >
+                  Anterior
+                </button>
+                <span>{{ bookingPageLabel() }}</span>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="!canLoadNextBookings() || loadingBookings()"
+                  (click)="loadNextBookings()"
+                >
+                  Siguiente
+                </button>
+              </div>
+            }
           </section>
         </mat-tab>
       </mat-tab-group>
@@ -486,6 +512,11 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly bookingError = signal('');
+  protected readonly bookingPage = signal(0);
+  protected readonly bookingPageSize = signal(20);
+  protected readonly bookingTotalElements = signal(0);
+  protected readonly bookingTotalPages = signal(0);
+  protected readonly bookingHasMore = signal(false);
   protected readonly editingBranchId = signal('');
   protected readonly editingServiceId = signal('');
   protected readonly editingResourceId = signal('');
@@ -752,7 +783,7 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected deleteEntity(collection: EntityCollection, id: string, branchId = ''): void {
-    if (!confirm('Esta accion no se puede deshacer. Deseas continuar?')) {
+    if (!confirm('Esta acción no se puede deshacer. ¿Deseas continuar?')) {
       return;
     }
 
@@ -765,19 +796,34 @@ export class BusinessDashboardPage implements OnInit {
     this.saveEntity(request);
   }
 
-  protected loadBookings(): void {
+  protected loadBookings(resetPage = false): void {
     if (this.bookingForm.invalid) {
       return;
+    }
+
+    if (resetPage) {
+      this.bookingPage.set(0);
     }
 
     this.loadingBookings.set(true);
     this.bookingError.set('');
 
     this.dashboardService
-      .listBookings(this.dateValue(this.bookingForm.controls.date.value))
+      .listBookingsPage(
+        this.dateValue(this.bookingForm.controls.date.value),
+        this.bookingPage(),
+        this.bookingPageSize(),
+      )
       .pipe(finalize(() => this.loadingBookings.set(false)))
       .subscribe({
-        next: (bookings) => this.bookings.set(bookings),
+        next: (page) => {
+          this.bookings.set(page.results);
+          this.bookingPage.set(page.page);
+          this.bookingPageSize.set(page.size);
+          this.bookingTotalElements.set(page.totalElements);
+          this.bookingTotalPages.set(page.totalPages);
+          this.bookingHasMore.set(page.hasMore);
+        },
         error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
       });
   }
@@ -788,10 +834,11 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     this.bookingForm.controls.date.setValue(value);
+    this.bookingPage.set(0);
   }
 
   protected cancelBooking(id: string): void {
-    if (!confirm('Deseas cancelar esta reserva?')) {
+    if (!confirm('¿Deseas cancelar esta reserva?')) {
       return;
     }
 
@@ -815,6 +862,43 @@ export class BusinessDashboardPage implements OnInit {
     return this.bookings().filter((booking) => booking.status === status);
   }
 
+  protected loadPreviousBookings(): void {
+    if (!this.canLoadPreviousBookings()) {
+      return;
+    }
+
+    this.bookingPage.update((page) => page - 1);
+    this.loadBookings();
+  }
+
+  protected loadNextBookings(): void {
+    if (!this.canLoadNextBookings()) {
+      return;
+    }
+
+    this.bookingPage.update((page) => page + 1);
+    this.loadBookings();
+  }
+
+  protected canLoadPreviousBookings(): boolean {
+    return this.bookingPage() > 0;
+  }
+
+  protected canLoadNextBookings(): boolean {
+    return this.bookingHasMore();
+  }
+
+  protected showBookingPager(): boolean {
+    return this.bookingTotalElements() > this.bookingPageSize();
+  }
+
+  protected bookingPageLabel(): string {
+    const currentPage = this.bookingPage() + 1;
+    const totalPages = Math.max(this.bookingTotalPages(), currentPage);
+
+    return `Página ${currentPage} de ${totalPages} · ${this.bookingTotalElements()} reservas`;
+  }
+
   protected branchName(branchId: string | undefined): string {
     return this.branches().find((branch) => branch.id === branchId)?.name ?? 'Sin sucursal';
   }
@@ -824,7 +908,7 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected bookingCustomerPhone(booking: Booking): string {
-    return booking.customerPhone ?? 'Sin telefono';
+    return booking.customerPhone ?? 'Sin teléfono';
   }
 
   protected branchScheduleLabel(branch: Branch): string {
@@ -1017,9 +1101,9 @@ type BookingStatusFilter = 'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'CANCELLED' | 'A
 const RESOURCE_WEEK_DAYS: Array<Pick<ResourceScheduleDay, 'dayOfWeek' | 'label'>> = [
   { dayOfWeek: 'MONDAY', label: 'Lunes' },
   { dayOfWeek: 'TUESDAY', label: 'Martes' },
-  { dayOfWeek: 'WEDNESDAY', label: 'Miercoles' },
+  { dayOfWeek: 'WEDNESDAY', label: 'Miércoles' },
   { dayOfWeek: 'THURSDAY', label: 'Jueves' },
   { dayOfWeek: 'FRIDAY', label: 'Viernes' },
-  { dayOfWeek: 'SATURDAY', label: 'Sabado' },
+  { dayOfWeek: 'SATURDAY', label: 'Sábado' },
   { dayOfWeek: 'SUNDAY', label: 'Domingo' },
 ];

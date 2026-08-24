@@ -32,7 +32,6 @@ describe('BookingService', () => {
         {
           service: 'Corte',
           date: '2026-08-17',
-          zone: 'Centro',
           timeFrom: '09:00',
           timeTo: '18:00',
         },
@@ -50,7 +49,7 @@ describe('BookingService', () => {
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10&maxSlotsPerService=10',
+      '/api/public/availability?date=2026-08-17&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10&maxSlotsPerService=10',
     );
 
     expect(request.request.method).toBe('GET');
@@ -107,7 +106,6 @@ describe('BookingService', () => {
           businessId: 'business-1',
           service: 'Corte',
           date: '2026-08-17',
-          zone: 'Centro',
           timeFrom: '09:00',
           timeTo: '18:00',
         },
@@ -119,7 +117,7 @@ describe('BookingService', () => {
       });
 
     const request = httpTesting.expectOne(
-      '/api/public/availability?date=2026-08-17&locality=Centro&service=Corte&startsFrom=09:00&startsTo=18:00&offset=10&limit=5&maxSlotsPerService=5&businessId=business-1',
+      '/api/public/availability?date=2026-08-17&service=Corte&startsFrom=09:00&startsTo=18:00&offset=10&limit=5&maxSlotsPerService=5&businessId=business-1',
     );
 
     expect(request.request.method).toBe('GET');
@@ -128,6 +126,38 @@ describe('BookingService', () => {
       size: 10,
       totalElements: 0,
       totalPages: 0,
+      results: [],
+    });
+  });
+
+  it('should search public availability with a selected branch', () => {
+    service
+      .searchAvailability(
+        {
+          business: 'Barberia pepito',
+          businessId: 'business-1',
+          branchId: 'branch-1',
+          service: 'Corte',
+          date: '2026-08-17',
+          timeFrom: '09:00',
+          timeTo: '18:00',
+        },
+        { offset: 0, limit: 10, maxSlotsPerService: 10 },
+      )
+      .subscribe((page) => {
+        expect(page.results).toEqual([]);
+      });
+
+    const request = httpTesting.expectOne(
+      '/api/public/availability?date=2026-08-17&service=Corte&startsFrom=09:00&startsTo=18:00&offset=0&limit=10&maxSlotsPerService=10&businessId=business-1&branchId=branch-1',
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      offset: 0,
+      limit: 10,
+      totalAvailableSlots: 0,
+      hasMore: false,
       results: [],
     });
   });
@@ -155,6 +185,35 @@ describe('BookingService', () => {
         status: 'ACTIVE',
       },
     ]);
+  });
+
+  it('should list branches for the selected business', () => {
+    service.listBranches('business-1').subscribe((branches) => {
+      expect(branches).toEqual([
+        {
+          id: 'branch-1',
+          name: 'Sucursal Centro',
+          address: 'Calle 1',
+          locality: 'Centro',
+          status: 'ACTIVE',
+        },
+      ]);
+    });
+
+    const request = httpTesting.expectOne('/api/businesses/business-1/branches');
+
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      results: [
+        {
+          id: 'branch-1',
+          name: 'Sucursal Centro',
+          address: 'Calle 1',
+          locality: 'Centro',
+          status: 'ACTIVE',
+        },
+      ],
+    });
   });
 
   it('should list service offerings for the search autocomplete', () => {
@@ -196,7 +255,6 @@ describe('BookingService', () => {
         {
           service: 'Corte',
           date: '2026-08-17',
-          zone: 'Centro',
           timeFrom: '09:00',
           timeTo: '18:00',
         },

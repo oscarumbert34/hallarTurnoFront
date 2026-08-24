@@ -72,4 +72,14 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | string;
 }
 
+export interface BookingListPage {
+  page: number;
+  size: number;
+  maxSize?: number;
+  totalElements: number;
+  totalPages: number;
+  hasMore: boolean;
+  results: Booking[];
+}
+
 export type EntityCollection = 'branches' | 'services' | 'resources';

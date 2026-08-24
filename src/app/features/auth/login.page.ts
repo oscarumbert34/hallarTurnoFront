@@ -35,12 +35,12 @@ import { authErrorMessage } from './auth-errors';
               @if (form.controls.email.hasError('required')) {
                 <mat-error>El email es obligatorio.</mat-error>
               } @else if (form.controls.email.hasError('email')) {
-                <mat-error>Ingresa un email valido.</mat-error>
+                <mat-error>Ingresa un email válido.</mat-error>
               }
             </mat-form-field>
 
             <mat-form-field appearance="outline">
-              <mat-label>Contrasena</mat-label>
+              <mat-label>Contraseña</mat-label>
               <input
                 matInput
                 type="password"

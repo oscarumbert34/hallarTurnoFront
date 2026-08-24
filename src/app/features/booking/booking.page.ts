@@ -9,7 +9,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { bookingErrorMessage } from './booking-error';
-import { BusinessDetail, CustomerBooking, SelectedSlot } from './booking.models';
+import {
+  AvailabilitySearch,
+  BusinessDetail,
+  CustomerBooking,
+  SelectedSlot,
+} from './booking.models';
 import { BookingService } from './booking.service';
 
 @Component({
@@ -27,7 +32,7 @@ import { BookingService } from './booking.service';
     <section class="booking-page">
       <header>
         <h1>Reserva</h1>
-        <p>Revisa el turno seleccionado y confirma cuando estes listo.</p>
+        <p>Revisa el turno seleccionado y confirma cuando estés listo.</p>
       </header>
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
@@ -72,9 +77,9 @@ import { BookingService } from './booking.service';
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Telefono</mat-label>
+                <mat-label>Teléfono</mat-label>
                 <input matInput formControlName="customerPhone" maxlength="40" />
-                <mat-error>Ingresa un telefono valido.</mat-error>
+                <mat-error>Ingresa un teléfono válido.</mat-error>
               </mat-form-field>
             </form>
 
@@ -83,14 +88,16 @@ import { BookingService } from './booking.service';
             }
           </mat-card-content>
           <mat-card-actions>
-            <button
-              mat-flat-button
-              type="button"
-              [disabled]="customerForm.invalid || saving()"
-              (click)="confirmBooking()"
-            >
-              Confirmar turno
-            </button>
+            @if (!confirmedBooking()) {
+              <button
+                mat-flat-button
+                type="button"
+                [disabled]="customerForm.invalid || saving()"
+                (click)="confirmBooking()"
+              >
+                Confirmar turno
+              </button>
+            }
             <a mat-button routerLink="/public-search">Buscar otro</a>
           </mat-card-actions>
         </mat-card>
@@ -139,7 +146,7 @@ export class BookingPage implements OnInit {
   protected confirmBooking(): void {
     const selectedSlot = this.selectedSlot();
 
-    if (!selectedSlot) {
+    if (!selectedSlot || this.confirmedBooking()) {
       return;
     }
 
@@ -219,13 +226,7 @@ export class BookingPage implements OnInit {
       return;
     }
 
-    const parsedSearch = JSON.parse(rawSearch) as {
-      service: string;
-      date: string;
-      zone: string;
-      timeFrom: string;
-      timeTo: string;
-    };
+    const parsedSearch = JSON.parse(rawSearch) as AvailabilitySearch;
 
     this.bookingService.searchAvailability(parsedSearch, { offset: 0, limit: 10 }).subscribe({
       next: (page) => {

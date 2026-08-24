@@ -1,9 +1,9 @@
 export interface AvailabilitySearch {
   business?: string;
   businessId?: string;
+  branchId?: string;
   service: string;
   date: string;
-  zone: string;
   timeFrom: string;
   timeTo: string;
 }
@@ -36,6 +36,14 @@ export interface BusinessSummary {
   id: string;
   name: string;
   shortDescription?: string;
+  status?: string;
+}
+
+export interface BranchSummary {
+  id: string;
+  name: string;
+  address?: string;
+  locality?: string;
   status?: string;
 }
 

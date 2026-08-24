@@ -9,6 +9,7 @@ describe('PublicSearchPage', () => {
   let fixture: ComponentFixture<PublicSearchPage>;
   let bookingService: {
     listBusinesses: ReturnType<typeof vi.fn>;
+    listBranches: ReturnType<typeof vi.fn>;
     listServiceOfferings: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
     listAvailabilitySlots: ReturnType<typeof vi.fn>;
@@ -25,6 +26,16 @@ describe('PublicSearchPage', () => {
           {
             id: 'business-1',
             name: 'Turnos SA',
+          },
+        ]),
+      ),
+      listBranches: vi.fn(() =>
+        of([
+          {
+            id: 'branch-1',
+            name: 'Centro',
+            address: 'Calle 1',
+            locality: 'Palermo',
           },
         ]),
       ),
@@ -109,13 +120,13 @@ describe('PublicSearchPage', () => {
           business?: string;
           service: string;
           date: string;
-          zone: string;
+          branchId?: string;
         }) => void;
       };
       search: () => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
     fixture.detectChanges();
 
@@ -132,13 +143,13 @@ describe('PublicSearchPage', () => {
           business?: string;
           service: string;
           date: string;
-          zone: string;
+          branchId?: string;
         }) => void;
       };
       search: () => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
     fixture.detectChanges();
 
@@ -177,13 +188,13 @@ describe('PublicSearchPage', () => {
           business?: string;
           service: string;
           date: string;
-          zone: string;
+          branchId?: string;
         }) => void;
       };
       search: () => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
     fixture.detectChanges();
 
@@ -208,6 +219,56 @@ describe('PublicSearchPage', () => {
     expect(sessionStorage.getItem('turnero.selectedSlot')).toContain('slot-1');
   });
 
+  it('should show the resource name when rendering available slots', () => {
+    bookingService.searchAvailability.mockReturnValueOnce(
+      of({
+        offset: 0,
+        limit: 10,
+        totalAvailableSlots: 2,
+        hasMore: false,
+        results: [
+          {
+            businessId: 'business-1',
+            businessName: 'Turnos SA',
+            branchId: 'branch-1',
+            branchName: 'Centro',
+            address: 'Calle 1',
+            serviceId: 'service-1',
+            serviceName: 'Corte',
+            durationMinutes: 30,
+            slots: [
+              {
+                id: 'slot-1',
+                startsAt: '2026-08-17T10:00:00',
+                endsAt: '2026-08-17T10:30:00',
+                resourceName: 'Ana',
+              },
+              {
+                id: 'slot-2',
+                startsAt: '2026-08-17T10:00:00',
+                endsAt: '2026-08-17T10:30:00',
+                resourceName: 'Luis',
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: { service: string; date: string }) => void;
+      };
+      search: () => void;
+    };
+
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
+    component.search();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Ana');
+    expect(fixture.nativeElement.textContent).toContain('Luis');
+  });
+
   it('should search with the selected business id', () => {
     const component = fixture.componentInstance as unknown as {
       form: {
@@ -215,7 +276,7 @@ describe('PublicSearchPage', () => {
           business?: string;
           service: string;
           date: string;
-          zone: string;
+          branchId?: string;
         }) => void;
       };
       search: () => void;
@@ -223,9 +284,9 @@ describe('PublicSearchPage', () => {
 
     component.form.patchValue({
       business: 'Turnos SA',
+      branchId: 'branch-1',
       service: 'Corte',
       date: '2026-08-17',
-      zone: 'Centro',
     });
     component.search();
 
@@ -233,6 +294,7 @@ describe('PublicSearchPage', () => {
       expect.objectContaining({
         business: 'Turnos SA',
         businessId: 'business-1',
+        branchId: 'branch-1',
       }),
       { offset: 0, limit: 10, maxSlotsPerService: 10 },
     );
@@ -264,13 +326,13 @@ describe('PublicSearchPage', () => {
           business?: string;
           service?: string;
           date?: Date;
-          zone?: string;
+          branchId?: string;
         }) => void;
       };
       search: () => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: new Date(2026, 7, 28), zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: new Date(2026, 7, 28) });
     component.search();
 
     expect(bookingService.searchAvailability).toHaveBeenCalledWith(
@@ -331,17 +393,17 @@ describe('PublicSearchPage', () => {
       );
     const component = fixture.componentInstance as unknown as {
       form: {
-        patchValue: (value: { service: string; date: string; zone: string }) => void;
+        patchValue: (value: { service: string; date: string; branchId?: string }) => void;
       };
       search: () => void;
       loadMoreServices: () => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Ver mas servicios');
+    expect(fixture.nativeElement.textContent).toContain('Ver más servicios');
 
     component.loadMoreServices();
     fixture.detectChanges();
@@ -356,7 +418,7 @@ describe('PublicSearchPage', () => {
     expect(fixture.nativeElement.textContent).toContain('10:00');
     expect(fixture.nativeElement.textContent).toContain('11:00');
     expect(fixture.nativeElement.textContent).toContain('Color');
-    expect(fixture.nativeElement.textContent).not.toContain('Ver mas servicios');
+    expect(fixture.nativeElement.textContent).not.toContain('Ver más servicios');
   });
 
   it('should request and append more slots for a single service', () => {
@@ -405,7 +467,7 @@ describe('PublicSearchPage', () => {
     );
     const component = fixture.componentInstance as unknown as {
       form: {
-        patchValue: (value: { service: string; date: string; zone: string }) => void;
+        patchValue: (value: { service: string; date: string; branchId?: string }) => void;
       };
       results: () => Array<{
         businessId: string;
@@ -417,11 +479,11 @@ describe('PublicSearchPage', () => {
       loadMoreSlots: (business: unknown) => void;
     };
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17', zone: 'Centro' });
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Ver mas horarios');
+    expect(fixture.nativeElement.textContent).toContain('Ver más horarios');
 
     component.loadMoreSlots(component.results()[0]);
     fixture.detectChanges();
@@ -438,7 +500,7 @@ describe('PublicSearchPage', () => {
       { offset: 10, limit: 10 },
     );
     expect(fixture.nativeElement.textContent).toContain('07:00');
-    expect(fixture.nativeElement.textContent).not.toContain('Ver mas horarios');
+    expect(fixture.nativeElement.textContent).not.toContain('Ver más horarios');
   });
 
   it('should load service offerings for the service autocomplete', () => {
@@ -448,17 +510,20 @@ describe('PublicSearchPage', () => {
           business?: string;
           service?: string;
           date?: string;
-          zone?: string;
+          branchId?: string;
         }) => void;
       };
     };
 
     expect(bookingService.listServiceOfferings).not.toHaveBeenCalled();
+    expect(bookingService.listBranches).not.toHaveBeenCalled();
 
     component.form.patchValue({ business: 'Turnos SA' });
     fixture.detectChanges();
 
     expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
+    expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
     expect(fixture.nativeElement.textContent).toContain('Servicio');
+    expect(fixture.nativeElement.textContent).toContain('Sucursal');
   });
 });
