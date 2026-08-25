@@ -11,6 +11,7 @@ import {
   DayOfWeek,
   Resource,
   ResourceSchedule,
+  ScheduleTimeRange,
   ServiceCatalogItem,
 } from './dashboard.models';
 
@@ -191,7 +192,7 @@ export class BusinessDashboardService {
       latitude: Number(branch.latitude),
       longitude: Number(branch.longitude),
       zoneId: branch.zoneId,
-      weeklySchedule: branch.weeklySchedule ?? [],
+      weeklySchedule: this.toSchedule(branch.schedule ?? branch.weeklySchedule),
       active: branch.active ?? branch.status === 'ACTIVE',
     };
   }
@@ -207,7 +208,7 @@ export class BusinessDashboardService {
       longitude: branch.longitude,
       zoneId: branch.zoneId,
       status: branch.active ? 'ACTIVE' : 'INACTIVE',
-      weeklySchedule: branch.weeklySchedule,
+      schedule: branch.weeklySchedule,
     };
   }
 
@@ -238,7 +239,7 @@ export class BusinessDashboardService {
       name: resource.name ?? resource.visibleName,
       branchId,
       serviceOfferingIds: resource.serviceOfferingIds ?? [],
-      weeklySchedule: resource.weeklySchedule ?? [],
+      weeklySchedule: this.toSchedule(resource.schedule ?? resource.weeklySchedule),
       active: resource.active ?? resource.status === 'ACTIVE',
     };
   }
@@ -249,9 +250,27 @@ export class BusinessDashboardService {
       type: 'EMPLOYEE',
       status: resource.active ? 'ACTIVE' : 'INACTIVE',
       serviceOfferingIds: resource.serviceOfferingIds,
-      weeklySchedule: resource.weeklySchedule,
+      schedule: resource.weeklySchedule,
       absences: [],
     };
+  }
+
+  private toSchedule(schedule: ScheduleResponse[] | undefined): BranchSchedule[] {
+    return (schedule ?? []).flatMap((day) => {
+      const dayOfWeek = day.day ?? day.dayOfWeek;
+
+      if (!dayOfWeek) {
+        return [];
+      }
+
+      return {
+        day: dayOfWeek,
+        timeRanges: (day.timeRanges ?? day.intervals ?? []).map((interval) => ({
+          start: interval.start ?? interval.opensAt ?? interval.startsAt ?? '',
+          end: interval.end ?? interval.closesAt ?? interval.endsAt ?? '',
+        })),
+      };
+    });
   }
 
   private requireBranchId(resource: Omit<Resource, 'id'>): string {
@@ -345,7 +364,8 @@ interface BranchResponse {
   latitude: number | string;
   longitude: number | string;
   zoneId: string;
-  weeklySchedule?: BranchSchedule[];
+  schedule?: ScheduleResponse[];
+  weeklySchedule?: ScheduleResponse[];
   active?: boolean;
   status?: string;
 }
@@ -360,7 +380,7 @@ interface BranchRequest {
   longitude: number;
   zoneId: string;
   status: 'ACTIVE' | 'INACTIVE';
-  weeklySchedule: BranchSchedule[];
+  schedule: BranchSchedule[];
 }
 
 interface ServiceOfferingResponse {
@@ -390,7 +410,8 @@ interface ResourceResponse {
   visibleName: string;
   branchId?: string;
   serviceOfferingIds?: string[];
-  weeklySchedule?: ResourceSchedule[];
+  schedule?: ScheduleResponse[];
+  weeklySchedule?: ScheduleResponse[];
   active?: boolean;
   status?: string;
 }
@@ -400,19 +421,27 @@ interface ResourceRequest {
   type: 'EMPLOYEE';
   status: 'ACTIVE' | 'INACTIVE';
   serviceOfferingIds: string[];
-  weeklySchedule: ResourceScheduleRequest[];
+  schedule: ResourceSchedule[];
   absences: [];
 }
 
-interface ResourceScheduleRequest {
-  dayOfWeek: DayOfWeek;
-  intervals: ResourceIntervalRequest[];
+interface ScheduleDayResponse {
+  day?: DayOfWeek;
+  dayOfWeek?: DayOfWeek;
+  timeRanges?: ScheduleTimeRangeResponse[];
+  intervals?: ScheduleTimeRangeResponse[];
 }
 
-interface ResourceIntervalRequest {
-  startsAt: string;
-  endsAt: string;
+interface ScheduleTimeRangeResponse {
+  start?: string;
+  end?: string;
+  opensAt?: string;
+  closesAt?: string;
+  startsAt?: string;
+  endsAt?: string;
 }
+
+type ScheduleResponse = ScheduleDayResponse;
 
 type BookingsResponse =
   | BookingResponse[]

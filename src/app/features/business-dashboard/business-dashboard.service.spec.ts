@@ -44,8 +44,8 @@ describe('BusinessDashboardService', () => {
       zoneId: 'America/Argentina/Buenos_Aires',
       weeklySchedule: [
         {
-          dayOfWeek: 'MONDAY' as const,
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'MONDAY' as const,
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
       ],
       active: true,
@@ -67,10 +67,10 @@ describe('BusinessDashboardService', () => {
       longitude: -58.3816,
       zoneId: 'America/Argentina/Buenos_Aires',
       status: 'ACTIVE',
-      weeklySchedule: [
+      schedule: [
         {
-          dayOfWeek: 'MONDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'MONDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
       ],
     });
@@ -254,8 +254,8 @@ describe('BusinessDashboardService', () => {
       serviceOfferingIds: ['service-1'],
       weeklySchedule: [
         {
-          dayOfWeek: 'MONDAY' as const,
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'MONDAY' as const,
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
       ],
       active: true,
@@ -272,10 +272,10 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'ACTIVE',
       serviceOfferingIds: ['service-1'],
-      weeklySchedule: [
+      schedule: [
         {
-          dayOfWeek: 'MONDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'MONDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
       ],
       absences: [],
@@ -288,13 +288,69 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'ACTIVE',
       serviceOfferingIds: ['service-1'],
-      weeklySchedule: [
+      schedule: [
         {
-          dayOfWeek: 'MONDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'MONDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
       ],
       absences: [],
+    });
+  });
+
+  it('should normalize resource schedules from mixed API response shapes', () => {
+    service.listResources().subscribe((resources) => {
+      expect(resources[0].weeklySchedule).toEqual([
+        {
+          day: 'MONDAY',
+          timeRanges: [
+            { start: '09:00:00', end: '13:00:00' },
+            { start: '16:00:00', end: '20:00:00' },
+          ],
+        },
+      ]);
+    });
+
+    const branchesRequest = httpTesting.expectOne(`/api/businesses/${businessId}/branches`);
+    branchesRequest.flush({
+      results: [
+        {
+          id: 'branch-1',
+          name: 'Centro',
+          address: 'Calle 1',
+          locality: 'Los Polvorines',
+          province: 'Buenos Aires',
+          country: 'Argentina',
+          latitude: -35.6037,
+          longitude: -58.3816,
+          zoneId: 'America/Argentina/Buenos_Aires',
+          schedule: [],
+          status: 'ACTIVE',
+        },
+      ],
+    });
+
+    const resourcesRequest = httpTesting.expectOne('/api/branches/branch-1/resources');
+    resourcesRequest.flush({
+      results: [
+        {
+          id: 'resource-1',
+          branchId: 'branch-1',
+          visibleName: 'Mariela Paso',
+          type: 'EMPLOYEE',
+          status: 'ACTIVE',
+          serviceOfferingIds: ['service-1'],
+          schedule: [
+            {
+              dayOfWeek: 'MONDAY',
+              timeRanges: [
+                { start: '09:00:00', end: '13:00:00' },
+                { startsAt: '16:00:00', endsAt: '20:00:00' },
+              ],
+            },
+          ],
+        },
+      ],
     });
   });
 
@@ -305,8 +361,8 @@ describe('BusinessDashboardService', () => {
       serviceOfferingIds: ['service-1', 'service-2'],
       weeklySchedule: [
         {
-          dayOfWeek: 'TUESDAY' as const,
-          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+          day: 'TUESDAY' as const,
+          timeRanges: [{ start: '10:00', end: '16:00' }],
         },
       ],
       active: false,
@@ -324,10 +380,10 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'INACTIVE',
       serviceOfferingIds: ['service-1', 'service-2'],
-      weeklySchedule: [
+      schedule: [
         {
-          dayOfWeek: 'TUESDAY',
-          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+          day: 'TUESDAY',
+          timeRanges: [{ start: '10:00', end: '16:00' }],
         },
       ],
       absences: [],
@@ -340,10 +396,10 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'INACTIVE',
       serviceOfferingIds: ['service-1', 'service-2'],
-      weeklySchedule: [
+      schedule: [
         {
-          dayOfWeek: 'TUESDAY',
-          intervals: [{ startsAt: '10:00', endsAt: '16:00' }],
+          day: 'TUESDAY',
+          timeRanges: [{ start: '10:00', end: '16:00' }],
         },
       ],
       absences: [],

@@ -128,26 +128,62 @@ import {
                           >
                             {{ day.label }}
                           </mat-checkbox>
-                          <mat-form-field appearance="outline">
-                            <mat-label>Abre</mat-label>
-                            <input
-                              matInput
-                              type="time"
-                              [value]="day.opensAt"
+                          <div class="schedule-ranges">
+                            @for (range of day.timeRanges; track $index; let rangeIndex = $index) {
+                              <div class="schedule-range">
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Abre</mat-label>
+                                  <input
+                                    matInput
+                                    type="time"
+                                    [value]="range.opensAt"
+                                    [disabled]="!day.active"
+                                    (input)="
+                                      setBranchScheduleTime(
+                                        day.dayOfWeek,
+                                        'opensAt',
+                                        $event,
+                                        rangeIndex
+                                      )
+                                    "
+                                  />
+                                </mat-form-field>
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Cierra</mat-label>
+                                  <input
+                                    matInput
+                                    type="time"
+                                    [value]="range.closesAt"
+                                    [disabled]="!day.active"
+                                    (input)="
+                                      setBranchScheduleTime(
+                                        day.dayOfWeek,
+                                        'closesAt',
+                                        $event,
+                                        rangeIndex
+                                      )
+                                    "
+                                  />
+                                </mat-form-field>
+                                <button
+                                  mat-button
+                                  type="button"
+                                  [disabled]="!day.active || day.timeRanges.length === 1"
+                                  (click)="removeBranchScheduleRange(day.dayOfWeek, rangeIndex)"
+                                >
+                                  Quitar
+                                </button>
+                              </div>
+                            }
+                            <button
+                              mat-button
+                              type="button"
                               [disabled]="!day.active"
-                              (input)="setBranchScheduleTime(day.dayOfWeek, 'opensAt', $event)"
-                            />
-                          </mat-form-field>
-                          <mat-form-field appearance="outline">
-                            <mat-label>Cierra</mat-label>
-                            <input
-                              matInput
-                              type="time"
-                              [value]="day.closesAt"
-                              [disabled]="!day.active"
-                              (input)="setBranchScheduleTime(day.dayOfWeek, 'closesAt', $event)"
-                            />
-                          </mat-form-field>
+                              (click)="addBranchScheduleRange(day.dayOfWeek)"
+                            >
+                              Agregar rango
+                            </button>
+                          </div>
                         </div>
                       }
                     </div>
@@ -336,26 +372,57 @@ import {
                           >
                             {{ day.label }}
                           </mat-checkbox>
-                          <mat-form-field appearance="outline">
-                            <mat-label>Desde</mat-label>
-                            <input
-                              matInput
-                              type="time"
-                              [value]="day.startsAt"
+                          <div class="schedule-ranges">
+                            @for (range of day.timeRanges; track $index; let rangeIndex = $index) {
+                              <div class="schedule-range">
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Desde</mat-label>
+                                  <input
+                                    matInput
+                                    type="time"
+                                    [value]="range.startsAt"
+                                    [disabled]="!day.active"
+                                    (input)="
+                                      setScheduleTime(
+                                        day.dayOfWeek,
+                                        'startsAt',
+                                        $event,
+                                        rangeIndex
+                                      )
+                                    "
+                                  />
+                                </mat-form-field>
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Hasta</mat-label>
+                                  <input
+                                    matInput
+                                    type="time"
+                                    [value]="range.endsAt"
+                                    [disabled]="!day.active"
+                                    (input)="
+                                      setScheduleTime(day.dayOfWeek, 'endsAt', $event, rangeIndex)
+                                    "
+                                  />
+                                </mat-form-field>
+                                <button
+                                  mat-button
+                                  type="button"
+                                  [disabled]="!day.active || day.timeRanges.length === 1"
+                                  (click)="removeScheduleRange(day.dayOfWeek, rangeIndex)"
+                                >
+                                  Quitar
+                                </button>
+                              </div>
+                            }
+                            <button
+                              mat-button
+                              type="button"
                               [disabled]="!day.active"
-                              (input)="setScheduleTime(day.dayOfWeek, 'startsAt', $event)"
-                            />
-                          </mat-form-field>
-                          <mat-form-field appearance="outline">
-                            <mat-label>Hasta</mat-label>
-                            <input
-                              matInput
-                              type="time"
-                              [value]="day.endsAt"
-                              [disabled]="!day.active"
-                              (input)="setScheduleTime(day.dayOfWeek, 'endsAt', $event)"
-                            />
-                          </mat-form-field>
+                              (click)="addScheduleRange(day.dayOfWeek)"
+                            >
+                              Agregar rango
+                            </button>
+                          </div>
                         </div>
                       }
                     </div>
@@ -599,7 +666,7 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected saveBranch(): void {
-    if (this.branchForm.invalid || !this.validBranchSchedule().length) {
+    if (this.branchForm.invalid || this.invalidBranchSchedule()) {
       this.branchForm.markAllAsTouched();
       this.branchScheduleInvalid.set(true);
       return;
@@ -710,7 +777,7 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected saveResource(): void {
-    if (this.resourceForm.invalid || !this.validResourceSchedule().length) {
+    if (this.resourceForm.invalid || this.invalidResourceSchedule()) {
       this.resourceForm.markAllAsTouched();
       this.scheduleInvalid.set(true);
       return;
@@ -719,7 +786,7 @@ export class BusinessDashboardPage implements OnInit {
     const editingResourceId = this.editingResourceId();
     const resource = {
       ...this.resourceForm.getRawValue(),
-      weeklySchedule: this.validResourceSchedule(),
+      weeklySchedule: this.resourceSchedulePayload(),
     };
     const request = editingResourceId
       ? this.dashboardService.updateResource(editingResourceId, resource)
@@ -769,11 +836,43 @@ export class BusinessDashboardPage implements OnInit {
     dayOfWeek: DayOfWeek,
     field: 'opensAt' | 'closesAt',
     event: Event,
+    rangeIndex = 0,
   ): void {
     const value = (event.target as HTMLInputElement).value;
 
     this.branchSchedule.update((days) =>
-      days.map((day) => (day.dayOfWeek === dayOfWeek ? { ...day, [field]: value } : day)),
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek
+          ? {
+              ...day,
+              timeRanges: day.timeRanges.map((range, index) =>
+                index === rangeIndex ? { ...range, [field]: value } : range,
+              ),
+            }
+          : day,
+      ),
+    );
+    this.branchScheduleInvalid.set(false);
+  }
+
+  protected addBranchScheduleRange(dayOfWeek: DayOfWeek): void {
+    this.branchSchedule.update((days) =>
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek
+          ? { ...day, timeRanges: [...day.timeRanges, { opensAt: '16:00', closesAt: '20:00' }] }
+          : day,
+      ),
+    );
+    this.branchScheduleInvalid.set(false);
+  }
+
+  protected removeBranchScheduleRange(dayOfWeek: DayOfWeek, rangeIndex: number): void {
+    this.branchSchedule.update((days) =>
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek && day.timeRanges.length > 1
+          ? { ...day, timeRanges: day.timeRanges.filter((_, index) => index !== rangeIndex) }
+          : day,
+      ),
     );
     this.branchScheduleInvalid.set(false);
   }
@@ -789,11 +888,43 @@ export class BusinessDashboardPage implements OnInit {
     dayOfWeek: DayOfWeek,
     field: 'startsAt' | 'endsAt',
     event: Event,
+    rangeIndex = 0,
   ): void {
     const value = (event.target as HTMLInputElement).value;
 
     this.resourceSchedule.update((days) =>
-      days.map((day) => (day.dayOfWeek === dayOfWeek ? { ...day, [field]: value } : day)),
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek
+          ? {
+              ...day,
+              timeRanges: day.timeRanges.map((range, index) =>
+                index === rangeIndex ? { ...range, [field]: value } : range,
+              ),
+            }
+          : day,
+      ),
+    );
+    this.scheduleInvalid.set(false);
+  }
+
+  protected addScheduleRange(dayOfWeek: DayOfWeek): void {
+    this.resourceSchedule.update((days) =>
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek
+          ? { ...day, timeRanges: [...day.timeRanges, { startsAt: '16:00', endsAt: '20:00' }] }
+          : day,
+      ),
+    );
+    this.scheduleInvalid.set(false);
+  }
+
+  protected removeScheduleRange(dayOfWeek: DayOfWeek, rangeIndex: number): void {
+    this.resourceSchedule.update((days) =>
+      days.map((day) =>
+        day.dayOfWeek === dayOfWeek && day.timeRanges.length > 1
+          ? { ...day, timeRanges: day.timeRanges.filter((_, index) => index !== rangeIndex) }
+          : day,
+      ),
     );
     this.scheduleInvalid.set(false);
   }
@@ -931,7 +1062,12 @@ export class BusinessDashboardPage implements OnInit {
   protected branchScheduleLabel(branch: Branch): string {
     const days = this.scheduleDaysFromBranch(branch.weeklySchedule)
       .filter((day) => day.active)
-      .map((day) => `${day.label} ${day.opensAt}-${day.closesAt}`);
+      .map(
+        (day) =>
+          `${day.label} ${day.timeRanges
+            .map((range) => `${range.opensAt}-${range.closesAt}`)
+            .join(', ')}`,
+      );
 
     return days.length ? days.join(', ') : 'Sin agenda semanal';
   }
@@ -951,7 +1087,12 @@ export class BusinessDashboardPage implements OnInit {
   protected resourceScheduleLabel(resource: Resource): string {
     const days = this.scheduleDaysFromResource(resource.weeklySchedule)
       .filter((day) => day.active)
-      .map((day) => `${day.label} ${day.startsAt}-${day.endsAt}`);
+      .map(
+        (day) =>
+          `${day.label} ${day.timeRanges
+            .map((range) => `${range.startsAt}-${range.endsAt}`)
+            .join(', ')}`,
+      );
 
     return days.length ? days.join(', ') : 'Sin agenda semanal';
   }
@@ -999,38 +1140,71 @@ export class BusinessDashboardPage implements OnInit {
 
   private validBranchSchedule(): BranchSchedule[] {
     return this.branchSchedule()
-      .filter((day) => day.active && day.opensAt && day.closesAt && day.opensAt < day.closesAt)
       .map((day) => ({
-        dayOfWeek: day.dayOfWeek,
-        intervals: [
-          {
-            opensAt: day.opensAt,
-            closesAt: day.closesAt,
-          },
-        ],
+        ...day,
+        timeRanges: day.timeRanges.filter(
+          (range) => range.opensAt && range.closesAt && range.opensAt < range.closesAt,
+        ),
+      }))
+      .filter((day) => day.active && day.timeRanges.length)
+      .map((day) => ({
+        day: day.dayOfWeek,
+        timeRanges: day.timeRanges.map((range) => ({
+          start: range.opensAt,
+          end: range.closesAt,
+        })),
       }));
   }
 
   private validResourceSchedule(): ResourceSchedule[] {
-    return this.resourceSchedule()
-      .filter((day) => day.active && day.startsAt && day.endsAt && day.startsAt < day.endsAt)
-      .map((day) => ({
-        dayOfWeek: day.dayOfWeek,
-        intervals: [
-          {
-            startsAt: day.startsAt,
-            endsAt: day.endsAt,
-          },
-        ],
-      }));
+    return this.resourceSchedulePayload().filter((day) => day.timeRanges.length);
+  }
+
+  private resourceSchedulePayload(): ResourceSchedule[] {
+    return this.resourceSchedule().map((day) => ({
+      day: day.dayOfWeek,
+      timeRanges: day.active
+        ? day.timeRanges
+            .filter((range) => range.startsAt && range.endsAt && range.startsAt < range.endsAt)
+            .map((range) => ({
+              start: range.startsAt,
+              end: range.endsAt,
+            }))
+        : [],
+    }));
+  }
+
+  private invalidBranchSchedule(): boolean {
+    return (
+      !this.validBranchSchedule().length ||
+      this.branchSchedule().some(
+        (day) =>
+          day.active &&
+          day.timeRanges.some(
+            (range) => !range.opensAt || !range.closesAt || range.opensAt >= range.closesAt,
+          ),
+      )
+    );
+  }
+
+  private invalidResourceSchedule(): boolean {
+    return (
+      !this.validResourceSchedule().length ||
+      this.resourceSchedule().some(
+        (day) =>
+          day.active &&
+          day.timeRanges.some(
+            (range) => !range.startsAt || !range.endsAt || range.startsAt >= range.endsAt,
+          ),
+      )
+    );
   }
 
   private defaultBranchScheduleDays(): BranchScheduleDay[] {
     return RESOURCE_WEEK_DAYS.map((day) => ({
       ...day,
       active: day.dayOfWeek !== 'SUNDAY',
-      opensAt: '09:00',
-      closesAt: '14:00',
+      timeRanges: [{ opensAt: '09:00', closesAt: '14:00' }],
     }));
   }
 
@@ -1038,43 +1212,46 @@ export class BusinessDashboardPage implements OnInit {
     return RESOURCE_WEEK_DAYS.map((day) => ({
       ...day,
       active: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'].includes(day.dayOfWeek),
-      startsAt: '09:00',
-      endsAt: '18:00',
+      timeRanges: [{ startsAt: '09:00', endsAt: '18:00' }],
     }));
   }
 
   private scheduleDaysFromResource(schedule: ResourceSchedule[]): ResourceScheduleDay[] {
     return this.defaultSchedule().map((day) => {
-      const savedDay = schedule.find((item) => item.dayOfWeek === day.dayOfWeek);
-      const interval = savedDay?.intervals[0];
+      const savedDay = schedule.find((item) => item.day === day.dayOfWeek);
+      const ranges = savedDay?.timeRanges ?? [];
 
-      if (!interval) {
+      if (!ranges.length) {
         return { ...day, active: false };
       }
 
       return {
         ...day,
         active: true,
-        startsAt: interval.startsAt.slice(0, 5),
-        endsAt: interval.endsAt.slice(0, 5),
+        timeRanges: ranges.map((range) => ({
+          startsAt: range.start.slice(0, 5),
+          endsAt: range.end.slice(0, 5),
+        })),
       };
     });
   }
 
   private scheduleDaysFromBranch(schedule: BranchSchedule[]): BranchScheduleDay[] {
     return this.defaultBranchScheduleDays().map((day) => {
-      const savedDay = schedule.find((item) => item.dayOfWeek === day.dayOfWeek);
-      const interval = savedDay?.intervals[0];
+      const savedDay = schedule.find((item) => item.day === day.dayOfWeek);
+      const ranges = savedDay?.timeRanges ?? [];
 
-      if (!interval) {
+      if (!ranges.length) {
         return { ...day, active: false };
       }
 
       return {
         ...day,
         active: true,
-        opensAt: interval.opensAt.slice(0, 5),
-        closesAt: interval.closesAt.slice(0, 5),
+        timeRanges: ranges.map((range) => ({
+          opensAt: range.start.slice(0, 5),
+          closesAt: range.end.slice(0, 5),
+        })),
       };
     });
   }
@@ -1101,6 +1278,10 @@ interface BranchScheduleDay {
   dayOfWeek: DayOfWeek;
   label: string;
   active: boolean;
+  timeRanges: BranchScheduleRange[];
+}
+
+interface BranchScheduleRange {
   opensAt: string;
   closesAt: string;
 }
@@ -1109,6 +1290,10 @@ interface ResourceScheduleDay {
   dayOfWeek: DayOfWeek;
   label: string;
   active: boolean;
+  timeRanges: ResourceScheduleRange[];
+}
+
+interface ResourceScheduleRange {
   startsAt: string;
   endsAt: string;
 }

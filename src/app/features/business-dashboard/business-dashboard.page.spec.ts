@@ -250,28 +250,28 @@ describe('BusinessDashboardPage', () => {
       zoneId: 'America/Argentina/Buenos_Aires',
       weeklySchedule: [
         {
-          dayOfWeek: 'MONDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'MONDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
         {
-          dayOfWeek: 'TUESDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'TUESDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
         {
-          dayOfWeek: 'WEDNESDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'WEDNESDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
         {
-          dayOfWeek: 'THURSDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'THURSDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
         {
-          dayOfWeek: 'FRIDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'FRIDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
         {
-          dayOfWeek: 'SATURDAY',
-          intervals: [{ opensAt: '09:00', closesAt: '14:00' }],
+          day: 'SATURDAY',
+          timeRanges: [{ start: '09:00', end: '14:00' }],
         },
       ],
       active: true,
@@ -315,7 +315,9 @@ describe('BusinessDashboardPage', () => {
         dayOfWeek: string,
         field: 'opensAt' | 'closesAt',
         event: Event,
+        rangeIndex?: number,
       ) => void;
+      addBranchScheduleRange: (dayOfWeek: string) => void;
       saveBranch: () => void;
     };
 
@@ -340,14 +342,34 @@ describe('BusinessDashboardPage', () => {
     component.setBranchScheduleTime('MONDAY', 'closesAt', {
       target: { value: '16:00' },
     } as unknown as Event);
+    component.addBranchScheduleRange('MONDAY');
+    component.setBranchScheduleTime(
+      'MONDAY',
+      'opensAt',
+      {
+        target: { value: '17:00' },
+      } as unknown as Event,
+      1,
+    );
+    component.setBranchScheduleTime(
+      'MONDAY',
+      'closesAt',
+      {
+        target: { value: '20:00' },
+      } as unknown as Event,
+      1,
+    );
     component.saveBranch();
 
     expect(dashboardService.createBranch).toHaveBeenCalledWith(
       expect.objectContaining({
         weeklySchedule: [
           {
-            dayOfWeek: 'MONDAY',
-            intervals: [{ opensAt: '10:30', closesAt: '16:00' }],
+            day: 'MONDAY',
+            timeRanges: [
+              { start: '10:30', end: '16:00' },
+              { start: '17:00', end: '20:00' },
+            ],
           },
         ],
       }),
@@ -406,24 +428,24 @@ describe('BusinessDashboardPage', () => {
         serviceOfferingIds: ['service-1'],
         weeklySchedule: [
           {
-            dayOfWeek: 'MONDAY',
-            intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+            day: 'MONDAY',
+            timeRanges: [{ start: '09:00', end: '18:00' }],
           },
           {
-            dayOfWeek: 'TUESDAY',
-            intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+            day: 'TUESDAY',
+            timeRanges: [{ start: '09:00', end: '18:00' }],
           },
           {
-            dayOfWeek: 'WEDNESDAY',
-            intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+            day: 'WEDNESDAY',
+            timeRanges: [{ start: '09:00', end: '18:00' }],
           },
           {
-            dayOfWeek: 'THURSDAY',
-            intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+            day: 'THURSDAY',
+            timeRanges: [{ start: '09:00', end: '18:00' }],
           },
           {
-            dayOfWeek: 'FRIDAY',
-            intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+            day: 'FRIDAY',
+            timeRanges: [{ start: '09:00', end: '18:00' }],
           },
         ],
         active: true,
@@ -456,28 +478,142 @@ describe('BusinessDashboardPage', () => {
       serviceOfferingIds: ['service-1'],
       weeklySchedule: [
         {
-          dayOfWeek: 'MONDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'MONDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
         {
-          dayOfWeek: 'TUESDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'TUESDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
         {
-          dayOfWeek: 'WEDNESDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'WEDNESDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
         {
-          dayOfWeek: 'THURSDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'THURSDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
         },
         {
-          dayOfWeek: 'FRIDAY',
-          intervals: [{ startsAt: '09:00', endsAt: '18:00' }],
+          day: 'FRIDAY',
+          timeRanges: [{ start: '09:00', end: '18:00' }],
+        },
+        {
+          day: 'SATURDAY',
+          timeRanges: [],
+        },
+        {
+          day: 'SUNDAY',
+          timeRanges: [],
         },
       ],
       active: true,
     });
+  });
+
+  it('should create a resource with multiple time ranges per day', () => {
+    dashboardService.createResource.mockReturnValue(
+      of({
+        id: 'resource-1',
+        name: 'Sandra',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        active: true,
+      }),
+    );
+
+    const component = fixture.componentInstance as unknown as {
+      resourceForm: {
+        setValue: (value: {
+          name: string;
+          branchId: string;
+          serviceOfferingIds: string[];
+          active: boolean;
+        }) => void;
+      };
+      setScheduleDayActive: (dayOfWeek: string, active: boolean) => void;
+      setScheduleTime: (
+        dayOfWeek: string,
+        field: 'startsAt' | 'endsAt',
+        event: Event,
+        rangeIndex?: number,
+      ) => void;
+      addScheduleRange: (dayOfWeek: string) => void;
+      saveResource: () => void;
+    };
+
+    component.resourceForm.setValue({
+      name: 'Sandra',
+      branchId: 'branch-1',
+      serviceOfferingIds: ['service-1'],
+      active: true,
+    });
+
+    for (const day of ['TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY']) {
+      component.setScheduleDayActive(day, false);
+    }
+    component.setScheduleTime('MONDAY', 'startsAt', {
+      target: { value: '09:00' },
+    } as unknown as Event);
+    component.setScheduleTime('MONDAY', 'endsAt', {
+      target: { value: '13:00' },
+    } as unknown as Event);
+    component.addScheduleRange('MONDAY');
+    component.setScheduleTime(
+      'MONDAY',
+      'startsAt',
+      {
+        target: { value: '16:00' },
+      } as unknown as Event,
+      1,
+    );
+    component.setScheduleTime(
+      'MONDAY',
+      'endsAt',
+      {
+        target: { value: '20:00' },
+      } as unknown as Event,
+      1,
+    );
+    component.saveResource();
+
+    expect(dashboardService.createResource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        weeklySchedule: [
+          {
+            day: 'MONDAY',
+            timeRanges: [
+              { start: '09:00', end: '13:00' },
+              { start: '16:00', end: '20:00' },
+            ],
+          },
+          {
+            day: 'TUESDAY',
+            timeRanges: [],
+          },
+          {
+            day: 'WEDNESDAY',
+            timeRanges: [],
+          },
+          {
+            day: 'THURSDAY',
+            timeRanges: [],
+          },
+          {
+            day: 'FRIDAY',
+            timeRanges: [],
+          },
+          {
+            day: 'SATURDAY',
+            timeRanges: [],
+          },
+          {
+            day: 'SUNDAY',
+            timeRanges: [],
+          },
+        ],
+      }),
+    );
   });
 
   it('should hide loading when dashboard data finishes loading', async () => {

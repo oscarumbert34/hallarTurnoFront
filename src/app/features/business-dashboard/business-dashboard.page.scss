@@ -128,9 +128,25 @@ p {
 
 .schedule-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 150px) minmax(0, 150px);
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.schedule-ranges {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-range {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 150px) auto;
   align-items: center;
   gap: 10px;
+}
+
+.schedule-range button {
+  justify-self: start;
 }
 
 .form-error {
@@ -202,11 +218,15 @@ p {
 
 @media (max-width: 900px) {
   .schedule-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .schedule-row mat-checkbox {
     grid-column: 1 / -1;
+  }
+
+  .schedule-range {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   }
 }
 
@@ -259,6 +279,14 @@ p {
 
   .schedule-row:last-child {
     border-bottom: 0;
+  }
+
+  .schedule-range {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-range button {
+    width: 100%;
   }
 }
 

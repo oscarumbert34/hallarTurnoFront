@@ -13,14 +13,11 @@ export interface Branch {
 }
 
 export interface BranchSchedule {
-  dayOfWeek: DayOfWeek;
-  intervals: BranchScheduleInterval[];
+  day: DayOfWeek;
+  timeRanges: ScheduleTimeRange[];
 }
 
-export interface BranchScheduleInterval {
-  opensAt: string;
-  closesAt: string;
-}
+export type BranchScheduleInterval = ScheduleTimeRange;
 
 export interface ServiceCatalogItem {
   id: string;
@@ -41,13 +38,15 @@ export interface Resource {
 }
 
 export interface ResourceSchedule {
-  dayOfWeek: DayOfWeek;
-  intervals: ResourceScheduleInterval[];
+  day: DayOfWeek;
+  timeRanges: ScheduleTimeRange[];
 }
 
-export interface ResourceScheduleInterval {
-  startsAt: string;
-  endsAt: string;
+export type ResourceScheduleInterval = ScheduleTimeRange;
+
+export interface ScheduleTimeRange {
+  start: string;
+  end: string;
 }
 
 export type DayOfWeek =
