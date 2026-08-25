@@ -354,7 +354,7 @@ import {
                   <mat-form-field appearance="outline">
                     <mat-label>Servicios que brinda</mat-label>
                     <mat-select formControlName="serviceOfferingIds" multiple>
-                      @for (service of services(); track service.id) {
+                      @for (service of resourceServices(); track service.id) {
                         <mat-option [value]="service.id">{{ service.name }}</mat-option>
                       }
                     </mat-select>
@@ -640,6 +640,9 @@ export class BusinessDashboardPage implements OnInit {
     this.bookingForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.bookingPage.set(0);
     });
+    this.resourceForm.controls.branchId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.pruneResourceServicesForBranch());
 
     this.refreshAll();
     this.loadBookings();
@@ -660,6 +663,7 @@ export class BusinessDashboardPage implements OnInit {
           this.branches.set(result.branches);
           this.services.set(result.services);
           this.resources.set(result.resources);
+          this.pruneResourceServicesForBranch();
         },
         error: (error) => this.errorMessage.set(dashboardErrorMessage(error)),
       });
@@ -1084,6 +1088,16 @@ export class BusinessDashboardPage implements OnInit {
     return this.branchName(service.branchId);
   }
 
+  protected resourceServices(): ServiceCatalogItem[] {
+    const branchId = this.resourceForm.controls.branchId.value;
+
+    if (!branchId) {
+      return [];
+    }
+
+    return this.services().filter((service) => service.branchId === branchId);
+  }
+
   protected resourceScheduleLabel(resource: Resource): string {
     const days = this.scheduleDaysFromResource(resource.weeklySchedule)
       .filter((day) => day.active)
@@ -1198,6 +1212,16 @@ export class BusinessDashboardPage implements OnInit {
           ),
       )
     );
+  }
+
+  private pruneResourceServicesForBranch(): void {
+    const serviceIds = new Set(this.resourceServices().map((service) => service.id));
+    const selectedServiceIds = this.resourceForm.controls.serviceOfferingIds.value;
+    const filteredServiceIds = selectedServiceIds.filter((serviceId) => serviceIds.has(serviceId));
+
+    if (filteredServiceIds.length !== selectedServiceIds.length) {
+      this.resourceForm.controls.serviceOfferingIds.setValue(filteredServiceIds);
+    }
   }
 
   private defaultBranchScheduleDays(): BranchScheduleDay[] {

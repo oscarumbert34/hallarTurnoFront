@@ -37,6 +37,14 @@ describe('BusinessDashboardPage', () => {
             price: 1200,
             active: true,
           },
+          {
+            id: 'service-2',
+            name: 'Color',
+            branchId: 'branch-2',
+            durationMinutes: 45,
+            price: 2500,
+            active: true,
+          },
         ]),
       ),
       listResources: vi.fn(() => of([])),
@@ -508,6 +516,33 @@ describe('BusinessDashboardPage', () => {
       ],
       active: true,
     });
+  });
+
+  it('should filter resource services by the selected branch', () => {
+    const component = fixture.componentInstance as unknown as {
+      resourceForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          serviceOfferingIds: {
+            setValue: (value: string[]) => void;
+            value: string[];
+          };
+        };
+      };
+      resourceServices: () => Array<{ id: string; branchId: string }>;
+    };
+
+    component.resourceForm.controls.branchId.setValue('branch-1');
+
+    expect(component.resourceServices().map((service) => service.id)).toEqual(['service-1']);
+
+    component.resourceForm.controls.serviceOfferingIds.setValue(['service-1', 'service-2']);
+    component.resourceForm.controls.branchId.setValue('branch-2');
+
+    expect(component.resourceServices().map((service) => service.id)).toEqual(['service-2']);
+    expect(component.resourceForm.controls.serviceOfferingIds.value).toEqual(['service-2']);
   });
 
   it('should create a resource with multiple time ranges per day', () => {
