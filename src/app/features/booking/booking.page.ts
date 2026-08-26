@@ -194,6 +194,7 @@ export class BookingPage implements OnInit {
     return new Date(value).toLocaleString([], {
       dateStyle: 'medium',
       timeStyle: 'short',
+      hour12: false,
     });
   }
 

@@ -513,6 +513,24 @@ import {
                       }
                     </mat-select>
                   </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Servicio</mat-label>
+                    <mat-select formControlName="serviceOfferingId">
+                      <mat-option value="">Todos</mat-option>
+                      @for (service of bookingServices(); track service.id) {
+                        <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Recurso</mat-label>
+                    <mat-select formControlName="resourceId">
+                      <mat-option value="">Todos</mat-option>
+                      @for (resource of bookingResources(); track resource.id) {
+                        <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
                   <button
                     mat-flat-button
                     type="submit"
@@ -634,12 +652,20 @@ export class BusinessDashboardPage implements OnInit {
     date: [new Date() as Date | string, Validators.required],
     status: ['ACTIVE' as BookingStatusFilter],
     branchId: [''],
+    resourceId: [''],
+    serviceOfferingId: [''],
   });
 
   ngOnInit(): void {
     this.bookingForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.bookingPage.set(0);
     });
+    this.bookingForm.controls.branchId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.pruneBookingFiltersForBranch());
+    this.bookingForm.controls.serviceOfferingId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.pruneBookingResourceForService());
     this.resourceForm.controls.branchId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.pruneResourceServicesForBranch());
@@ -965,6 +991,8 @@ export class BusinessDashboardPage implements OnInit {
         this.bookingPage(),
         this.bookingPageSize(),
         this.bookingForm.controls.branchId.value,
+        this.bookingForm.controls.resourceId.value,
+        this.bookingForm.controls.serviceOfferingId.value,
       )
       .pipe(finalize(() => this.loadingBookings.set(false)))
       .subscribe({
@@ -1098,6 +1126,34 @@ export class BusinessDashboardPage implements OnInit {
     return this.services().filter((service) => service.branchId === branchId);
   }
 
+  protected bookingResources(): Resource[] {
+    const branchId = this.bookingForm.controls.branchId.value;
+    const serviceOfferingId = this.bookingForm.controls.serviceOfferingId.value;
+    let resources = this.resources();
+
+    if (branchId) {
+      resources = resources.filter((resource) => resource.branchId === branchId);
+    }
+
+    if (serviceOfferingId) {
+      resources = resources.filter((resource) =>
+        resource.serviceOfferingIds.includes(serviceOfferingId),
+      );
+    }
+
+    return resources;
+  }
+
+  protected bookingServices(): ServiceCatalogItem[] {
+    const branchId = this.bookingForm.controls.branchId.value;
+
+    if (!branchId) {
+      return this.services();
+    }
+
+    return this.services().filter((service) => service.branchId === branchId);
+  }
+
   protected resourceScheduleLabel(resource: Resource): string {
     const days = this.scheduleDaysFromResource(resource.weeklySchedule)
       .filter((day) => day.active)
@@ -1127,6 +1183,7 @@ export class BusinessDashboardPage implements OnInit {
     return new Intl.DateTimeFormat('es-AR', {
       dateStyle: 'medium',
       timeStyle: 'short',
+      hour12: false,
     }).format(date);
   }
 
@@ -1221,6 +1278,36 @@ export class BusinessDashboardPage implements OnInit {
 
     if (filteredServiceIds.length !== selectedServiceIds.length) {
       this.resourceForm.controls.serviceOfferingIds.setValue(filteredServiceIds);
+    }
+  }
+
+  private pruneBookingFiltersForBranch(): void {
+    const selectedResourceId = this.bookingForm.controls.resourceId.value;
+    const selectedServiceOfferingId = this.bookingForm.controls.serviceOfferingId.value;
+
+    if (
+      selectedServiceOfferingId &&
+      !this.bookingServices().some((service) => service.id === selectedServiceOfferingId)
+    ) {
+      this.bookingForm.controls.serviceOfferingId.setValue('');
+    }
+
+    if (
+      selectedResourceId &&
+      !this.bookingResources().some((resource) => resource.id === selectedResourceId)
+    ) {
+      this.bookingForm.controls.resourceId.setValue('');
+    }
+  }
+
+  private pruneBookingResourceForService(): void {
+    const selectedResourceId = this.bookingForm.controls.resourceId.value;
+
+    if (
+      selectedResourceId &&
+      !this.bookingResources().some((resource) => resource.id === selectedResourceId)
+    ) {
+      this.bookingForm.controls.resourceId.setValue('');
     }
   }
 

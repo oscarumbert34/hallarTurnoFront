@@ -269,6 +269,16 @@ describe('PublicSearchPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Luis');
   });
 
+  it('should show available slot times in 24-hour format', () => {
+    const component = fixture.componentInstance as unknown as {
+      timeLabel: (value: string) => string;
+    };
+    const label = component.timeLabel('2026-08-17T15:00:00');
+
+    expect(label).toBe('15:00');
+    expect(label).not.toMatch(/AM|PM/i);
+  });
+
   it('should search with the selected business id', () => {
     const component = fixture.componentInstance as unknown as {
       form: {
@@ -524,7 +534,7 @@ describe('PublicSearchPage', () => {
       }),
       { offset: 10, limit: 10 },
     );
-    expect(fixture.nativeElement.textContent).toContain('07:00');
+    expect(fixture.nativeElement.textContent).toContain('19:00');
     expect(fixture.nativeElement.textContent).not.toContain('Ver más horarios');
   });
 

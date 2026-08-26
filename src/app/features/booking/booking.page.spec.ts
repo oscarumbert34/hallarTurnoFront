@@ -114,4 +114,14 @@ describe('BookingPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Turnos SA');
     expect(fixture.nativeElement.textContent).toContain('Corte');
   });
+
+  it('should show reservation times in 24-hour format', () => {
+    const component = fixture.componentInstance as unknown as {
+      dateLabel: (value: string) => string;
+    };
+    const label = component.dateLabel('2026-08-17T15:00:00');
+
+    expect(label).toContain('15:00');
+    expect(label).not.toMatch(/AM|PM/i);
+  });
 });

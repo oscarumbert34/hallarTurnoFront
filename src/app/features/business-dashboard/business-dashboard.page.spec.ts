@@ -702,6 +702,8 @@ describe('BusinessDashboardPage', () => {
     ).toBe('Afeitar barba');
     expect(component.dateTimeLabel('2026-08-26T15:00:00Z')).toContain('2026');
     expect(component.dateTimeLabel('2026-08-26T15:00:00Z')).not.toContain('T15:00:00Z');
+    expect(component.dateTimeLabel('2026-08-26T15:00:00')).toContain('15:00');
+    expect(component.dateTimeLabel('2026-08-26T15:00:00')).not.toMatch(/AM|PM/i);
     expect(component.bookingBranchName({ branchId: 'branch-1' })).toBe('Centro');
     expect(component.statusLabel('CONFIRMED')).toBe('Confirmada');
   });
@@ -741,7 +743,7 @@ describe('BusinessDashboardPage', () => {
     component.bookingForm.controls.date.setValue(new Date(2026, 7, 28));
     component.loadBookings();
 
-    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20, '');
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20, '', '', '');
   });
 
   it('should request bookings with the selected branch filter', () => {
@@ -769,6 +771,151 @@ describe('BusinessDashboardPage', () => {
       0,
       20,
       'branch-1',
+      '',
+      '',
+    );
+  });
+
+  it('should request bookings with the selected resource filter', () => {
+    dashboardService.listBookingsPage.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          date: {
+            setValue: (value: Date) => void;
+          };
+          resourceId: {
+            setValue: (value: string) => void;
+          };
+          serviceOfferingId: {
+            setValue: (value: string) => void;
+          };
+        };
+      };
+      resources: {
+        set: (
+          value: Array<{
+            id: string;
+            name: string;
+            branchId: string;
+            serviceOfferingIds: string[];
+            weeklySchedule: [];
+            active: boolean;
+          }>,
+        ) => void;
+      };
+      bookingResources: () => Array<{ id: string }>;
+      loadBookings: () => void;
+    };
+
+    component.resources.set([
+      {
+        id: 'resource-1',
+        name: 'Sandra',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        active: true,
+      },
+      {
+        id: 'resource-2',
+        name: 'Luis',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-2'],
+        weeklySchedule: [],
+        active: true,
+      },
+      {
+        id: 'resource-3',
+        name: 'Marta',
+        branchId: 'branch-2',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        active: true,
+      },
+    ]);
+
+    component.bookingForm.controls.date.setValue(new Date(2026, 7, 25));
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.bookingForm.controls.serviceOfferingId.setValue('service-1');
+    component.bookingForm.controls.resourceId.setValue('resource-1');
+    component.loadBookings();
+
+    expect(component.bookingResources().map((resource) => resource.id)).toEqual(['resource-1']);
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
+      '2026-08-25',
+      0,
+      20,
+      'branch-1',
+      'resource-1',
+      'service-1',
+    );
+  });
+
+  it('should request bookings with the selected service filter', () => {
+    dashboardService.listBookingsPage.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          date: {
+            setValue: (value: Date) => void;
+          };
+          serviceOfferingId: {
+            setValue: (value: string) => void;
+          };
+        };
+      };
+      services: {
+        set: (
+          value: Array<{
+            id: string;
+            name: string;
+            branchId: string;
+            durationMinutes: number;
+            active: boolean;
+          }>,
+        ) => void;
+      };
+      bookingServices: () => Array<{ id: string }>;
+      loadBookings: () => void;
+    };
+
+    component.services.set([
+      {
+        id: 'service-1',
+        name: 'Corte',
+        branchId: 'branch-1',
+        durationMinutes: 30,
+        active: true,
+      },
+      {
+        id: 'service-2',
+        name: 'Color',
+        branchId: 'branch-2',
+        durationMinutes: 45,
+        active: true,
+      },
+    ]);
+
+    component.bookingForm.controls.date.setValue(new Date(2026, 7, 25));
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.bookingForm.controls.serviceOfferingId.setValue('service-1');
+    component.loadBookings();
+
+    expect(component.bookingServices().map((service) => service.id)).toEqual(['service-1']);
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
+      '2026-08-25',
+      0,
+      20,
+      'branch-1',
+      '',
+      'service-1',
     );
   });
 

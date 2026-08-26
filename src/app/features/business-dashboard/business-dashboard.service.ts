@@ -150,6 +150,8 @@ export class BusinessDashboardService {
     page = 0,
     size = 20,
     branchId = '',
+    resourceId = '',
+    serviceOfferingId = '',
   ): Observable<BookingListPage> {
     let params = new HttpParams()
       .set('date', date)
@@ -158,6 +160,14 @@ export class BusinessDashboardService {
 
     if (branchId) {
       params = params.set('branchId', branchId);
+    }
+
+    if (resourceId) {
+      params = params.set('resourceId', resourceId);
+    }
+
+    if (serviceOfferingId) {
+      params = params.set('serviceOfferingId', serviceOfferingId);
     }
 
     return this.http

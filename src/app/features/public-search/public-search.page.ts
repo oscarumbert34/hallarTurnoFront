@@ -433,7 +433,11 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected timeLabel(value: string): string {
-    return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(value).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   }
 
   protected slotLabel(slot: AvailabilitySlot): string {

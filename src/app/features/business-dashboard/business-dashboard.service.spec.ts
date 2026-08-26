@@ -458,7 +458,9 @@ describe('BusinessDashboardService', () => {
   });
 
   it('should expose booking pagination metadata', () => {
-    service.listBookingsPage('2026-08-17', 1, 50, 'branch-1').subscribe((page) => {
+    service
+      .listBookingsPage('2026-08-17', 1, 50, 'branch-1', 'resource-1', 'service-1')
+      .subscribe((page) => {
       expect(page.page).toBe(1);
       expect(page.size).toBe(50);
       expect(page.maxSize).toBe(50);
@@ -466,10 +468,10 @@ describe('BusinessDashboardService', () => {
       expect(page.totalPages).toBe(2);
       expect(page.hasMore).toBe(false);
       expect(page.results[0].id).toBe('booking-51');
-    });
+      });
 
     const request = httpTesting.expectOne(
-      `/api/businesses/${businessId}/bookings?date=2026-08-17&page=1&size=50&branchId=branch-1`,
+      `/api/businesses/${businessId}/bookings?date=2026-08-17&page=1&size=50&branchId=branch-1&resourceId=resource-1&serviceOfferingId=service-1`,
     );
     expect(request.request.method).toBe('GET');
 
