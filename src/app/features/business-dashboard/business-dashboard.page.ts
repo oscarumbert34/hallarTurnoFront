@@ -551,9 +551,10 @@ import {
                     <strong>{{ bookingTitle(booking) }}</strong>
                     <span>{{ bookingCustomerPhone(booking) }}</span>
                     <span>{{ dateTimeLabel(booking.startsAt) }}</span>
-                    <small
-                      >{{ bookingBranchName(booking) }} · {{ statusLabel(booking.status) }}</small
-                    >
+                    <small>
+                      {{ bookingBranchName(booking) }} · {{ bookingResourceName(booking) }} ·
+                      {{ statusLabel(booking.status) }}
+                    </small>
                   </div>
                   @if (booking.status !== 'CANCELLED') {
                     <button mat-button type="button" (click)="cancelBooking(booking.id)">
@@ -1089,6 +1090,10 @@ export class BusinessDashboardPage implements OnInit {
 
   protected bookingCustomerPhone(booking: Booking): string {
     return booking.customerPhone ?? 'Sin teléfono';
+  }
+
+  protected bookingResourceName(booking: Booking): string {
+    return booking.resourceName ?? 'Sin recurso';
   }
 
   protected branchScheduleLabel(branch: Branch): string {

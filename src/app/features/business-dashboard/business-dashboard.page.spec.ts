@@ -690,6 +690,7 @@ describe('BusinessDashboardPage', () => {
     const component = fixture.componentInstance as unknown as {
       bookingTitle: (booking: { customerName: string; serviceName: string }) => string;
       bookingBranchName: (booking: { branchId?: string; branchName?: string }) => string;
+      bookingResourceName: (booking: { resourceName?: string }) => string;
       dateTimeLabel: (value: string) => string;
       statusLabel: (status: string) => string;
     };
@@ -705,6 +706,8 @@ describe('BusinessDashboardPage', () => {
     expect(component.dateTimeLabel('2026-08-26T15:00:00')).toContain('15:00');
     expect(component.dateTimeLabel('2026-08-26T15:00:00')).not.toMatch(/AM|PM/i);
     expect(component.bookingBranchName({ branchId: 'branch-1' })).toBe('Centro');
+    expect(component.bookingResourceName({ resourceName: 'Sandra' })).toBe('Sandra');
+    expect(component.bookingResourceName({})).toBe('Sin recurso');
     expect(component.statusLabel('CONFIRMED')).toBe('Confirmada');
   });
 
