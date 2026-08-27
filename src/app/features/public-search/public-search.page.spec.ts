@@ -44,6 +44,7 @@ describe('PublicSearchPage', () => {
           {
             id: 'service-1',
             name: 'Corte',
+            branchId: 'branch-1',
             durationMinutes: 30,
             price: 1200,
           },
@@ -560,5 +561,81 @@ describe('PublicSearchPage', () => {
     expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
     expect(fixture.nativeElement.textContent).toContain('Servicio');
     expect(fixture.nativeElement.textContent).toContain('Sucursal');
+  });
+
+  it('should require selecting a service option and filter services by selected branch', () => {
+    bookingService.listBranches.mockReturnValueOnce(
+      of([
+        {
+          id: 'branch-1',
+          name: 'Centro',
+          address: 'Calle 1',
+          locality: 'Palermo',
+        },
+        {
+          id: 'branch-2',
+          name: 'Norte',
+          address: 'Calle 2',
+          locality: 'Belgrano',
+        },
+      ]),
+    );
+    bookingService.listServiceOfferings.mockReturnValueOnce(
+      of([
+        {
+          id: 'service-1',
+          name: 'Corte',
+          branchId: 'branch-1',
+          durationMinutes: 30,
+          price: 1200,
+        },
+        {
+          id: 'service-2',
+          name: 'Color',
+          branchId: 'branch-2',
+          durationMinutes: 45,
+          price: 2500,
+        },
+      ]),
+    );
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: { business?: string; branchId?: string; service?: string }) => void;
+        controls: {
+          service: {
+            value: string;
+          };
+        };
+      };
+      filteredServiceOfferings: () => Array<{ id: string }>;
+    };
+
+    component.form.patchValue({ business: 'Turnos SA' });
+    fixture.detectChanges();
+
+    const serviceField = Array.from<HTMLElement>(
+      fixture.nativeElement.querySelectorAll('mat-form-field'),
+    ).find((field) => field.textContent?.includes('Servicio'));
+
+    expect(serviceField?.querySelector('mat-select')).toBeTruthy();
+    expect(serviceField?.querySelector('input')).toBeFalsy();
+    expect(component.filteredServiceOfferings().map((service) => service.id)).toEqual([
+      'service-1',
+      'service-2',
+    ]);
+
+    component.form.patchValue({ branchId: 'branch-1' });
+
+    expect(component.filteredServiceOfferings().map((service) => service.id)).toEqual([
+      'service-1',
+    ]);
+
+    component.form.patchValue({ branchId: 'branch-2', service: 'Color' });
+
+    expect(component.form.controls.service.value).toBe('Color');
+
+    component.form.patchValue({ branchId: 'branch-1' });
+
+    expect(component.form.controls.service.value).toBe('');
   });
 });

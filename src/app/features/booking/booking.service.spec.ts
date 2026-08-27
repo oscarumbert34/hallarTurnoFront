@@ -222,6 +222,7 @@ describe('BookingService', () => {
         {
           id: 'service-1',
           name: 'Corte de pelo',
+          branchId: 'branch-1',
           durationMinutes: 30,
           price: 5000,
           status: 'ACTIVE',
@@ -237,6 +238,7 @@ describe('BookingService', () => {
         {
           id: 'service-1',
           name: 'Corte de pelo',
+          branchId: 'branch-1',
           durationMinutes: 30,
           price: 5000,
           status: 'ACTIVE',

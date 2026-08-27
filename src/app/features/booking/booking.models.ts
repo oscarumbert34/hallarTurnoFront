@@ -50,6 +50,7 @@ export interface BranchSummary {
 export interface ServiceOfferingSummary {
   id: string;
   name: string;
+  branchId?: string;
   durationMinutes?: number;
   price?: number;
   status?: string;

@@ -70,25 +70,25 @@ import { BookingService } from '../booking/booking.service';
             </mat-form-field>
 
             <mat-form-field appearance="outline">
+              <mat-label>Sucursal</mat-label>
+              <mat-select formControlName="branchId" panelClass="search-select-panel">
+                <mat-option value="">Todas</mat-option>
+                @for (branch of branches(); track branch.id) {
+                  <mat-option [value]="branch.id">{{ branchLabel(branch) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
               <mat-label>Servicio</mat-label>
-              <input
-                matInput
-                formControlName="service"
-                [matAutocomplete]="serviceAutocomplete"
-                placeholder="Corte, consulta, limpieza"
-              />
-              <mat-autocomplete
-                #serviceAutocomplete="matAutocomplete"
-                class="search-autocomplete-panel"
-                [panelWidth]="320"
-              >
+              <mat-select formControlName="service" panelClass="search-select-panel">
                 @for (service of filteredServiceOfferings(); track service.id) {
                   <mat-option [value]="service.name">{{ service.name }}</mat-option>
                 } @empty {
                   <mat-option disabled>No hay servicios disponibles</mat-option>
                 }
-              </mat-autocomplete>
-              <mat-error>Indica el servicio.</mat-error>
+              </mat-select>
+              <mat-error>Selecciona el servicio.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -102,16 +102,6 @@ import { BookingService } from '../booking/booking.service';
               <mat-datepicker-toggle matIconSuffix [for]="searchDatePicker" />
               <mat-datepicker #searchDatePicker />
               <mat-error>Indica la fecha.</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Sucursal</mat-label>
-              <mat-select formControlName="branchId" panelClass="search-select-panel">
-                <mat-option value="">Todas</mat-option>
-                @for (branch of branches(); track branch.id) {
-                  <mat-option [value]="branch.id">{{ branchLabel(branch) }}</mat-option>
-                }
-              </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -257,6 +247,9 @@ export class PublicSearchPage implements OnInit {
           this.syncBusinessOptions();
         }
       });
+    this.form.controls.branchId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.pruneServiceForBranch());
 
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.resetPagination();
@@ -366,13 +359,13 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected filteredServiceOfferings(): ServiceOfferingSummary[] {
-    const query = this.form.controls.service.value.trim().toLowerCase();
+    const branchId = this.form.controls.branchId.value;
 
-    if (!query) {
+    if (!branchId) {
       return this.serviceOfferings();
     }
 
-    return this.serviceOfferings().filter((service) => service.name.toLowerCase().includes(query));
+    return this.serviceOfferings().filter((service) => service.branchId === branchId);
   }
 
   protected selectBusiness(name: string): void {
@@ -648,11 +641,13 @@ export class PublicSearchPage implements OnInit {
       this.branches.set([]);
       this.serviceOfferings.set([]);
       this.form.controls.branchId.setValue('', { emitEvent: false });
+      this.form.controls.service.setValue('', { emitEvent: false });
       return;
     }
 
     if (resetBranch) {
       this.form.controls.branchId.setValue('', { emitEvent: false });
+      this.form.controls.service.setValue('', { emitEvent: false });
     }
 
     this.loadBranches(businessId);
@@ -668,9 +663,23 @@ export class PublicSearchPage implements OnInit {
 
   private loadServiceOfferings(businessId: string): void {
     this.bookingService.listServiceOfferings(businessId).subscribe({
-      next: (serviceOfferings) => this.serviceOfferings.set(serviceOfferings),
+      next: (serviceOfferings) => {
+        this.serviceOfferings.set(serviceOfferings);
+        this.pruneServiceForBranch();
+      },
       error: () => this.serviceOfferings.set([]),
     });
+  }
+
+  private pruneServiceForBranch(): void {
+    const selectedService = this.form.controls.service.value;
+
+    if (
+      selectedService &&
+      !this.filteredServiceOfferings().some((service) => service.name === selectedService)
+    ) {
+      this.form.controls.service.setValue('');
+    }
   }
 
   private syncBusinessSelection(name: string): void {

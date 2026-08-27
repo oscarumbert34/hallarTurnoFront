@@ -229,6 +229,7 @@ export class BookingService {
     return serviceOfferings.map((serviceOffering) => ({
       id: serviceOffering.id,
       name: serviceOffering.name,
+      branchId: serviceOffering.branchId,
       durationMinutes: serviceOffering.durationMinutes ?? serviceOffering.duration,
       price: serviceOffering.price,
       status: serviceOffering.status,
@@ -259,6 +260,7 @@ interface BranchResponse {
 interface ServiceOfferingResponse {
   id: string;
   name: string;
+  branchId?: string;
   durationMinutes?: number;
   duration?: number;
   price?: number;
