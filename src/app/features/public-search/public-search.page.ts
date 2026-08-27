@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { UiStateComponent } from '../../shared/ui-state.component';
+import { AuthService } from '../auth/auth.service';
 import { bookingErrorMessage } from '../booking/booking-error';
 import {
   AvailabilityPage,
@@ -47,27 +48,29 @@ import { BookingService } from '../booking/booking.service';
       <mat-card appearance="outlined">
         <mat-card-content>
           <form class="search-form" [formGroup]="form" (ngSubmit)="search()">
-            <mat-form-field appearance="outline">
-              <mat-label>Negocio</mat-label>
-              <input
-                matInput
-                formControlName="business"
-                [matAutocomplete]="businessAutocomplete"
-                placeholder="Barbería, centro médico"
-              />
-              <mat-autocomplete
-                #businessAutocomplete="matAutocomplete"
-                class="search-autocomplete-panel"
-                [panelWidth]="320"
-                (optionSelected)="selectBusiness($event.option.value)"
-              >
-                @for (business of filteredBusinesses(); track business.id) {
-                  <mat-option [value]="business.name">{{ business.name }}</mat-option>
-                } @empty {
-                  <mat-option disabled>No hay negocios disponibles</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
+            @if (!businessScoped) {
+              <mat-form-field appearance="outline">
+                <mat-label>Negocio</mat-label>
+                <input
+                  matInput
+                  formControlName="business"
+                  [matAutocomplete]="businessAutocomplete"
+                  placeholder="Barbería, centro médico"
+                />
+                <mat-autocomplete
+                  #businessAutocomplete="matAutocomplete"
+                  class="search-autocomplete-panel"
+                  [panelWidth]="320"
+                  (optionSelected)="selectBusiness($event.option.value)"
+                >
+                  @for (business of filteredBusinesses(); track business.id) {
+                    <mat-option [value]="business.name">{{ business.name }}</mat-option>
+                  } @empty {
+                    <mat-option disabled>No hay negocios disponibles</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+            }
 
             <mat-form-field appearance="outline">
               <mat-label>Sucursal</mat-label>
@@ -194,10 +197,13 @@ import { BookingService } from '../booking/booking.service';
 export class PublicSearchPage implements OnInit {
   private readonly servicesPageLimit = 10;
   private readonly slotsPageLimit = 10;
+  private readonly authService = inject(AuthService);
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  protected readonly businessScoped = Boolean(this.route.snapshot.data['businessScoped']);
 
   protected readonly businesses = signal<BusinessSummary[]>([]);
   protected readonly branches = signal<BranchSummary[]>([]);
@@ -233,7 +239,9 @@ export class PublicSearchPage implements OnInit {
         ...search,
         date: this.dateInputValue(search.date),
       });
-      this.syncBusinessSelection(this.form.controls.business.value);
+      if (!this.businessScoped) {
+        this.syncBusinessSelection(this.form.controls.business.value);
+      }
     }
 
     this.form.controls.business.valueChanges
@@ -254,6 +262,11 @@ export class PublicSearchPage implements OnInit {
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.resetPagination();
     });
+
+    if (this.businessScoped) {
+      this.loadSessionBusinessOptions();
+      return;
+    }
 
     this.loadBusinesses();
   }
@@ -632,6 +645,19 @@ export class PublicSearchPage implements OnInit {
       },
       error: () => this.businesses.set([]),
     });
+  }
+
+  private loadSessionBusinessOptions(): void {
+    const businessId = this.authService.businessId;
+
+    if (!businessId) {
+      this.errorMessage.set('No encontramos el negocio asociado a la sesión.');
+      return;
+    }
+
+    this.selectedBusinessId.set(businessId);
+    this.loadBranches(businessId);
+    this.loadServiceOfferings(businessId);
   }
 
   private syncBusinessOptions(resetBranch = true): void {

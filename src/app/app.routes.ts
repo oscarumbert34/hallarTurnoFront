@@ -27,6 +27,14 @@ export const routes: Routes = [
   },
   {
     path: 'public-search',
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
+  },
+  {
+    path: 'search',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'], businessScoped: true },
     loadComponent: () =>
       import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
   },

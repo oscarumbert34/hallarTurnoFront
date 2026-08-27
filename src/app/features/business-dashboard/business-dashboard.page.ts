@@ -383,12 +383,7 @@ import {
                                     [value]="range.startsAt"
                                     [disabled]="!day.active"
                                     (input)="
-                                      setScheduleTime(
-                                        day.dayOfWeek,
-                                        'startsAt',
-                                        $event,
-                                        rangeIndex
-                                      )
+                                      setScheduleTime(day.dayOfWeek, 'startsAt', $event, rangeIndex)
                                     "
                                   />
                                 </mat-form-field>

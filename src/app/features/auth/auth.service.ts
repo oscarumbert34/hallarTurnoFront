@@ -60,7 +60,7 @@ export class AuthService {
     const roles = this.sessionSubject.value?.user.roles ?? [];
 
     if (roles.includes('ADMIN') || roles.includes('BUSINESS')) {
-      return '/business-dashboard';
+      return '/search';
     }
 
     if (roles.includes('CUSTOMER')) {

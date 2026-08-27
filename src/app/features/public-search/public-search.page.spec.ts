@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
+import { AuthService } from '../auth/auth.service';
 import { BookingService } from '../booking/booking.service';
 import { PublicSearchPage } from './public-search.page';
 
@@ -16,6 +17,14 @@ describe('PublicSearchPage', () => {
   };
   let router: {
     navigate: ReturnType<typeof vi.fn>;
+  };
+  let route: {
+    snapshot: {
+      data: Record<string, unknown>;
+    };
+  };
+  let authService: {
+    businessId: string | null;
   };
 
   beforeEach(async () => {
@@ -97,11 +106,15 @@ describe('PublicSearchPage', () => {
       ),
     };
     router = { navigate: vi.fn() };
+    route = { snapshot: { data: {} } };
+    authService = { businessId: 'business-1' };
 
     await TestBed.configureTestingModule({
       imports: [PublicSearchPage],
       providers: [
+        { provide: AuthService, useValue: authService },
         { provide: BookingService, useValue: bookingService },
+        { provide: ActivatedRoute, useValue: route },
         { provide: Router, useValue: router },
       ],
     }).compileComponents();
@@ -133,6 +146,38 @@ describe('PublicSearchPage', () => {
 
     expect(bookingService.searchAvailability).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Turnos SA');
+  });
+
+  it('should use the logged business and hide the business filter in scoped mode', () => {
+    route.snapshot.data = { businessScoped: true };
+    bookingService.listBusinesses.mockClear();
+    bookingService.listBranches.mockClear();
+    bookingService.listServiceOfferings.mockClear();
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: { service: string; date: string; branchId?: string }) => void;
+      };
+      search: () => void;
+    };
+
+    expect(bookingService.listBusinesses).not.toHaveBeenCalled();
+    expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
+    expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
+    expect(fixture.nativeElement.textContent).not.toContain('Negocio');
+
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
+    component.search();
+
+    expect(bookingService.searchAvailability).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'business-1',
+      }),
+      { offset: 0, limit: 10, maxSlotsPerService: 10 },
+    );
   });
 
   it('should hide loading when the availability response completes', () => {

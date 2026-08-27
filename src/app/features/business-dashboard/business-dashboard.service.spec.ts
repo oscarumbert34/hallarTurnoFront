@@ -461,13 +461,13 @@ describe('BusinessDashboardService', () => {
     service
       .listBookingsPage('2026-08-17', 1, 50, 'branch-1', 'resource-1', 'service-1')
       .subscribe((page) => {
-      expect(page.page).toBe(1);
-      expect(page.size).toBe(50);
-      expect(page.maxSize).toBe(50);
-      expect(page.totalElements).toBe(75);
-      expect(page.totalPages).toBe(2);
-      expect(page.hasMore).toBe(false);
-      expect(page.results[0].id).toBe('booking-51');
+        expect(page.page).toBe(1);
+        expect(page.size).toBe(50);
+        expect(page.maxSize).toBe(50);
+        expect(page.totalElements).toBe(75);
+        expect(page.totalPages).toBe(2);
+        expect(page.hasMore).toBe(false);
+        expect(page.results[0].id).toBe('booking-51');
       });
 
     const request = httpTesting.expectOne(
