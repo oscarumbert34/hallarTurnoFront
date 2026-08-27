@@ -38,7 +38,6 @@ export class App {
   );
   protected readonly navItems = [
     { label: 'Busqueda', path: '/search' },
-    { label: 'Reserva', path: '/booking' },
     { label: 'Panel', path: '/business-dashboard' },
     { label: 'Acceso', path: '/auth' },
   ];
