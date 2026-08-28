@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { BusinessDashboardPage } from './business-dashboard.page';
@@ -73,7 +74,10 @@ describe('BusinessDashboardPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [BusinessDashboardPage],
-      providers: [{ provide: BusinessDashboardService, useValue: dashboardService }],
+      providers: [
+        { provide: BusinessDashboardService, useValue: dashboardService },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BusinessDashboardPage);

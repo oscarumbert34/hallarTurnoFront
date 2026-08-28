@@ -1,6 +1,8 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { catchError, forkJoin, finalize, Observable, of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -38,6 +40,7 @@ import {
     MatInputModule,
     MatSelectModule,
     MatTabsModule,
+    NgTemplateOutlet,
     ReactiveFormsModule,
     UiStateComponent,
   ],
@@ -54,538 +57,572 @@ import {
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
 
-      <mat-tab-group class="dashboard-tabs" mat-stretch-tabs="false">
-        <mat-tab label="Sucursales">
-          <section class="tab-panel">
-            <div class="entity-toolbar">
-              <button mat-flat-button type="button" (click)="startCreateBranch()">
-                Crear sucursal
-              </button>
-            </div>
-
-            <mat-accordion>
-              <mat-expansion-panel [expanded]="branchFormExpanded()" (closed)="resetBranchForm()">
-                <mat-expansion-panel-header>
-                  <mat-panel-title>{{
-                    editingBranchId() ? 'Editar sucursal' : 'Nueva sucursal'
-                  }}</mat-panel-title>
-                </mat-expansion-panel-header>
-
-                <form
-                  class="form-grid expansion-form"
-                  [formGroup]="branchForm"
-                  (ngSubmit)="saveBranch()"
-                >
-                  <mat-form-field appearance="outline">
-                    <mat-label>Nombre</mat-label>
-                    <input matInput formControlName="name" />
-                    <mat-error>El nombre es obligatorio.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Dirección</mat-label>
-                    <input matInput formControlName="address" />
-                    <mat-error>La dirección es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Localidad</mat-label>
-                    <input matInput formControlName="locality" />
-                    <mat-error>La localidad es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Provincia</mat-label>
-                    <input matInput formControlName="province" />
-                    <mat-error>La provincia es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>País</mat-label>
-                    <input matInput formControlName="country" />
-                    <mat-error>El país es obligatorio.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Latitud</mat-label>
-                    <input matInput type="number" formControlName="latitude" />
-                    <mat-error>La latitud es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Longitud</mat-label>
-                    <input matInput type="number" formControlName="longitude" />
-                    <mat-error>La longitud es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Zona horaria</mat-label>
-                    <input matInput formControlName="zoneId" />
-                    <mat-error>La zona horaria es obligatoria.</mat-error>
-                  </mat-form-field>
-                  <mat-checkbox formControlName="active">Activa</mat-checkbox>
-                  <section class="schedule-editor" aria-label="Agenda semanal de la sucursal">
-                    <h3>Agenda semanal</h3>
-                    <div class="schedule-grid">
-                      @for (day of branchSchedule(); track day.dayOfWeek) {
-                        <div class="schedule-row">
-                          <mat-checkbox
-                            [checked]="day.active"
-                            (change)="setBranchScheduleDayActive(day.dayOfWeek, $event.checked)"
-                          >
-                            {{ day.label }}
-                          </mat-checkbox>
-                          <div class="schedule-ranges">
-                            @for (range of day.timeRanges; track $index; let rangeIndex = $index) {
-                              <div class="schedule-range">
-                                <mat-form-field appearance="outline">
-                                  <mat-label>Abre</mat-label>
-                                  <input
-                                    matInput
-                                    type="time"
-                                    [value]="range.opensAt"
-                                    [disabled]="!day.active"
-                                    (input)="
-                                      setBranchScheduleTime(
-                                        day.dayOfWeek,
-                                        'opensAt',
-                                        $event,
-                                        rangeIndex
-                                      )
-                                    "
-                                  />
-                                </mat-form-field>
-                                <mat-form-field appearance="outline">
-                                  <mat-label>Cierra</mat-label>
-                                  <input
-                                    matInput
-                                    type="time"
-                                    [value]="range.closesAt"
-                                    [disabled]="!day.active"
-                                    (input)="
-                                      setBranchScheduleTime(
-                                        day.dayOfWeek,
-                                        'closesAt',
-                                        $event,
-                                        rangeIndex
-                                      )
-                                    "
-                                  />
-                                </mat-form-field>
-                                <button
-                                  mat-button
-                                  type="button"
-                                  [disabled]="!day.active || day.timeRanges.length === 1"
-                                  (click)="removeBranchScheduleRange(day.dayOfWeek, rangeIndex)"
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            }
-                            <button
-                              mat-button
-                              type="button"
-                              [disabled]="!day.active"
-                              (click)="addBranchScheduleRange(day.dayOfWeek)"
-                            >
-                              Agregar rango
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                    @if (branchScheduleInvalid()) {
-                      <p class="form-error">
-                        Selecciona al menos un día y un rango horario válido.
-                      </p>
-                    }
-                  </section>
-                  <div class="form-actions">
-                    <button
-                      mat-flat-button
-                      type="submit"
-                      [disabled]="branchForm.invalid || saving()"
-                    >
-                      Guardar
-                    </button>
-                    <button mat-button type="button" (click)="resetBranchForm()">Cancelar</button>
-                  </div>
-                </form>
-              </mat-expansion-panel>
-            </mat-accordion>
-            <div class="list">
-              @for (branch of branches(); track branch.id) {
-                <article class="row-card">
-                  <div>
-                    <strong>{{ branch.name }}</strong>
-                    <span>{{ branch.address }}</span>
-                    <small>{{ branch.locality }}, {{ branch.province }}</small>
-                    <small>{{ branch.zoneId }}</small>
-                    <small>{{ branchScheduleLabel(branch) }}</small>
-                  </div>
-                  <div class="row-actions">
-                    <button mat-button type="button" (click)="editBranch(branch)">Editar</button>
-                    <button mat-button type="button" (click)="deleteEntity('branches', branch.id)">
-                      Eliminar
-                    </button>
-                  </div>
-                </article>
-              } @empty {
-                <p class="empty">No hay sucursales cargadas.</p>
-              }
-            </div>
-          </section>
-        </mat-tab>
-
-        <mat-tab label="Servicios">
-          <section class="tab-panel">
-            <div class="entity-toolbar">
-              <button mat-flat-button type="button" (click)="startCreateService()">
-                Crear servicio
-              </button>
-            </div>
-
-            <mat-accordion>
-              <mat-expansion-panel [expanded]="serviceFormExpanded()" (closed)="resetServiceForm()">
-                <mat-expansion-panel-header>
-                  <mat-panel-title>{{
-                    editingServiceId() ? 'Editar servicio' : 'Nuevo servicio'
-                  }}</mat-panel-title>
-                </mat-expansion-panel-header>
-
-                <form
-                  class="form-grid expansion-form"
-                  [formGroup]="serviceForm"
-                  (ngSubmit)="saveService()"
-                >
-                  <mat-form-field appearance="outline">
-                    <mat-label>Nombre</mat-label>
-                    <input matInput formControlName="name" />
-                    <mat-error>El nombre es obligatorio.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Duración minutos</mat-label>
-                    <input matInput type="number" min="5" formControlName="durationMinutes" />
-                    <mat-error>La duración mínima es 5 minutos.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Sucursal</mat-label>
-                    <mat-select formControlName="branchId">
-                      @for (branch of branches(); track branch.id) {
-                        <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
-                      }
-                    </mat-select>
-                    <mat-error>Selecciona la sucursal.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Precio</mat-label>
-                    <input matInput type="number" min="0" formControlName="price" />
-                  </mat-form-field>
-                  <mat-checkbox formControlName="active">Activo</mat-checkbox>
-                  <div class="form-actions">
-                    <button
-                      mat-flat-button
-                      type="submit"
-                      [disabled]="serviceForm.invalid || saving()"
-                    >
-                      Guardar
-                    </button>
-                    <button mat-button type="button" (click)="resetServiceForm()">Cancelar</button>
-                  </div>
-                </form>
-              </mat-expansion-panel>
-            </mat-accordion>
-            <div class="list">
-              @for (service of services(); track service.id) {
-                <article class="row-card">
-                  <div>
-                    <strong>{{ service.name }}</strong>
-                    <small>{{ serviceBranchesLabel(service) }}</small>
-                    <span>{{ service.durationMinutes }} min</span>
-                    @if (service.price !== undefined && service.price !== null) {
-                      <small>{{ service.price }}</small>
-                    }
-                  </div>
-                  <div class="row-actions">
-                    <button mat-button type="button" (click)="editService(service)">Editar</button>
-                    <button mat-button type="button" (click)="deleteEntity('services', service.id)">
-                      Eliminar
-                    </button>
-                  </div>
-                </article>
-              } @empty {
-                <p class="empty">No hay servicios cargados.</p>
-              }
-            </div>
-          </section>
-        </mat-tab>
-
-        <mat-tab label="Recursos">
-          <section class="tab-panel">
-            <div class="entity-toolbar">
-              <button mat-flat-button type="button" (click)="startCreateResource()">
-                Crear recurso
-              </button>
-            </div>
-
-            <mat-accordion>
-              <mat-expansion-panel
-                [expanded]="resourceFormExpanded()"
-                (closed)="resetResourceForm()"
-              >
-                <mat-expansion-panel-header>
-                  <mat-panel-title>{{
-                    editingResourceId() ? 'Editar recurso' : 'Nuevo recurso'
-                  }}</mat-panel-title>
-                </mat-expansion-panel-header>
-
-                <form
-                  class="form-grid expansion-form"
-                  [formGroup]="resourceForm"
-                  (ngSubmit)="saveResource()"
-                >
-                  <mat-form-field appearance="outline">
-                    <mat-label>Nombre</mat-label>
-                    <input matInput formControlName="name" />
-                    <mat-error>El nombre es obligatorio.</mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Sucursal</mat-label>
-                    <mat-select formControlName="branchId">
-                      <mat-option value="">Sin asignar</mat-option>
-                      @for (branch of branches(); track branch.id) {
-                        <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Servicios que brinda</mat-label>
-                    <mat-select formControlName="serviceOfferingIds" multiple>
-                      @for (service of resourceServices(); track service.id) {
-                        <mat-option [value]="service.id">{{ service.name }}</mat-option>
-                      }
-                    </mat-select>
-                    <mat-error>Selecciona al menos un servicio.</mat-error>
-                  </mat-form-field>
-                  <mat-checkbox formControlName="active">Activo</mat-checkbox>
-                  <section class="schedule-editor" aria-label="Agenda semanal del recurso">
-                    <h3>Agenda semanal</h3>
-                    <div class="schedule-grid">
-                      @for (day of resourceSchedule(); track day.dayOfWeek) {
-                        <div class="schedule-row">
-                          <mat-checkbox
-                            [checked]="day.active"
-                            (change)="setScheduleDayActive(day.dayOfWeek, $event.checked)"
-                          >
-                            {{ day.label }}
-                          </mat-checkbox>
-                          <div class="schedule-ranges">
-                            @for (range of day.timeRanges; track $index; let rangeIndex = $index) {
-                              <div class="schedule-range">
-                                <mat-form-field appearance="outline">
-                                  <mat-label>Desde</mat-label>
-                                  <input
-                                    matInput
-                                    type="time"
-                                    [value]="range.startsAt"
-                                    [disabled]="!day.active"
-                                    (input)="
-                                      setScheduleTime(day.dayOfWeek, 'startsAt', $event, rangeIndex)
-                                    "
-                                  />
-                                </mat-form-field>
-                                <mat-form-field appearance="outline">
-                                  <mat-label>Hasta</mat-label>
-                                  <input
-                                    matInput
-                                    type="time"
-                                    [value]="range.endsAt"
-                                    [disabled]="!day.active"
-                                    (input)="
-                                      setScheduleTime(day.dayOfWeek, 'endsAt', $event, rangeIndex)
-                                    "
-                                  />
-                                </mat-form-field>
-                                <button
-                                  mat-button
-                                  type="button"
-                                  [disabled]="!day.active || day.timeRanges.length === 1"
-                                  (click)="removeScheduleRange(day.dayOfWeek, rangeIndex)"
-                                >
-                                  Quitar
-                                </button>
-                              </div>
-                            }
-                            <button
-                              mat-button
-                              type="button"
-                              [disabled]="!day.active"
-                              (click)="addScheduleRange(day.dayOfWeek)"
-                            >
-                              Agregar rango
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                    @if (scheduleInvalid()) {
-                      <p class="form-error">
-                        Selecciona al menos un día y un rango horario válido.
-                      </p>
-                    }
-                  </section>
-                  <div class="form-actions">
-                    <button
-                      mat-flat-button
-                      type="submit"
-                      [disabled]="resourceForm.invalid || saving()"
-                    >
-                      Guardar
-                    </button>
-                    <button mat-button type="button" (click)="resetResourceForm()">Cancelar</button>
-                  </div>
-                </form>
-              </mat-expansion-panel>
-            </mat-accordion>
-            <div class="list">
-              @for (resource of resources(); track resource.id) {
-                <article class="row-card">
-                  <div>
-                    <strong>{{ resource.name }}</strong>
-                    <small>{{ branchName(resource.branchId) }}</small>
-                    <small>{{ resourceServicesLabel(resource) }}</small>
-                    <small>{{ resourceScheduleLabel(resource) }}</small>
-                  </div>
-                  <div class="row-actions">
-                    <button mat-button type="button" (click)="editResource(resource)">
-                      Editar
-                    </button>
-                    <button
-                      mat-button
-                      type="button"
-                      (click)="deleteEntity('resources', resource.id, resource.branchId)"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </article>
-              } @empty {
-                <p class="empty">No hay recursos cargados.</p>
-              }
-            </div>
-          </section>
-        </mat-tab>
-
-        <mat-tab label="Reservas">
-          <section class="tab-panel">
-            <mat-card appearance="outlined">
-              <mat-card-content>
-                <form
-                  class="booking-filter"
-                  [formGroup]="bookingForm"
-                  (ngSubmit)="loadBookings(true)"
-                >
-                  <mat-form-field appearance="outline">
-                    <mat-label>Fecha</mat-label>
-                    <input
-                      matInput
-                      [matDatepicker]="bookingDatePicker"
-                      formControlName="date"
-                      (dateChange)="setBookingDate($event.value)"
-                    />
-                    <mat-datepicker-toggle matIconSuffix [for]="bookingDatePicker" />
-                    <mat-datepicker #bookingDatePicker />
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Estado</mat-label>
-                    <mat-select formControlName="status">
-                      <mat-option value="ACTIVE">Activas</mat-option>
-                      <mat-option value="CONFIRMED">Confirmadas</mat-option>
-                      <mat-option value="PENDING">Pendientes</mat-option>
-                      <mat-option value="CANCELLED">Canceladas</mat-option>
-                      <mat-option value="ALL">Todas</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Sucursal</mat-label>
-                    <mat-select formControlName="branchId">
-                      <mat-option value="">Todas</mat-option>
-                      @for (branch of branches(); track branch.id) {
-                        <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Servicio</mat-label>
-                    <mat-select formControlName="serviceOfferingId">
-                      <mat-option value="">Todos</mat-option>
-                      @for (service of bookingServices(); track service.id) {
-                        <mat-option [value]="service.id">{{ service.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="outline">
-                    <mat-label>Recurso</mat-label>
-                    <mat-select formControlName="resourceId">
-                      <mat-option value="">Todos</mat-option>
-                      @for (resource of bookingResources(); track resource.id) {
-                        <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  <button
-                    mat-flat-button
-                    type="submit"
-                    [disabled]="bookingForm.invalid || loadingBookings()"
-                  >
-                    Ver reservas
-                  </button>
-                </form>
-              </mat-card-content>
-            </mat-card>
-
-            <app-ui-state [loading]="loadingBookings()" [error]="bookingError()" />
-
-            <div class="list">
-              @for (booking of filteredBookings(); track booking.id) {
-                <article class="row-card">
-                  <div>
-                    <strong>{{ bookingTitle(booking) }}</strong>
-                    <span>{{ bookingCustomerPhone(booking) }}</span>
-                    <span>{{ dateTimeLabel(booking.startsAt) }}</span>
-                    <small>
-                      {{ bookingBranchName(booking) }} · {{ bookingResourceName(booking) }} ·
-                      {{ statusLabel(booking.status) }}
-                    </small>
-                  </div>
-                  @if (booking.status !== 'CANCELLED') {
-                    <button mat-button type="button" (click)="cancelBooking(booking.id)">
-                      Cancelar
-                    </button>
-                  }
-                </article>
-              } @empty {
-                <p class="empty">No hay reservas para la fecha seleccionada.</p>
-              }
-            </div>
-
-            @if (showBookingPager()) {
-              <div class="load-more">
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [disabled]="!canLoadPreviousBookings() || loadingBookings()"
-                  (click)="loadPreviousBookings()"
-                >
-                  Anterior
-                </button>
-                <span>{{ bookingPageLabel() }}</span>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [disabled]="!canLoadNextBookings() || loadingBookings()"
-                  (click)="loadNextBookings()"
-                >
-                  Siguiente
+      @if (bookingsStandalone()) {
+        <ng-container [ngTemplateOutlet]="bookingsPanel" />
+      } @else {
+        <mat-tab-group class="dashboard-tabs" mat-stretch-tabs="false">
+          <mat-tab label="Sucursales">
+            <section class="tab-panel">
+              <div class="entity-toolbar">
+                <button mat-flat-button type="button" (click)="startCreateBranch()">
+                  Crear sucursal
                 </button>
               </div>
+
+              <mat-accordion>
+                <mat-expansion-panel [expanded]="branchFormExpanded()" (closed)="resetBranchForm()">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>{{
+                      editingBranchId() ? 'Editar sucursal' : 'Nueva sucursal'
+                    }}</mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <form
+                    class="form-grid expansion-form"
+                    [formGroup]="branchForm"
+                    (ngSubmit)="saveBranch()"
+                  >
+                    <mat-form-field appearance="outline">
+                      <mat-label>Nombre</mat-label>
+                      <input matInput formControlName="name" />
+                      <mat-error>El nombre es obligatorio.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Dirección</mat-label>
+                      <input matInput formControlName="address" />
+                      <mat-error>La dirección es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Localidad</mat-label>
+                      <input matInput formControlName="locality" />
+                      <mat-error>La localidad es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Provincia</mat-label>
+                      <input matInput formControlName="province" />
+                      <mat-error>La provincia es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>País</mat-label>
+                      <input matInput formControlName="country" />
+                      <mat-error>El país es obligatorio.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Latitud</mat-label>
+                      <input matInput type="number" formControlName="latitude" />
+                      <mat-error>La latitud es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Longitud</mat-label>
+                      <input matInput type="number" formControlName="longitude" />
+                      <mat-error>La longitud es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Zona horaria</mat-label>
+                      <input matInput formControlName="zoneId" />
+                      <mat-error>La zona horaria es obligatoria.</mat-error>
+                    </mat-form-field>
+                    <mat-checkbox formControlName="active">Activa</mat-checkbox>
+                    <section class="schedule-editor" aria-label="Agenda semanal de la sucursal">
+                      <h3>Agenda semanal</h3>
+                      <div class="schedule-grid">
+                        @for (day of branchSchedule(); track day.dayOfWeek) {
+                          <div class="schedule-row">
+                            <mat-checkbox
+                              [checked]="day.active"
+                              (change)="setBranchScheduleDayActive(day.dayOfWeek, $event.checked)"
+                            >
+                              {{ day.label }}
+                            </mat-checkbox>
+                            <div class="schedule-ranges">
+                              @for (
+                                range of day.timeRanges;
+                                track $index;
+                                let rangeIndex = $index
+                              ) {
+                                <div class="schedule-range">
+                                  <mat-form-field appearance="outline">
+                                    <mat-label>Abre</mat-label>
+                                    <input
+                                      matInput
+                                      type="time"
+                                      [value]="range.opensAt"
+                                      [disabled]="!day.active"
+                                      (input)="
+                                        setBranchScheduleTime(
+                                          day.dayOfWeek,
+                                          'opensAt',
+                                          $event,
+                                          rangeIndex
+                                        )
+                                      "
+                                    />
+                                  </mat-form-field>
+                                  <mat-form-field appearance="outline">
+                                    <mat-label>Cierra</mat-label>
+                                    <input
+                                      matInput
+                                      type="time"
+                                      [value]="range.closesAt"
+                                      [disabled]="!day.active"
+                                      (input)="
+                                        setBranchScheduleTime(
+                                          day.dayOfWeek,
+                                          'closesAt',
+                                          $event,
+                                          rangeIndex
+                                        )
+                                      "
+                                    />
+                                  </mat-form-field>
+                                  <button
+                                    mat-button
+                                    type="button"
+                                    [disabled]="!day.active || day.timeRanges.length === 1"
+                                    (click)="removeBranchScheduleRange(day.dayOfWeek, rangeIndex)"
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              }
+                              <button
+                                mat-button
+                                type="button"
+                                [disabled]="!day.active"
+                                (click)="addBranchScheduleRange(day.dayOfWeek)"
+                              >
+                                Agregar rango
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                      @if (branchScheduleInvalid()) {
+                        <p class="form-error">
+                          Selecciona al menos un día y un rango horario válido.
+                        </p>
+                      }
+                    </section>
+                    <div class="form-actions">
+                      <button
+                        mat-flat-button
+                        type="submit"
+                        [disabled]="branchForm.invalid || saving()"
+                      >
+                        Guardar
+                      </button>
+                      <button mat-button type="button" (click)="resetBranchForm()">Cancelar</button>
+                    </div>
+                  </form>
+                </mat-expansion-panel>
+              </mat-accordion>
+              <div class="list">
+                @for (branch of branches(); track branch.id) {
+                  <article class="row-card">
+                    <div>
+                      <strong>{{ branch.name }}</strong>
+                      <span>{{ branch.address }}</span>
+                      <small>{{ branch.locality }}, {{ branch.province }}</small>
+                      <small>{{ branch.zoneId }}</small>
+                      <small>{{ branchScheduleLabel(branch) }}</small>
+                    </div>
+                    <div class="row-actions">
+                      <button mat-button type="button" (click)="editBranch(branch)">Editar</button>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="deleteEntity('branches', branch.id)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="empty">No hay sucursales cargadas.</p>
+                }
+              </div>
+            </section>
+          </mat-tab>
+
+          <mat-tab label="Servicios">
+            <section class="tab-panel">
+              <div class="entity-toolbar">
+                <button mat-flat-button type="button" (click)="startCreateService()">
+                  Crear servicio
+                </button>
+              </div>
+
+              <mat-accordion>
+                <mat-expansion-panel
+                  [expanded]="serviceFormExpanded()"
+                  (closed)="resetServiceForm()"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>{{
+                      editingServiceId() ? 'Editar servicio' : 'Nuevo servicio'
+                    }}</mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <form
+                    class="form-grid expansion-form"
+                    [formGroup]="serviceForm"
+                    (ngSubmit)="saveService()"
+                  >
+                    <mat-form-field appearance="outline">
+                      <mat-label>Nombre</mat-label>
+                      <input matInput formControlName="name" />
+                      <mat-error>El nombre es obligatorio.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Duración minutos</mat-label>
+                      <input matInput type="number" min="5" formControlName="durationMinutes" />
+                      <mat-error>La duración mínima es 5 minutos.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Sucursal</mat-label>
+                      <mat-select formControlName="branchId">
+                        @for (branch of branches(); track branch.id) {
+                          <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                        }
+                      </mat-select>
+                      <mat-error>Selecciona la sucursal.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Precio</mat-label>
+                      <input matInput type="number" min="0" formControlName="price" />
+                    </mat-form-field>
+                    <mat-checkbox formControlName="active">Activo</mat-checkbox>
+                    <div class="form-actions">
+                      <button
+                        mat-flat-button
+                        type="submit"
+                        [disabled]="serviceForm.invalid || saving()"
+                      >
+                        Guardar
+                      </button>
+                      <button mat-button type="button" (click)="resetServiceForm()">
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                </mat-expansion-panel>
+              </mat-accordion>
+              <div class="list">
+                @for (service of services(); track service.id) {
+                  <article class="row-card">
+                    <div>
+                      <strong>{{ service.name }}</strong>
+                      <small>{{ serviceBranchesLabel(service) }}</small>
+                      <span>{{ service.durationMinutes }} min</span>
+                      @if (service.price !== undefined && service.price !== null) {
+                        <small>{{ service.price }}</small>
+                      }
+                    </div>
+                    <div class="row-actions">
+                      <button mat-button type="button" (click)="editService(service)">
+                        Editar
+                      </button>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="deleteEntity('services', service.id)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="empty">No hay servicios cargados.</p>
+                }
+              </div>
+            </section>
+          </mat-tab>
+
+          <mat-tab label="Recursos">
+            <section class="tab-panel">
+              <div class="entity-toolbar">
+                <button mat-flat-button type="button" (click)="startCreateResource()">
+                  Crear recurso
+                </button>
+              </div>
+
+              <mat-accordion>
+                <mat-expansion-panel
+                  [expanded]="resourceFormExpanded()"
+                  (closed)="resetResourceForm()"
+                >
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>{{
+                      editingResourceId() ? 'Editar recurso' : 'Nuevo recurso'
+                    }}</mat-panel-title>
+                  </mat-expansion-panel-header>
+
+                  <form
+                    class="form-grid expansion-form"
+                    [formGroup]="resourceForm"
+                    (ngSubmit)="saveResource()"
+                  >
+                    <mat-form-field appearance="outline">
+                      <mat-label>Nombre</mat-label>
+                      <input matInput formControlName="name" />
+                      <mat-error>El nombre es obligatorio.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Sucursal</mat-label>
+                      <mat-select formControlName="branchId">
+                        <mat-option value="">Sin asignar</mat-option>
+                        @for (branch of branches(); track branch.id) {
+                          <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Servicios que brinda</mat-label>
+                      <mat-select formControlName="serviceOfferingIds" multiple>
+                        @for (service of resourceServices(); track service.id) {
+                          <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                        }
+                      </mat-select>
+                      <mat-error>Selecciona al menos un servicio.</mat-error>
+                    </mat-form-field>
+                    <mat-checkbox formControlName="active">Activo</mat-checkbox>
+                    <section class="schedule-editor" aria-label="Agenda semanal del recurso">
+                      <h3>Agenda semanal</h3>
+                      <div class="schedule-grid">
+                        @for (day of resourceSchedule(); track day.dayOfWeek) {
+                          <div class="schedule-row">
+                            <mat-checkbox
+                              [checked]="day.active"
+                              (change)="setScheduleDayActive(day.dayOfWeek, $event.checked)"
+                            >
+                              {{ day.label }}
+                            </mat-checkbox>
+                            <div class="schedule-ranges">
+                              @for (
+                                range of day.timeRanges;
+                                track $index;
+                                let rangeIndex = $index
+                              ) {
+                                <div class="schedule-range">
+                                  <mat-form-field appearance="outline">
+                                    <mat-label>Desde</mat-label>
+                                    <input
+                                      matInput
+                                      type="time"
+                                      [value]="range.startsAt"
+                                      [disabled]="!day.active"
+                                      (input)="
+                                        setScheduleTime(
+                                          day.dayOfWeek,
+                                          'startsAt',
+                                          $event,
+                                          rangeIndex
+                                        )
+                                      "
+                                    />
+                                  </mat-form-field>
+                                  <mat-form-field appearance="outline">
+                                    <mat-label>Hasta</mat-label>
+                                    <input
+                                      matInput
+                                      type="time"
+                                      [value]="range.endsAt"
+                                      [disabled]="!day.active"
+                                      (input)="
+                                        setScheduleTime(day.dayOfWeek, 'endsAt', $event, rangeIndex)
+                                      "
+                                    />
+                                  </mat-form-field>
+                                  <button
+                                    mat-button
+                                    type="button"
+                                    [disabled]="!day.active || day.timeRanges.length === 1"
+                                    (click)="removeScheduleRange(day.dayOfWeek, rangeIndex)"
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              }
+                              <button
+                                mat-button
+                                type="button"
+                                [disabled]="!day.active"
+                                (click)="addScheduleRange(day.dayOfWeek)"
+                              >
+                                Agregar rango
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                      @if (scheduleInvalid()) {
+                        <p class="form-error">
+                          Selecciona al menos un día y un rango horario válido.
+                        </p>
+                      }
+                    </section>
+                    <div class="form-actions">
+                      <button
+                        mat-flat-button
+                        type="submit"
+                        [disabled]="resourceForm.invalid || saving()"
+                      >
+                        Guardar
+                      </button>
+                      <button mat-button type="button" (click)="resetResourceForm()">
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                </mat-expansion-panel>
+              </mat-accordion>
+              <div class="list">
+                @for (resource of resources(); track resource.id) {
+                  <article class="row-card">
+                    <div>
+                      <strong>{{ resource.name }}</strong>
+                      <small>{{ branchName(resource.branchId) }}</small>
+                      <small>{{ resourceServicesLabel(resource) }}</small>
+                      <small>{{ resourceScheduleLabel(resource) }}</small>
+                    </div>
+                    <div class="row-actions">
+                      <button mat-button type="button" (click)="editResource(resource)">
+                        Editar
+                      </button>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="deleteEntity('resources', resource.id, resource.branchId)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="empty">No hay recursos cargados.</p>
+                }
+              </div>
+            </section>
+          </mat-tab>
+        </mat-tab-group>
+      }
+
+      <ng-template #bookingsPanel>
+        <section class="tab-panel">
+          <mat-card appearance="outlined">
+            <mat-card-content>
+              <form
+                class="booking-filter"
+                [formGroup]="bookingForm"
+                (ngSubmit)="loadBookings(true)"
+              >
+                <mat-form-field appearance="outline">
+                  <mat-label>Fecha</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="bookingDatePicker"
+                    formControlName="date"
+                    (dateChange)="setBookingDate($event.value)"
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="bookingDatePicker" />
+                  <mat-datepicker #bookingDatePicker />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Estado</mat-label>
+                  <mat-select formControlName="status">
+                    <mat-option value="ACTIVE">Activas</mat-option>
+                    <mat-option value="CONFIRMED">Confirmadas</mat-option>
+                    <mat-option value="PENDING">Pendientes</mat-option>
+                    <mat-option value="CANCELLED">Canceladas</mat-option>
+                    <mat-option value="ALL">Todas</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Sucursal</mat-label>
+                  <mat-select formControlName="branchId">
+                    <mat-option value="">Todas</mat-option>
+                    @for (branch of branches(); track branch.id) {
+                      <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Servicio</mat-label>
+                  <mat-select formControlName="serviceOfferingId">
+                    <mat-option value="">Todos</mat-option>
+                    @for (service of bookingServices(); track service.id) {
+                      <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Recurso</mat-label>
+                  <mat-select formControlName="resourceId">
+                    <mat-option value="">Todos</mat-option>
+                    @for (resource of bookingResources(); track resource.id) {
+                      <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button
+                  mat-flat-button
+                  type="submit"
+                  [disabled]="bookingForm.invalid || loadingBookings()"
+                >
+                  Ver reservas
+                </button>
+              </form>
+            </mat-card-content>
+          </mat-card>
+
+          <app-ui-state [loading]="loadingBookings()" [error]="bookingError()" />
+
+          <div class="list">
+            @for (booking of filteredBookings(); track booking.id) {
+              <article class="row-card">
+                <div>
+                  <strong>{{ bookingTitle(booking) }}</strong>
+                  <span>{{ bookingCustomerPhone(booking) }}</span>
+                  <span>{{ dateTimeLabel(booking.startsAt) }}</span>
+                  <small>
+                    {{ bookingBranchName(booking) }} · {{ bookingResourceName(booking) }} ·
+                    {{ statusLabel(booking.status) }}
+                  </small>
+                </div>
+                @if (booking.status !== 'CANCELLED') {
+                  <button mat-button type="button" (click)="cancelBooking(booking.id)">
+                    Cancelar
+                  </button>
+                }
+              </article>
+            } @empty {
+              <p class="empty">No hay reservas para la fecha seleccionada.</p>
             }
-          </section>
-        </mat-tab>
-      </mat-tab-group>
+          </div>
+
+          @if (showBookingPager()) {
+            <div class="load-more">
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="!canLoadPreviousBookings() || loadingBookings()"
+                (click)="loadPreviousBookings()"
+              >
+                Anterior
+              </button>
+              <span>{{ bookingPageLabel() }}</span>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="!canLoadNextBookings() || loadingBookings()"
+                (click)="loadNextBookings()"
+              >
+                Siguiente
+              </button>
+            </div>
+          }
+        </section>
+      </ng-template>
     </section>
   `,
   styleUrl: './business-dashboard.page.scss',
@@ -594,6 +631,7 @@ export class BusinessDashboardPage implements OnInit {
   private readonly dashboardService = inject(BusinessDashboardService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
@@ -619,6 +657,9 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly branchScheduleInvalid = signal(false);
   protected readonly resourceSchedule = signal<ResourceScheduleDay[]>(this.defaultSchedule());
   protected readonly scheduleInvalid = signal(false);
+  protected readonly bookingsStandalone = signal(
+    this.route.snapshot.data['section'] === 'bookings',
+  );
 
   protected readonly branchForm = this.formBuilder.nonNullable.group({
     name: ['', Validators.required],

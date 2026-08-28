@@ -19,7 +19,18 @@ export class AuthService {
   }
 
   get isAuthenticated(): boolean {
-    return Boolean(this.token);
+    const token = this.token;
+
+    if (!token) {
+      return false;
+    }
+
+    if (this.isTokenExpired(token)) {
+      this.clearSession();
+      return false;
+    }
+
+    return true;
   }
 
   get businessId(): string | null {
@@ -120,5 +131,25 @@ export class AuthService {
       roles,
       businessId: response.user?.businessId ?? response.businessId,
     };
+  }
+
+  private isTokenExpired(token: string): boolean {
+    const [, payload] = token.split('.');
+
+    if (!payload) {
+      return false;
+    }
+
+    try {
+      const normalizedPayload = payload
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+      const decodedPayload = JSON.parse(atob(normalizedPayload)) as { exp?: number };
+
+      return typeof decodedPayload.exp === 'number' && decodedPayload.exp * 1000 <= Date.now();
+    } catch {
+      return false;
+    }
   }
 }

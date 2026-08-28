@@ -90,4 +90,21 @@ describe('AuthService', () => {
     expect(service.token).toBeNull();
     expect(localStorage.getItem('turnero.auth.session')).toBeNull();
   });
+
+  it('should treat expired JWT sessions as unauthenticated', () => {
+    service.login({ email: 'user@test.com', password: 'supersecret' }).subscribe();
+    httpTesting.expectOne('/api/auth/login').flush({
+      token: jwtWithPayload({ exp: 1 }),
+      email: 'user@test.com',
+      roles: ['BUSINESS'],
+    });
+
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.token).toBeNull();
+    expect(localStorage.getItem('turnero.auth.session')).toBeNull();
+  });
 });
+
+function jwtWithPayload(payload: object): string {
+  return ['header', btoa(JSON.stringify(payload)), 'signature'].join('.');
+}

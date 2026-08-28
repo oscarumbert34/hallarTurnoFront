@@ -52,6 +52,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'bookings',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'], section: 'bookings' },
+    loadComponent: () =>
+      import('./features/business-dashboard/business-dashboard.page').then(
+        (m) => m.BusinessDashboardPage,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'public-search',
   },
