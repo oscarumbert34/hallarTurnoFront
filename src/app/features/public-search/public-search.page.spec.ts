@@ -325,15 +325,18 @@ describe('PublicSearchPage', () => {
     expect(label).not.toMatch(/AM|PM/i);
   });
 
-  it('should use 24-hour timepicker inputs for the time filters', () => {
+  it('should use native time pickers with 24-hour visible values for the time filters', () => {
     const timeFields = Array.from<HTMLElement>(
       fixture.nativeElement.querySelectorAll('mat-form-field'),
     ).filter((field) => ['Desde', 'Hasta'].some((label) => field.textContent?.includes(label)));
 
     expect(timeFields).toHaveLength(2);
-    expect(timeFields.every((field) => field.querySelector('input'))).toBe(true);
-    expect(timeFields.every((field) => field.querySelector('mat-timepicker-toggle'))).toBe(true);
-    expect(timeFields.every((field) => field.querySelector('input[type="time"]'))).toBe(false);
+    expect(timeFields.every((field) => field.querySelector('input[readonly]'))).toBe(true);
+    expect(timeFields.every((field) => field.querySelector('input[type="time"]'))).toBe(true);
+    expect(timeFields.every((field) => field.querySelector('.clock-icon'))).toBe(true);
+    expect(
+      timeFields.map((field) => field.querySelector<HTMLInputElement>('input[readonly]')?.value),
+    ).toEqual(['09:00', '18:00']);
   });
 
   it('should search with the selected business id', () => {
@@ -435,24 +438,20 @@ describe('PublicSearchPage', () => {
     );
   });
 
-  it('should send selected timepicker values as 24-hour strings', () => {
+  it('should store native time picker selections as 24-hour strings', () => {
     const component = fixture.componentInstance as unknown as {
       form: {
-        patchValue: (value: {
-          service?: string;
-          date?: string;
-          timeFrom?: Date;
-          timeTo?: Date;
-        }) => void;
+        patchValue: (value: { service?: string; date?: string }) => void;
       };
+      setTimeFilter: (controlName: 'timeFrom' | 'timeTo', event: Event) => void;
       search: () => void;
     };
 
+    component.setTimeFilter('timeFrom', { target: { value: '15:30' } } as unknown as Event);
+    component.setTimeFilter('timeTo', { target: { value: '20:00' } } as unknown as Event);
     component.form.patchValue({
       service: 'Corte',
       date: '2026-08-17',
-      timeFrom: new Date(2026, 7, 17, 15, 30),
-      timeTo: new Date(2026, 7, 17, 20, 0),
     });
     component.search();
 

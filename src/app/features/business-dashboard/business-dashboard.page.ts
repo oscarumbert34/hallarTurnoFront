@@ -49,8 +49,8 @@ import {
     <section class="dashboard">
       <header class="dashboard-header">
         <div>
-          <h1>Panel de negocio</h1>
-          <p>Configura sucursales, servicios, recursos y reservas.</p>
+          <h1>{{ pageTitle() }}</h1>
+          <p>{{ pageSubtitle() }}</p>
         </div>
         <button mat-stroked-button type="button" (click)="refreshAll()">Actualizar</button>
       </header>
@@ -659,6 +659,14 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly scheduleInvalid = signal(false);
   protected readonly bookingsStandalone = signal(
     this.route.snapshot.data['section'] === 'bookings',
+  );
+  protected readonly pageTitle = signal(
+    this.bookingsStandalone() ? 'Reservas' : 'Panel de negocio',
+  );
+  protected readonly pageSubtitle = signal(
+    this.bookingsStandalone()
+      ? 'Consulta y gestiona las reservas del negocio.'
+      : 'Configura sucursales, servicios, recursos y reservas.',
   );
 
   protected readonly branchForm = this.formBuilder.nonNullable.group({
