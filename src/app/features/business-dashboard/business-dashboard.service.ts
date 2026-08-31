@@ -177,6 +177,40 @@ export class BusinessDashboardService {
       .pipe(map((response) => this.toBookingPage(response)));
   }
 
+  listBookingsRange(
+    dateFrom: string,
+    dateTo: string,
+    page = 0,
+    size = 50,
+    branchId = '',
+    resourceId = '',
+    serviceOfferingId = '',
+  ): Observable<BookingListPage> {
+    let params = new HttpParams()
+      .set('dateFrom', dateFrom)
+      .set('dateTo', dateTo)
+      .set('page', page)
+      .set('size', Math.min(size, 50));
+
+    if (branchId) {
+      params = params.set('branchId', branchId);
+    }
+
+    if (resourceId) {
+      params = params.set('resourceId', resourceId);
+    }
+
+    if (serviceOfferingId) {
+      params = params.set('serviceOfferingId', serviceOfferingId);
+    }
+
+    return this.http
+      .get<BookingsResponse>(this.apiUrl.build(`/businesses/${this.currentBusinessId}/bookings`), {
+        params,
+      })
+      .pipe(map((response) => this.toBookingPage(response)));
+  }
+
   cancelBooking(id: string): Observable<Booking> {
     return this.http.post<Booking>(this.apiUrl.build(`/bookings/${id}/cancel`), {});
   }

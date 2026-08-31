@@ -1,13 +1,23 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { catchError, forkJoin, finalize, Observable, of } from 'rxjs';
+import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -32,9 +42,11 @@ import {
   selector: 'app-business-dashboard-page',
   imports: [
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatCheckboxModule,
     MatDatepickerModule,
+    MatDialogModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
@@ -514,10 +526,19 @@ import {
               <form
                 class="booking-filter"
                 [formGroup]="bookingForm"
-                (ngSubmit)="loadBookings(true)"
+                (ngSubmit)="loadCurrentBookings(true)"
               >
+                <mat-button-toggle-group
+                  class="booking-view-toggle"
+                  [value]="bookingViewMode()"
+                  aria-label="Vista de reservas"
+                  (valueChange)="setBookingViewMode($event)"
+                >
+                  <mat-button-toggle value="day">Día</mat-button-toggle>
+                  <mat-button-toggle value="week">Semana</mat-button-toggle>
+                </mat-button-toggle-group>
                 <mat-form-field appearance="outline">
-                  <mat-label>Fecha</mat-label>
+                  <mat-label>{{ bookingViewMode() === 'week' ? 'Semana' : 'Fecha' }}</mat-label>
                   <input
                     matInput
                     [matDatepicker]="bookingDatePicker"
@@ -577,58 +598,223 @@ import {
 
           <app-ui-state [loading]="loadingBookings()" [error]="bookingError()" />
 
-          <div class="list">
-            @for (booking of filteredBookings(); track booking.id) {
-              <article class="row-card">
-                <div>
-                  <strong>{{ bookingTitle(booking) }}</strong>
-                  <span>{{ bookingCustomerPhone(booking) }}</span>
-                  <span>{{ dateTimeLabel(booking.startsAt) }}</span>
-                  <small>
-                    {{ bookingBranchName(booking) }} · {{ bookingResourceName(booking) }} ·
-                    {{ statusLabel(booking.status) }}
-                  </small>
-                </div>
-                @if (booking.status !== 'CANCELLED') {
-                  <button mat-button type="button" (click)="cancelBooking(booking.id)">
-                    Cancelar
-                  </button>
-                }
-              </article>
-            } @empty {
-              <p class="empty">No hay reservas para la fecha seleccionada.</p>
-            }
-          </div>
-
-          @if (showBookingPager()) {
-            <div class="load-more">
+          @if (bookingViewMode() === 'week') {
+            <div class="week-nav">
               <button
                 mat-stroked-button
                 type="button"
-                [disabled]="!canLoadPreviousBookings() || loadingBookings()"
-                (click)="loadPreviousBookings()"
+                [disabled]="loadingBookings()"
+                (click)="changeWeek(-1)"
               >
-                Anterior
+                Semana anterior
               </button>
-              <span>{{ bookingPageLabel() }}</span>
+              <strong>{{ weekRangeLabel() }}</strong>
               <button
                 mat-stroked-button
                 type="button"
-                [disabled]="!canLoadNextBookings() || loadingBookings()"
-                (click)="loadNextBookings()"
+                [disabled]="loadingBookings()"
+                (click)="changeWeek(1)"
               >
-                Siguiente
+                Semana siguiente
               </button>
             </div>
+
+            <div class="week-day-tabs" role="tablist" aria-label="Días de la semana">
+              @for (day of weeklyBookings(); track day.date) {
+                <button
+                  type="button"
+                  class="week-day-card"
+                  role="tab"
+                  [class.active]="selectedWeekDate() === day.date"
+                  [class.empty]="day.bookings.length === 0"
+                  [attr.aria-selected]="selectedWeekDate() === day.date"
+                  (click)="selectWeekDay(day.date)"
+                >
+                  <span class="week-day-accent"></span>
+                  <span>{{ day.shortLabel }}</span>
+                  <strong>{{ day.dayNumber }}</strong>
+                  <small>{{ day.bookings.length }}</small>
+                </button>
+              }
+            </div>
+
+            @if (selectedWeekDay(); as day) {
+              <section class="selected-week-day">
+                <header>
+                  <div>
+                    <h3>{{ day.fullLabel }}</h3>
+                    <p>{{ reservationSummaryLabel(day.bookings) }}</p>
+                  </div>
+                  <span class="booking-count-pill">
+                    {{ reservationCountLabel(day.bookings.length) }}
+                  </span>
+                </header>
+
+                <div class="week-agenda-list">
+                  @for (booking of day.bookings; track booking.id) {
+                    <button
+                      type="button"
+                      class="week-booking-row"
+                      [class.cancelled]="booking.status === 'CANCELLED'"
+                      (click)="openBookingDetail(booking)"
+                    >
+                      <strong class="week-booking-time">
+                        {{ timeOnlyLabel(booking.startsAt) }}
+                      </strong>
+                      <span class="week-booking-main">
+                        <b>{{ booking.customerName }}</b>
+                        <small>{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small>
+                      </span>
+                      <small
+                        class="booking-status"
+                        [class.pending]="booking.status === 'PENDING'"
+                        [class.cancelled]="booking.status === 'CANCELLED'"
+                      >
+                        {{ statusLabel(booking.status) }}
+                      </small>
+                    </button>
+                  } @empty {
+                    <p class="empty">No hay reservas para este día.</p>
+                  }
+                </div>
+              </section>
+            }
+          } @else {
+            <section class="selected-week-day">
+              <header>
+                <div>
+                  <h3>{{ bookingDayLabel() }}</h3>
+                  <p>{{ reservationSummaryLabel(filteredBookings()) }}</p>
+                </div>
+                <span class="booking-count-pill">
+                  {{ reservationCountLabel(filteredBookings().length) }}
+                </span>
+              </header>
+
+              <div class="week-agenda-list">
+                @for (booking of filteredBookings(); track booking.id) {
+                  <button
+                    type="button"
+                    class="week-booking-row"
+                    [class.cancelled]="booking.status === 'CANCELLED'"
+                    (click)="openBookingDetail(booking)"
+                  >
+                    <strong class="week-booking-time">
+                      {{ timeOnlyLabel(booking.startsAt) }}
+                    </strong>
+                    <span class="week-booking-main">
+                      <b>{{ booking.customerName }}</b>
+                      <small>{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small>
+                    </span>
+                    <small
+                      class="booking-status"
+                      [class.pending]="booking.status === 'PENDING'"
+                      [class.cancelled]="booking.status === 'CANCELLED'"
+                    >
+                      {{ statusLabel(booking.status) }}
+                    </small>
+                  </button>
+                } @empty {
+                  <p class="empty">No hay reservas para la fecha seleccionada.</p>
+                }
+              </div>
+            </section>
+
+            @if (showBookingPager()) {
+              <div class="load-more">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="!canLoadPreviousBookings() || loadingBookings()"
+                  (click)="loadPreviousBookings()"
+                >
+                  Anterior
+                </button>
+                <span>{{ bookingPageLabel() }}</span>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="!canLoadNextBookings() || loadingBookings()"
+                  (click)="loadNextBookings()"
+                >
+                  Siguiente
+                </button>
+              </div>
+            }
           }
         </section>
+      </ng-template>
+
+      <ng-template #bookingDetailDialog>
+        @if (selectedBooking(); as booking) {
+          <section class="booking-detail">
+            <h2 mat-dialog-title>Detalle de reserva</h2>
+            <mat-dialog-content>
+              <dl>
+                <div>
+                  <dt>Horario</dt>
+                  <dd>{{ dateTimeLabel(booking.startsAt) }}</dd>
+                </div>
+                <div>
+                  <dt>Cliente</dt>
+                  <dd>{{ booking.customerName }}</dd>
+                </div>
+                <div>
+                  <dt>Teléfono</dt>
+                  <dd>{{ bookingCustomerPhone(booking) }}</dd>
+                </div>
+                <div>
+                  <dt>Servicio</dt>
+                  <dd>{{ booking.serviceName }}</dd>
+                </div>
+                <div>
+                  <dt>Sucursal</dt>
+                  <dd>{{ bookingBranchName(booking) }}</dd>
+                </div>
+                <div>
+                  <dt>Recurso</dt>
+                  <dd>{{ bookingResourceName(booking) }}</dd>
+                </div>
+                <div>
+                  <dt>Estado</dt>
+                  <dd>
+                    <span
+                      class="booking-status"
+                      [class.pending]="booking.status === 'PENDING'"
+                      [class.cancelled]="booking.status === 'CANCELLED'"
+                    >
+                      {{ statusLabel(booking.status) }}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </mat-dialog-content>
+            <mat-dialog-actions class="booking-detail-actions" align="end">
+              <button mat-button type="button" mat-dialog-close>Cerrar</button>
+              @if (booking.status !== 'CANCELLED') {
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="cancel-booking-button"
+                  mat-dialog-close
+                  (click)="cancelBooking(booking.id)"
+                >
+                  Cancelar reserva
+                </button>
+              }
+            </mat-dialog-actions>
+          </section>
+        }
       </ng-template>
     </section>
   `,
   styleUrl: './business-dashboard.page.scss',
 })
 export class BusinessDashboardPage implements OnInit {
+  @ViewChild('bookingDetailDialog') private bookingDetailDialog?: TemplateRef<unknown>;
+
   private readonly dashboardService = inject(BusinessDashboardService);
+  private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
@@ -647,6 +833,10 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingTotalElements = signal(0);
   protected readonly bookingTotalPages = signal(0);
   protected readonly bookingHasMore = signal(false);
+  protected readonly bookingViewMode = signal<BookingViewMode>('day');
+  protected readonly weeklyBookings = signal<WeekBookingDay[]>([]);
+  protected readonly selectedWeekDate = signal(this.dateValue(new Date()));
+  protected readonly selectedBooking = signal<Booking | null>(null);
   protected readonly editingBranchId = signal('');
   protected readonly editingServiceId = signal('');
   protected readonly editingResourceId = signal('');
@@ -716,7 +906,7 @@ export class BusinessDashboardPage implements OnInit {
       .subscribe(() => this.pruneResourceServicesForBranch());
 
     this.refreshAll();
-    this.loadBookings();
+    this.loadCurrentBookings();
   }
 
   protected refreshAll(): void {
@@ -1018,6 +1208,15 @@ export class BusinessDashboardPage implements OnInit {
     this.saveEntity(request);
   }
 
+  protected loadCurrentBookings(resetPage = false): void {
+    if (this.bookingViewMode() === 'week') {
+      this.loadWeeklyBookings();
+      return;
+    }
+
+    this.loadBookings(resetPage);
+  }
+
   protected loadBookings(resetPage = false): void {
     if (this.bookingForm.invalid) {
       return;
@@ -1060,6 +1259,38 @@ export class BusinessDashboardPage implements OnInit {
 
     this.bookingForm.controls.date.setValue(value);
     this.bookingPage.set(0);
+    this.selectedWeekDate.set(this.dateValue(value));
+  }
+
+  protected openBookingDetail(booking: Booking): void {
+    if (!this.bookingDetailDialog) {
+      return;
+    }
+
+    this.selectedBooking.set(booking);
+    this.dialog.open(this.bookingDetailDialog, {
+      panelClass: 'booking-detail-dialog',
+      width: 'min(520px, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)',
+    });
+  }
+
+  protected setBookingViewMode(value: BookingViewMode): void {
+    this.bookingViewMode.set(value);
+    this.loadCurrentBookings(true);
+  }
+
+  protected changeWeek(offset: number): void {
+    const date = this.dateInputValue(this.bookingForm.controls.date.value);
+    date.setDate(date.getDate() + offset * 7);
+    this.bookingForm.controls.date.setValue(date);
+    this.selectedWeekDate.set(this.dateValue(date));
+    this.loadWeeklyBookings();
+  }
+
+  protected selectWeekDay(date: string): void {
+    this.selectedWeekDate.set(date);
+    this.bookingForm.controls.date.setValue(this.dateInputValue(date));
   }
 
   protected cancelBooking(id: string): void {
@@ -1068,23 +1299,63 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     this.dashboardService.cancelBooking(id).subscribe({
-      next: () => this.loadBookings(),
+      next: () => this.loadCurrentBookings(),
       error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
     });
   }
 
   protected filteredBookings(): Booking[] {
-    const status = this.bookingForm.controls.status.value;
+    return this.filterBookingsByStatus(this.bookings());
+  }
 
-    if (status === 'ALL') {
-      return this.bookings();
+  protected weekRangeLabel(): string {
+    const days = this.weekDays();
+    const first = days[0];
+    const last = days[days.length - 1];
+
+    return `${this.shortDateLabel(first)} - ${this.shortDateLabel(last)}`;
+  }
+
+  protected timeOnlyLabel(value: string): string {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.slice(11, 16) || value;
     }
 
-    if (status === 'ACTIVE') {
-      return this.bookings().filter((booking) => booking.status !== 'CANCELLED');
+    return new Intl.DateTimeFormat('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(date);
+  }
+
+  protected selectedWeekDay(): WeekBookingDay | undefined {
+    return this.weeklyBookings().find((day) => day.date === this.selectedWeekDate());
+  }
+
+  protected bookingDayLabel(): string {
+    const date = this.dateInputValue(this.bookingForm.controls.date.value);
+    const weekday = new Intl.DateTimeFormat('es-AR', { weekday: 'long' })
+      .format(date)
+      .replace('.', '');
+
+    return `${weekday} ${this.shortDateLabel(date)}`;
+  }
+
+  protected reservationCountLabel(count: number): string {
+    return `${count} ${count === 1 ? 'reserva' : 'reservas'}`;
+  }
+
+  protected reservationSummaryLabel(bookings: Booking[]): string {
+    if (bookings.length === 0) {
+      return 'Sin reservas cargadas';
     }
 
-    return this.bookings().filter((booking) => booking.status === status);
+    const confirmed = bookings.filter((booking) => booking.status === 'CONFIRMED').length;
+    const pending = bookings.filter((booking) => booking.status === 'PENDING').length;
+
+    return `${this.reservationCountLabel(bookings.length)} · ${confirmed} confirmadas · ${pending} pendientes`;
   }
 
   protected loadPreviousBookings(): void {
@@ -1256,6 +1527,143 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     return value;
+  }
+
+  private dateInputValue(value: Date | string): Date {
+    if (value instanceof Date) {
+      return new Date(value);
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+
+    if (!year || !month || !day) {
+      return new Date();
+    }
+
+    return new Date(year, month - 1, day);
+  }
+
+  private loadWeeklyBookings(): void {
+    if (this.bookingForm.invalid) {
+      return;
+    }
+
+    this.selectedWeekDate.set(
+      this.dateValue(this.dateInputValue(this.bookingForm.controls.date.value)),
+    );
+    this.loadingBookings.set(true);
+    this.bookingError.set('');
+    this.weeklyBookings.set(this.weekDays().map((date) => this.emptyWeekDay(date)));
+
+    const days = this.weekDays();
+    const [firstDay] = days;
+    const lastDay = days[days.length - 1];
+
+    this.dashboardService
+      .listBookingsRange(
+        this.dateValue(firstDay),
+        this.dateValue(lastDay),
+        0,
+        50,
+        this.bookingForm.controls.branchId.value,
+        this.bookingForm.controls.resourceId.value,
+        this.bookingForm.controls.serviceOfferingId.value,
+      )
+      .pipe(finalize(() => this.loadingBookings.set(false)))
+      .subscribe({
+        next: (page) => {
+          const bookingsByDate = new Map<string, Booking[]>();
+
+          for (const booking of this.filterBookingsByStatus(page.results)) {
+            const date = this.bookingDateKey(booking.startsAt);
+            bookingsByDate.set(date, [...(bookingsByDate.get(date) ?? []), booking]);
+          }
+
+          this.weeklyBookings.set(
+            days.map((date) => ({
+              ...this.emptyWeekDay(date),
+              bookings: (bookingsByDate.get(this.dateValue(date)) ?? []).sort((a, b) =>
+                a.startsAt.localeCompare(b.startsAt),
+              ),
+            })),
+          );
+        },
+        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  private weekDays(): Date[] {
+    const firstDay = this.startOfWeek(this.dateInputValue(this.bookingForm.controls.date.value));
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(firstDay);
+      date.setDate(firstDay.getDate() + index);
+
+      return date;
+    });
+  }
+
+  private startOfWeek(date: Date): Date {
+    const firstDay = new Date(date);
+    const day = firstDay.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+
+    firstDay.setDate(firstDay.getDate() + diff);
+    firstDay.setHours(0, 0, 0, 0);
+
+    return firstDay;
+  }
+
+  private emptyWeekDay(date: Date): WeekBookingDay {
+    return {
+      date: this.dateValue(date),
+      shortLabel: new Intl.DateTimeFormat('es-AR', { weekday: 'short' })
+        .format(date)
+        .replace('.', ''),
+      fullLabel: new Intl.DateTimeFormat('es-AR', {
+        weekday: 'long',
+      })
+        .format(date)
+        .replace('.', '')
+        .concat(` ${this.shortDateLabel(date)}`),
+      dayNumber: new Intl.DateTimeFormat('es-AR', {
+        day: 'numeric',
+      }).format(date),
+      bookings: [],
+    };
+  }
+
+  private shortDateLabel(date: Date): string {
+    return new Intl.DateTimeFormat('es-AR', {
+      day: 'numeric',
+      month: 'short',
+    })
+      .format(date)
+      .replace('.', '');
+  }
+
+  private bookingDateKey(startsAt: string): string {
+    const datePart = startsAt.slice(0, 10);
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      return datePart;
+    }
+
+    return this.dateValue(new Date(startsAt));
+  }
+
+  private filterBookingsByStatus(bookings: Booking[]): Booking[] {
+    const status = this.bookingForm.controls.status.value;
+
+    if (status === 'ALL') {
+      return bookings;
+    }
+
+    if (status === 'ACTIVE') {
+      return bookings.filter((booking) => booking.status !== 'CANCELLED');
+    }
+
+    return bookings.filter((booking) => booking.status === status);
   }
 
   private validBranchSchedule(): BranchSchedule[] {
@@ -1459,6 +1867,15 @@ interface ResourceScheduleRange {
 }
 
 type BookingStatusFilter = 'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'CANCELLED' | 'ALL';
+type BookingViewMode = 'day' | 'week';
+
+interface WeekBookingDay {
+  date: string;
+  shortLabel: string;
+  fullLabel: string;
+  dayNumber: string;
+  bookings: Booking[];
+}
 
 const RESOURCE_WEEK_DAYS: Array<Pick<ResourceScheduleDay, 'dayOfWeek' | 'label'>> = [
   { dayOfWeek: 'MONDAY', label: 'Lunes' },

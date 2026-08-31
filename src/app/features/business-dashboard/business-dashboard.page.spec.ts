@@ -60,6 +60,16 @@ describe('BusinessDashboardPage', () => {
           results: [],
         }),
       ),
+      listBookingsRange: vi.fn(() =>
+        of({
+          page: 0,
+          size: 50,
+          totalElements: 0,
+          totalPages: 0,
+          hasMore: false,
+          results: [],
+        }),
+      ),
       createBranch: vi.fn(),
       updateBranch: vi.fn(),
       deleteBranch: vi.fn(),
@@ -751,6 +761,80 @@ describe('BusinessDashboardPage', () => {
     component.loadBookings();
 
     expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20, '', '', '');
+  });
+
+  it('should request bookings once with a date range when using the weekly view', () => {
+    dashboardService.listBookingsPage.mockClear();
+    dashboardService.listBookingsRange.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          date: {
+            setValue: (value: Date) => void;
+          };
+          resourceId: {
+            setValue: (value: string) => void;
+          };
+          serviceOfferingId: {
+            setValue: (value: string) => void;
+          };
+        };
+      };
+      resources: {
+        set: (
+          value: Array<{
+            id: string;
+            name: string;
+            branchId: string;
+            serviceOfferingIds: string[];
+            weeklySchedule: [];
+            active: boolean;
+          }>,
+        ) => void;
+      };
+      setBookingViewMode: (value: 'day' | 'week') => void;
+      weeklyBookings: () => Array<{ date: string }>;
+    };
+
+    component.resources.set([
+      {
+        id: 'resource-1',
+        name: 'Sandra',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        active: true,
+      },
+    ]);
+    component.bookingForm.controls.date.setValue(new Date(2026, 7, 26));
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.bookingForm.controls.resourceId.setValue('resource-1');
+    component.bookingForm.controls.serviceOfferingId.setValue('service-1');
+    component.setBookingViewMode('week');
+
+    expect(dashboardService.listBookingsPage).not.toHaveBeenCalled();
+    expect(dashboardService.listBookingsRange).toHaveBeenCalledTimes(1);
+    expect(dashboardService.listBookingsRange).toHaveBeenCalledWith(
+      '2026-08-24',
+      '2026-08-30',
+      0,
+      50,
+      'branch-1',
+      'resource-1',
+      'service-1',
+    );
+    expect(component.weeklyBookings().map((day) => day.date)).toEqual([
+      '2026-08-24',
+      '2026-08-25',
+      '2026-08-26',
+      '2026-08-27',
+      '2026-08-28',
+      '2026-08-29',
+      '2026-08-30',
+    ]);
   });
 
   it('should request bookings with the selected branch filter', () => {

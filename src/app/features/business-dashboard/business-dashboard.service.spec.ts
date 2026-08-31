@@ -497,6 +497,40 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should request bookings by date range', () => {
+    service
+      .listBookingsRange('2026-09-07', '2026-09-13', 0, 50, 'branch-1', 'resource-1', 'service-1')
+      .subscribe((page) => {
+        expect(page.page).toBe(0);
+        expect(page.size).toBe(50);
+        expect(page.results[0].id).toBe('booking-1');
+      });
+
+    const request = httpTesting.expectOne(
+      `/api/businesses/${businessId}/bookings?dateFrom=2026-09-07&dateTo=2026-09-13&page=0&size=50&branchId=branch-1&resourceId=resource-1&serviceOfferingId=service-1`,
+    );
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      page: 0,
+      size: 50,
+      totalElements: 1,
+      totalPages: 1,
+      hasMore: false,
+      results: [
+        {
+          id: 'booking-1',
+          customerName: 'Juan Perez',
+          customerPhone: '+54 11 5555-1234',
+          serviceName: 'Afeitar barba',
+          branchName: 'Centro',
+          startsAt: '2026-09-09T15:00:00',
+          status: 'CONFIRMED',
+        },
+      ],
+    });
+  });
+
   it('should cancel bookings through the cancel endpoint', () => {
     service.cancelBooking('booking-1').subscribe((booking) => {
       expect(booking.status).toBe('CANCELLED');

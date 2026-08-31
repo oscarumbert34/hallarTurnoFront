@@ -90,7 +90,9 @@ p {
 
 .booking-filter {
   display: grid;
-  grid-template-columns: minmax(0, 260px) minmax(0, 220px) auto;
+  grid-template-columns:
+    auto minmax(0, 220px) minmax(0, 180px) minmax(0, 180px) minmax(0, 180px) minmax(0, 180px)
+    auto;
   align-items: center;
   gap: 12px;
 }

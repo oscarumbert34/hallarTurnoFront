@@ -56,3 +56,376 @@ body {
     white-space: normal;
   }
 }
+
+.week-agenda-list {
+  display: grid;
+  gap: 10px;
+}
+
+.week-nav {
+  display: grid;
+  grid-template-columns: auto minmax(110px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-nav strong {
+  color: #101b33;
+  font-size: 1.12rem;
+  text-align: center;
+}
+
+.week-day-tabs {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+
+.week-day-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 104px;
+  border: 1px solid #d9e1ee;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 6%);
+  color: #17233d;
+  cursor: pointer;
+  font: inherit;
+  padding: 16px 8px 10px;
+  text-align: center;
+}
+
+.week-day-card.active {
+  border-color: #0b63c7;
+  background: #eef6ff;
+  box-shadow: 0 0 0 1px #0b63c7 inset;
+  color: #0b63c7;
+}
+
+.week-day-card.empty {
+  color: #68758a;
+}
+
+.week-day-card span:not(.week-day-accent) {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.week-day-card strong {
+  color: #101b33;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.week-day-card small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #168144;
+  font-weight: 700;
+}
+
+.week-day-card small::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.week-day-card.empty small {
+  color: #68758a;
+  font-weight: 500;
+}
+
+.week-day-accent {
+  position: absolute;
+  top: 10px;
+  left: 20%;
+  right: 20%;
+  height: 5px;
+  border-radius: 999px;
+  background: #21a852;
+}
+
+.week-day-card.active .week-day-accent {
+  background: #0b63c7;
+}
+
+.week-day-card.empty .week-day-accent {
+  background: #b7bec9;
+}
+
+.selected-week-day {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dfe6f1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 5px rgb(15 23 42 / 6%);
+  padding: 16px;
+}
+
+.selected-week-day header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.selected-week-day h3 {
+  margin: 0;
+  color: #101b33;
+  font-size: 1.15rem;
+  text-transform: capitalize;
+}
+
+.selected-week-day p {
+  margin: 3px 0 0;
+  color: #53647c;
+  font-size: 0.9rem;
+}
+
+.booking-count-pill {
+  border-radius: 999px;
+  background: #e7f1ff;
+  color: #0b63c7;
+  font-weight: 800;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.week-booking-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 78px;
+  border: 1px solid #d9e1ee;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 7%);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 12px;
+  text-align: left;
+}
+
+.week-booking-row:hover,
+.week-booking-row:focus-visible {
+  border-color: #0b63c7;
+  outline: none;
+}
+
+.week-booking-row.cancelled {
+  opacity: 0.72;
+}
+
+.week-booking-time {
+  box-sizing: border-box;
+  display: inline-grid;
+  width: 74px;
+  min-width: 0;
+  border-radius: 8px;
+  background: #0b63c7;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  justify-content: center;
+  padding: 10px 8px;
+}
+
+.week-booking-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.week-booking-main b,
+.week-booking-main small {
+  overflow-wrap: anywhere;
+}
+
+.week-booking-main small {
+  color: #53647c;
+}
+
+.booking-status {
+  justify-self: end;
+  border-radius: 999px;
+  background: #dff5e8;
+  color: #116836;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.booking-status.pending {
+  background: #fff2cf;
+  color: #8a5d00;
+}
+
+.booking-status.cancelled {
+  background: #ffe0e0;
+  color: #9a1f1f;
+}
+
+.booking-detail-dialog .mat-mdc-dialog-surface {
+  border-radius: 18px;
+}
+
+.booking-detail h2 {
+  margin-bottom: 2px;
+}
+
+.booking-detail dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.booking-detail dl > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.booking-detail dt {
+  color: #53647c;
+  font-size: 0.82rem;
+}
+
+.booking-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.booking-detail .booking-status {
+  display: inline-flex;
+  justify-self: start;
+}
+
+.booking-detail-actions {
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .week-nav {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+  }
+
+  .week-nav button {
+    min-width: 48px;
+    padding-inline: 0;
+  }
+
+  .week-nav button:first-child,
+  .week-nav button:last-child {
+    font-size: 0;
+  }
+
+  .week-nav button:first-child::before {
+    content: '<';
+    font-size: 1.3rem;
+  }
+
+  .week-nav button:last-child::before {
+    content: '>';
+    font-size: 1.3rem;
+  }
+
+  .week-day-tabs {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .week-day-card {
+    min-height: 82px;
+    padding: 14px 3px 7px;
+  }
+
+  .week-day-card span:not(.week-day-accent) {
+    font-size: 0.72rem;
+  }
+
+  .week-day-card strong {
+    font-size: 1.2rem;
+  }
+
+  .week-day-card small {
+    font-size: 0.72rem;
+  }
+
+  .week-day-accent {
+    top: 8px;
+    height: 4px;
+  }
+
+  .selected-week-day {
+    padding: 14px;
+  }
+
+  .selected-week-day header {
+    align-items: flex-start;
+  }
+
+  .week-booking-row {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 8px 12px;
+    min-height: 92px;
+    padding: 10px;
+  }
+
+  .week-booking-time {
+    width: 72px;
+    padding-inline: 6px;
+  }
+
+  .week-booking-row .booking-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .booking-detail dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .booking-detail-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding-inline: 16px;
+  }
+
+  .booking-detail-actions button {
+    width: 100%;
+  }
+}
+
+.cancel-booking-button.mat-mdc-unelevated-button:not(:disabled) {
+  --mdc-filled-button-container-color: #dc2626;
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mat-button-filled-container-color: #dc2626;
+  --mat-button-filled-label-text-color: #ffffff;
+  --mat-filled-button-ripple-color: rgb(255 255 255 / 18%);
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.cancel-booking-button.mat-mdc-unelevated-button:not(:disabled):hover {
+  --mdc-filled-button-container-color: #b91c1c;
+  --mat-button-filled-container-color: #b91c1c;
+  background-color: #b91c1c;
+}
+
+.cancel-booking-button .mdc-button__label {
+  color: #ffffff;
+}
