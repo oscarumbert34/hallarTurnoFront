@@ -10,7 +10,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { provideNativeDateAdapter } from '@angular/material/core';
+import { MAT_NATIVE_DATE_FORMATS, provideNativeDateAdapter } from '@angular/material/core';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { AuthService } from '../auth/auth.service';
 import { bookingErrorMessage } from '../booking/booking-error';
@@ -24,6 +25,15 @@ import {
 } from '../booking/booking.models';
 import { BookingService } from '../booking/booking.service';
 
+const SEARCH_DATE_FORMATS = {
+  ...MAT_NATIVE_DATE_FORMATS,
+  display: {
+    ...MAT_NATIVE_DATE_FORMATS.display,
+    timeInput: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', hour12: false },
+    timeOptionLabel: { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', hour12: false },
+  },
+};
+
 @Component({
   selector: 'app-public-search-page',
   imports: [
@@ -34,10 +44,11 @@ import { BookingService } from '../booking/booking.service';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatTimepickerModule,
     ReactiveFormsModule,
     UiStateComponent,
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [provideNativeDateAdapter(SEARCH_DATE_FORMATS)],
   template: `
     <section class="search-page">
       <header>
@@ -109,12 +120,16 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Desde</mat-label>
-              <input matInput type="time" formControlName="timeFrom" />
+              <input matInput [matTimepicker]="timeFromPicker" formControlName="timeFrom" />
+              <mat-timepicker-toggle matIconSuffix [for]="timeFromPicker" />
+              <mat-timepicker #timeFromPicker interval="30m" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>Hasta</mat-label>
-              <input matInput type="time" formControlName="timeTo" />
+              <input matInput [matTimepicker]="timeToPicker" formControlName="timeTo" />
+              <mat-timepicker-toggle matIconSuffix [for]="timeToPicker" />
+              <mat-timepicker #timeToPicker interval="30m" />
             </mat-form-field>
 
             <button mat-flat-button type="submit" [disabled]="form.invalid || loading()">
@@ -467,9 +482,13 @@ export class PublicSearchPage implements OnInit {
   }
 
   private availabilitySearch() {
+    const search = this.form.getRawValue();
+
     return {
-      ...this.form.getRawValue(),
+      ...search,
       date: this.dateValue(this.form.controls.date.value),
+      timeFrom: this.timeValue(search.timeFrom),
+      timeTo: this.timeValue(search.timeTo),
       businessId: this.selectedBusinessId(),
     };
   }
@@ -634,6 +653,17 @@ export class PublicSearchPage implements OnInit {
     }
 
     return new Date(year, month - 1, day);
+  }
+
+  private timeValue(value: Date | string): string {
+    if (value instanceof Date) {
+      const hours = String(value.getHours()).padStart(2, '0');
+      const minutes = String(value.getMinutes()).padStart(2, '0');
+
+      return `${hours}:${minutes}`;
+    }
+
+    return value;
   }
 
   private loadBusinesses(): void {

@@ -325,6 +325,17 @@ describe('PublicSearchPage', () => {
     expect(label).not.toMatch(/AM|PM/i);
   });
 
+  it('should use 24-hour timepicker inputs for the time filters', () => {
+    const timeFields = Array.from<HTMLElement>(
+      fixture.nativeElement.querySelectorAll('mat-form-field'),
+    ).filter((field) => ['Desde', 'Hasta'].some((label) => field.textContent?.includes(label)));
+
+    expect(timeFields).toHaveLength(2);
+    expect(timeFields.every((field) => field.querySelector('input'))).toBe(true);
+    expect(timeFields.every((field) => field.querySelector('mat-timepicker-toggle'))).toBe(true);
+    expect(timeFields.every((field) => field.querySelector('input[type="time"]'))).toBe(false);
+  });
+
   it('should search with the selected business id', () => {
     const component = fixture.componentInstance as unknown as {
       form: {
@@ -419,6 +430,36 @@ describe('PublicSearchPage', () => {
     expect(bookingService.searchAvailability).toHaveBeenCalledWith(
       expect.objectContaining({
         date: '2026-08-28',
+      }),
+      { offset: 0, limit: 10, maxSlotsPerService: 10 },
+    );
+  });
+
+  it('should send selected timepicker values as 24-hour strings', () => {
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: {
+          service?: string;
+          date?: string;
+          timeFrom?: Date;
+          timeTo?: Date;
+        }) => void;
+      };
+      search: () => void;
+    };
+
+    component.form.patchValue({
+      service: 'Corte',
+      date: '2026-08-17',
+      timeFrom: new Date(2026, 7, 17, 15, 30),
+      timeTo: new Date(2026, 7, 17, 20, 0),
+    });
+    component.search();
+
+    expect(bookingService.searchAvailability).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeFrom: '15:30',
+        timeTo: '20:00',
       }),
       { offset: 0, limit: 10, maxSlotsPerService: 10 },
     );
