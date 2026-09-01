@@ -765,7 +765,7 @@ import {
         <section class="copy-week-dialog">
           <h2 mat-dialog-title>Copiar semana</h2>
           <mat-dialog-content>
-            <p>
+            <p class="copy-week-origin">
               Origen: <strong>{{ weekRangeLabel() }}</strong>
             </p>
             <form class="copy-week-form" [formGroup]="copyWeekForm">

@@ -8,6 +8,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { UiStateComponent } from '../../shared/ui-state.component';
+import { AuthService } from '../auth/auth.service';
 import { bookingErrorMessage } from './booking-error';
 import {
   AvailabilitySearch,
@@ -98,7 +99,7 @@ import { BookingService } from './booking.service';
                 Confirmar turno
               </button>
             }
-            <a mat-button routerLink="/public-search">Buscar otro</a>
+            <a mat-button [routerLink]="searchRoute">Buscar otro</a>
           </mat-card-actions>
         </mat-card>
       } @else {
@@ -107,7 +108,7 @@ import { BookingService } from './booking.service';
             <p>Elegí un turno desde el buscador para continuar.</p>
           </mat-card-content>
           <mat-card-actions>
-            <a mat-flat-button routerLink="/public-search">Ir al buscador</a>
+            <a mat-flat-button [routerLink]="searchRoute">Ir al buscador</a>
           </mat-card-actions>
         </mat-card>
       }
@@ -116,9 +117,11 @@ import { BookingService } from './booking.service';
   styleUrl: './booking.page.scss',
 })
 export class BookingPage implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly bookingService = inject(BookingService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  protected readonly searchRoute = this.authService.isAuthenticated ? '/search' : '/public-search';
 
   protected readonly selectedSlot = signal<SelectedSlot | null>(null);
   protected readonly businessDetail = signal<BusinessDetail | null>(null);

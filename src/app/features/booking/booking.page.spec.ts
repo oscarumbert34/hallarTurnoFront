@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
+import { AuthService } from '../auth/auth.service';
 import { BookingPage } from './booking.page';
 import { BookingService } from './booking.service';
 
@@ -12,6 +13,9 @@ describe('BookingPage', () => {
     getBusiness: ReturnType<typeof vi.fn>;
     createBooking: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
+  };
+  let authService: {
+    isAuthenticated: boolean;
   };
   let route: {
     snapshot: {
@@ -24,6 +28,9 @@ describe('BookingPage', () => {
       getBusiness: vi.fn(() => of({ id: 'business-1', name: 'Turnos SA' })),
       createBooking: vi.fn(),
       searchAvailability: vi.fn(() => of([])),
+    };
+    authService = {
+      isAuthenticated: false,
     };
     route = {
       snapshot: {
@@ -45,6 +52,7 @@ describe('BookingPage', () => {
       imports: [BookingPage],
       providers: [
         { provide: BookingService, useValue: bookingService },
+        { provide: AuthService, useValue: authService },
         { provide: ActivatedRoute, useValue: route },
       ],
     }).compileComponents();
@@ -123,5 +131,17 @@ describe('BookingPage', () => {
 
     expect(label).toContain('15:00');
     expect(label).not.toMatch(/AM|PM/i);
+  });
+
+  it('should return to the private search when the business user is authenticated', () => {
+    authService.isAuthenticated = true;
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      searchRoute: string;
+    };
+
+    expect(component.searchRoute).toBe('/search');
   });
 });

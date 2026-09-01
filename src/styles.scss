@@ -106,12 +106,18 @@ body {
 }
 
 .copy-week-dialog p {
-  margin: 0 0 14px;
+  margin: 0;
   color: #53647c;
+  line-height: 1.35;
+}
+
+.copy-week-origin {
+  padding-bottom: 22px;
 }
 
 .copy-week-form {
   display: grid;
+  padding-top: 6px;
 }
 
 .week-day-tabs {
@@ -375,12 +381,12 @@ body {
   }
 
   .copy-week-toolbar {
-    align-items: stretch;
+    align-items: center;
     flex-direction: column;
   }
 
   .copy-week-toolbar button {
-    width: 100%;
+    width: 184px;
   }
 
   .week-nav button {
