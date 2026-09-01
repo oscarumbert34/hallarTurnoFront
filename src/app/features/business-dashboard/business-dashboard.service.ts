@@ -141,6 +141,12 @@ export class BusinessDashboardService {
     return this.http.delete<void>(this.apiUrl.build(`/resources/${id}`));
   }
 
+  getConfiguration(): Observable<BusinessConfiguration> {
+    return this.http.get<BusinessConfiguration>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/configuration`),
+    );
+  }
+
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
   }
@@ -209,6 +215,13 @@ export class BusinessDashboardService {
         params,
       })
       .pipe(map((response) => this.toBookingPage(response)));
+  }
+
+  copyBookingsWeek(payload: CopyBookingsWeekRequest): Observable<void> {
+    return this.http.post<void>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/bookings/copy-week`),
+      payload,
+    );
   }
 
   cancelBooking(id: string): Observable<Booking> {
@@ -513,4 +526,17 @@ interface BookingResponse {
   branchName?: string;
   startsAt: string;
   status: string;
+}
+
+interface CopyBookingsWeekRequest {
+  sourceWeekStart: string;
+  targetWeekStart: string;
+  branchId: string;
+  resourceId: string;
+  serviceOfferingId: string;
+}
+
+interface BusinessConfiguration {
+  businessId: string;
+  weeklyBookingCopyEnabled: boolean;
 }

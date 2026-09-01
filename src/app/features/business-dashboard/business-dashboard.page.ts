@@ -531,6 +531,7 @@ import {
                 <mat-button-toggle-group
                   class="booking-view-toggle"
                   [value]="bookingViewMode()"
+                  [hideSingleSelectionIndicator]="true"
                   aria-label="Vista de reservas"
                   (valueChange)="setBookingViewMode($event)"
                 >
@@ -618,6 +619,21 @@ import {
                 Semana siguiente
               </button>
             </div>
+            @if (weeklyBookingCopyEnabled()) {
+              <div class="copy-week-toolbar">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="!canCopyWeek() || loadingBookings() || copyingWeek()"
+                  (click)="openCopyWeekDialog()"
+                >
+                  Copiar semana
+                </button>
+                @if (!canCopyWeek()) {
+                  <small>Seleccioná sucursal, servicio y recurso para copiar una semana.</small>
+                }
+              </div>
+            }
 
             <div class="week-day-tabs" role="tablist" aria-label="Días de la semana">
               @for (day of weeklyBookings(); track day.date) {
@@ -745,6 +761,43 @@ import {
         </section>
       </ng-template>
 
+      <ng-template #copyWeekDialog>
+        <section class="copy-week-dialog">
+          <h2 mat-dialog-title>Copiar semana</h2>
+          <mat-dialog-content>
+            <p>
+              Origen: <strong>{{ weekRangeLabel() }}</strong>
+            </p>
+            <form class="copy-week-form" [formGroup]="copyWeekForm">
+              <mat-form-field appearance="outline">
+                <mat-label>Semana destino</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="copyWeekTargetPicker"
+                  formControlName="targetWeekStart"
+                />
+                <mat-datepicker-toggle matIconSuffix [for]="copyWeekTargetPicker" />
+                <mat-datepicker #copyWeekTargetPicker />
+              </mat-form-field>
+            </form>
+            @if (copyWeekError()) {
+              <p class="form-error">{{ copyWeekError() }}</p>
+            }
+          </mat-dialog-content>
+          <mat-dialog-actions class="booking-detail-actions" align="end">
+            <button mat-button type="button" mat-dialog-close>Cerrar</button>
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="copyWeekForm.invalid || copyingWeek()"
+              (click)="copyWeek()"
+            >
+              Copiar semana
+            </button>
+          </mat-dialog-actions>
+        </section>
+      </ng-template>
+
       <ng-template #bookingDetailDialog>
         @if (selectedBooking(); as booking) {
           <section class="booking-detail">
@@ -812,12 +865,17 @@ import {
 })
 export class BusinessDashboardPage implements OnInit {
   @ViewChild('bookingDetailDialog') private bookingDetailDialog?: TemplateRef<unknown>;
+  @ViewChild('copyWeekDialog') private copyWeekDialog?: TemplateRef<unknown>;
 
   private readonly dashboardService = inject(BusinessDashboardService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private activeBookingRequestKey = '';
+  private lastBookingRequestKey = '';
+  private lastBookingRequestStartedAt = 0;
+  private lastCompletedBookingRequestKey = '';
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
@@ -826,14 +884,17 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly loadingBookings = signal(false);
   protected readonly saving = signal(false);
+  protected readonly copyingWeek = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly bookingError = signal('');
+  protected readonly copyWeekError = signal('');
   protected readonly bookingPage = signal(0);
   protected readonly bookingPageSize = signal(20);
   protected readonly bookingTotalElements = signal(0);
   protected readonly bookingTotalPages = signal(0);
   protected readonly bookingHasMore = signal(false);
   protected readonly bookingViewMode = signal<BookingViewMode>('day');
+  protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly weeklyBookings = signal<WeekBookingDay[]>([]);
   protected readonly selectedWeekDate = signal(this.dateValue(new Date()));
   protected readonly selectedBooking = signal<Booking | null>(null);
@@ -890,6 +951,9 @@ export class BusinessDashboardPage implements OnInit {
     resourceId: [''],
     serviceOfferingId: [''],
   });
+  protected readonly copyWeekForm = this.formBuilder.nonNullable.group({
+    targetWeekStart: [this.defaultTargetWeekStart(), Validators.required],
+  });
 
   ngOnInit(): void {
     this.bookingForm.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
@@ -917,6 +981,9 @@ export class BusinessDashboardPage implements OnInit {
       branches: this.dashboardService.listBranches().pipe(catchError(() => of([]))),
       services: this.dashboardService.listServices().pipe(catchError(() => of([]))),
       resources: this.dashboardService.listResources().pipe(catchError(() => of([]))),
+      configuration: this.dashboardService
+        .getConfiguration()
+        .pipe(catchError(() => of({ weeklyBookingCopyEnabled: false }))),
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -924,6 +991,7 @@ export class BusinessDashboardPage implements OnInit {
           this.branches.set(result.branches);
           this.services.set(result.services);
           this.resources.set(result.resources);
+          this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
           this.pruneResourceServicesForBranch();
         },
         error: (error) => this.errorMessage.set(dashboardErrorMessage(error)),
@@ -1210,7 +1278,7 @@ export class BusinessDashboardPage implements OnInit {
 
   protected loadCurrentBookings(resetPage = false): void {
     if (this.bookingViewMode() === 'week') {
-      this.loadWeeklyBookings();
+      this.loadWeeklyBookings(resetPage);
       return;
     }
 
@@ -1226,8 +1294,19 @@ export class BusinessDashboardPage implements OnInit {
       this.bookingPage.set(0);
     }
 
-    this.loadingBookings.set(true);
-    this.bookingError.set('');
+    const requestKey = this.bookingRequestKey('day', [
+      this.dateValue(this.bookingForm.controls.date.value),
+      this.bookingPage(),
+      this.bookingPageSize(),
+      this.bookingForm.controls.branchId.value,
+      this.bookingForm.controls.resourceId.value,
+      this.bookingForm.controls.serviceOfferingId.value,
+      this.bookingForm.controls.status.value,
+    ]);
+
+    if (!this.startBookingRequest(requestKey, resetPage)) {
+      return;
+    }
 
     this.dashboardService
       .listBookingsPage(
@@ -1238,9 +1317,13 @@ export class BusinessDashboardPage implements OnInit {
         this.bookingForm.controls.resourceId.value,
         this.bookingForm.controls.serviceOfferingId.value,
       )
-      .pipe(finalize(() => this.loadingBookings.set(false)))
+      .pipe(finalize(() => this.finishBookingRequest(requestKey)))
       .subscribe({
         next: (page) => {
+          if (this.activeBookingRequestKey !== requestKey) {
+            return;
+          }
+
           this.bookings.set(page.results);
           this.bookingPage.set(page.page);
           this.bookingPageSize.set(page.size);
@@ -1248,7 +1331,11 @@ export class BusinessDashboardPage implements OnInit {
           this.bookingTotalPages.set(page.totalPages);
           this.bookingHasMore.set(page.hasMore);
         },
-        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+        error: (error) => {
+          if (this.activeBookingRequestKey === requestKey) {
+            this.bookingError.set(dashboardErrorMessage(error));
+          }
+        },
       });
   }
 
@@ -1276,8 +1363,12 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected setBookingViewMode(value: BookingViewMode): void {
+    if (value === this.bookingViewMode()) {
+      return;
+    }
+
     this.bookingViewMode.set(value);
-    this.loadCurrentBookings(true);
+    this.loadCurrentBookings();
   }
 
   protected changeWeek(offset: number): void {
@@ -1285,7 +1376,66 @@ export class BusinessDashboardPage implements OnInit {
     date.setDate(date.getDate() + offset * 7);
     this.bookingForm.controls.date.setValue(date);
     this.selectedWeekDate.set(this.dateValue(date));
-    this.loadWeeklyBookings();
+    this.loadWeeklyBookings(true);
+  }
+
+  protected canCopyWeek(): boolean {
+    return Boolean(
+      this.weeklyBookingCopyEnabled() &&
+        this.bookingForm.controls.branchId.value &&
+        this.bookingForm.controls.resourceId.value &&
+        this.bookingForm.controls.serviceOfferingId.value,
+    );
+  }
+
+  protected openCopyWeekDialog(): void {
+    if (!this.copyWeekDialog || !this.canCopyWeek()) {
+      return;
+    }
+
+    this.copyWeekError.set('');
+    this.copyWeekForm.controls.targetWeekStart.setValue(this.defaultTargetWeekStart());
+    this.dialog.open(this.copyWeekDialog, {
+      panelClass: 'copy-week-dialog-panel',
+      width: 'min(460px, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)',
+    });
+  }
+
+  protected copyWeek(): void {
+    if (this.copyWeekForm.invalid || !this.canCopyWeek()) {
+      return;
+    }
+
+    const sourceWeekStart = this.dateValue(
+      this.startOfWeek(this.dateInputValue(this.bookingForm.controls.date.value)),
+    );
+    const targetWeekStartDate = this.startOfWeek(
+      this.dateInputValue(this.copyWeekForm.controls.targetWeekStart.value),
+    );
+    const targetWeekStart = this.dateValue(targetWeekStartDate);
+
+    this.copyingWeek.set(true);
+    this.copyWeekError.set('');
+
+    this.dashboardService
+      .copyBookingsWeek({
+        sourceWeekStart,
+        targetWeekStart,
+        branchId: this.bookingForm.controls.branchId.value,
+        resourceId: this.bookingForm.controls.resourceId.value,
+        serviceOfferingId: this.bookingForm.controls.serviceOfferingId.value,
+      })
+      .pipe(finalize(() => this.copyingWeek.set(false)))
+      .subscribe({
+        next: () => {
+          this.dialog.closeAll();
+          this.bookingForm.controls.date.setValue(targetWeekStartDate);
+          this.selectedWeekDate.set(targetWeekStart);
+          this.loadWeeklyBookings(true);
+        },
+        error: (error) => this.copyWeekError.set(dashboardErrorMessage(error)),
+      });
   }
 
   protected selectWeekDay(date: string): void {
@@ -1543,7 +1693,14 @@ export class BusinessDashboardPage implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  private loadWeeklyBookings(): void {
+  private defaultTargetWeekStart(): Date {
+    const target = this.startOfWeek(this.dateInputValue(this.bookingForm.controls.date.value));
+    target.setDate(target.getDate() + 7);
+
+    return target;
+  }
+
+  private loadWeeklyBookings(force = false): void {
     if (this.bookingForm.invalid) {
       return;
     }
@@ -1551,13 +1708,23 @@ export class BusinessDashboardPage implements OnInit {
     this.selectedWeekDate.set(
       this.dateValue(this.dateInputValue(this.bookingForm.controls.date.value)),
     );
-    this.loadingBookings.set(true);
-    this.bookingError.set('');
-    this.weeklyBookings.set(this.weekDays().map((date) => this.emptyWeekDay(date)));
-
     const days = this.weekDays();
     const [firstDay] = days;
     const lastDay = days[days.length - 1];
+    const requestKey = this.bookingRequestKey('week', [
+      this.dateValue(firstDay),
+      this.dateValue(lastDay),
+      this.bookingForm.controls.branchId.value,
+      this.bookingForm.controls.resourceId.value,
+      this.bookingForm.controls.serviceOfferingId.value,
+      this.bookingForm.controls.status.value,
+    ]);
+
+    if (!this.startBookingRequest(requestKey, force)) {
+      return;
+    }
+
+    this.weeklyBookings.set(days.map((date) => this.emptyWeekDay(date)));
 
     this.dashboardService
       .listBookingsRange(
@@ -1569,9 +1736,13 @@ export class BusinessDashboardPage implements OnInit {
         this.bookingForm.controls.resourceId.value,
         this.bookingForm.controls.serviceOfferingId.value,
       )
-      .pipe(finalize(() => this.loadingBookings.set(false)))
+      .pipe(finalize(() => this.finishBookingRequest(requestKey)))
       .subscribe({
         next: (page) => {
+          if (this.activeBookingRequestKey !== requestKey) {
+            return;
+          }
+
           const bookingsByDate = new Map<string, Booking[]>();
 
           for (const booking of this.filterBookingsByStatus(page.results)) {
@@ -1588,7 +1759,11 @@ export class BusinessDashboardPage implements OnInit {
             })),
           );
         },
-        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+        error: (error) => {
+          if (this.activeBookingRequestKey === requestKey) {
+            this.bookingError.set(dashboardErrorMessage(error));
+          }
+        },
       });
   }
 
@@ -1650,6 +1825,47 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     return this.dateValue(new Date(startsAt));
+  }
+
+  private bookingRequestKey(scope: 'day' | 'week', parts: unknown[]): string {
+    return [scope, ...parts].join('|');
+  }
+
+  private startBookingRequest(requestKey: string, force = false): boolean {
+    const now = Date.now();
+
+    if (this.loadingBookings() && this.activeBookingRequestKey === requestKey) {
+      return false;
+    }
+
+    if (!force && this.lastCompletedBookingRequestKey === requestKey) {
+      return false;
+    }
+
+    if (
+      this.lastBookingRequestKey === requestKey &&
+      now - this.lastBookingRequestStartedAt < 1000
+    ) {
+      return false;
+    }
+
+    this.activeBookingRequestKey = requestKey;
+    this.lastBookingRequestKey = requestKey;
+    this.lastBookingRequestStartedAt = now;
+    this.loadingBookings.set(true);
+    this.bookingError.set('');
+
+    return true;
+  }
+
+  private finishBookingRequest(requestKey: string): void {
+    if (this.activeBookingRequestKey !== requestKey) {
+      return;
+    }
+
+    this.activeBookingRequestKey = '';
+    this.lastCompletedBookingRequestKey = requestKey;
+    this.loadingBookings.set(false);
   }
 
   private filterBookingsByStatus(bookings: Booking[]): Booking[] {

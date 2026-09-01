@@ -49,6 +49,12 @@ describe('BusinessDashboardPage', () => {
         ]),
       ),
       listResources: vi.fn(() => of([])),
+      getConfiguration: vi.fn(() =>
+        of({
+          businessId: 'business-1',
+          weeklyBookingCopyEnabled: true,
+        }),
+      ),
       listBookings: vi.fn(() => of([])),
       listBookingsPage: vi.fn(() =>
         of({
@@ -79,6 +85,7 @@ describe('BusinessDashboardPage', () => {
       createResource: vi.fn(),
       updateResource: vi.fn(),
       deleteResource: vi.fn(),
+      copyBookingsWeek: vi.fn(() => of(undefined)),
       cancelBooking: vi.fn(),
     };
 
@@ -835,6 +842,113 @@ describe('BusinessDashboardPage', () => {
       '2026-08-29',
       '2026-08-30',
     ]);
+  });
+
+  it('should copy the selected week to the target week', () => {
+    dashboardService.copyBookingsWeek.mockClear();
+    dashboardService.listBookingsRange.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          date: {
+            setValue: (value: Date) => void;
+          };
+          resourceId: {
+            setValue: (value: string) => void;
+          };
+          serviceOfferingId: {
+            setValue: (value: string) => void;
+          };
+        };
+      };
+      copyWeekForm: {
+        controls: {
+          targetWeekStart: {
+            setValue: (value: Date) => void;
+          };
+        };
+      };
+      resources: {
+        set: (
+          value: Array<{
+            id: string;
+            name: string;
+            branchId: string;
+            serviceOfferingIds: string[];
+            weeklySchedule: [];
+            active: boolean;
+          }>,
+        ) => void;
+      };
+      copyWeek: () => void;
+    };
+
+    component.resources.set([
+      {
+        id: 'resource-1',
+        name: 'Sandra',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        active: true,
+      },
+    ]);
+    component.bookingForm.controls.date.setValue(new Date(2026, 8, 9));
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.bookingForm.controls.resourceId.setValue('resource-1');
+    component.bookingForm.controls.serviceOfferingId.setValue('service-1');
+    component.copyWeekForm.controls.targetWeekStart.setValue(new Date(2026, 8, 16));
+
+    component.copyWeek();
+
+    expect(dashboardService.copyBookingsWeek).toHaveBeenCalledWith({
+      sourceWeekStart: '2026-09-07',
+      targetWeekStart: '2026-09-14',
+      branchId: 'branch-1',
+      resourceId: 'resource-1',
+      serviceOfferingId: 'service-1',
+    });
+    expect(dashboardService.listBookingsRange).toHaveBeenCalledWith(
+      '2026-09-14',
+      '2026-09-20',
+      0,
+      50,
+      'branch-1',
+      'resource-1',
+      'service-1',
+    );
+  });
+
+  it('should not allow copying weeks when the business configuration disables it', () => {
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          branchId: {
+            setValue: (value: string) => void;
+          };
+          resourceId: {
+            setValue: (value: string) => void;
+          };
+          serviceOfferingId: {
+            setValue: (value: string) => void;
+          };
+        };
+      };
+      weeklyBookingCopyEnabled: {
+        set: (value: boolean) => void;
+      };
+      canCopyWeek: () => boolean;
+    };
+
+    component.weeklyBookingCopyEnabled.set(false);
+    component.bookingForm.controls.branchId.setValue('branch-1');
+    component.bookingForm.controls.resourceId.setValue('resource-1');
+    component.bookingForm.controls.serviceOfferingId.setValue('service-1');
+
+    expect(component.canCopyWeek()).toBe(false);
   });
 
   it('should request bookings with the selected branch filter', () => {

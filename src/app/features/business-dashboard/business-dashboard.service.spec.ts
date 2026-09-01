@@ -457,6 +457,21 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should load business configuration', () => {
+    service.getConfiguration().subscribe((configuration) => {
+      expect(configuration.businessId).toBe(businessId);
+      expect(configuration.weeklyBookingCopyEnabled).toBe(true);
+    });
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/configuration`);
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      businessId,
+      weeklyBookingCopyEnabled: true,
+    });
+  });
+
   it('should expose booking pagination metadata', () => {
     service
       .listBookingsPage('2026-08-17', 1, 50, 'branch-1', 'resource-1', 'service-1')
@@ -529,6 +544,26 @@ describe('BusinessDashboardService', () => {
         },
       ],
     });
+  });
+
+  it('should copy bookings from one week to another', () => {
+    const payload = {
+      sourceWeekStart: '2026-09-07',
+      targetWeekStart: '2026-09-14',
+      branchId: 'branch-1',
+      resourceId: 'resource-1',
+      serviceOfferingId: 'service-1',
+    };
+
+    service.copyBookingsWeek(payload).subscribe();
+
+    const request = httpTesting.expectOne(
+      `/api/businesses/${businessId}/bookings/copy-week`,
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+
+    request.flush(null);
   });
 
   it('should cancel bookings through the cancel endpoint', () => {
