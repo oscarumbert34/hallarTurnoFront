@@ -29,6 +29,10 @@ p {
   margin-top: 18px;
 }
 
+.customer-skip-contact {
+  align-self: center;
+}
+
 dt {
   color: var(--mat-sys-on-surface-variant);
   font-size: 0.82rem;
@@ -56,5 +60,9 @@ dd {
 
   .customer-form {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+
+  .customer-skip-contact {
+    grid-column: 1 / -1;
   }
 }

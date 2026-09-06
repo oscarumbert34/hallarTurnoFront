@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
 import { BookingPage } from './booking.page';
@@ -10,7 +11,7 @@ import { BookingService } from './booking.service';
 describe('BookingPage', () => {
   let fixture: ComponentFixture<BookingPage>;
   let bookingService: {
-    getBusiness: ReturnType<typeof vi.fn>;
+    searchCustomerContact: ReturnType<typeof vi.fn>;
     createBooking: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
   };
@@ -25,7 +26,14 @@ describe('BookingPage', () => {
 
   beforeEach(async () => {
     bookingService = {
-      getBusiness: vi.fn(() => of({ id: 'business-1', name: 'Turnos SA' })),
+      searchCustomerContact: vi.fn(() =>
+        of({
+          id: 'customer-1',
+          businessId: 'business-1',
+          name: 'Juan Gonzalez',
+          phone: '1124546622',
+        }),
+      ),
       createBooking: vi.fn(),
       searchAvailability: vi.fn(() => of([])),
     };
@@ -62,10 +70,12 @@ describe('BookingPage', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     sessionStorage.clear();
   });
 
-  it('should create a booking without requiring login', () => {
+  it('should create a booking without requiring login', async () => {
+    vi.useFakeTimers();
     bookingService.createBooking.mockReturnValue(
       of({
         id: 'booking-1',
@@ -77,15 +87,23 @@ describe('BookingPage', () => {
     );
     const component = fixture.componentInstance as unknown as {
       customerForm: {
-        setValue: (value: { customerName: string; customerPhone: string }) => void;
+        setValue: (value: {
+          customerName: string;
+          customerPhone: string;
+          customerEmail: string;
+          skipCustomerContact: boolean;
+        }) => void;
       };
       confirmBooking: () => void;
     };
 
     component.customerForm.setValue({
       customerName: 'Juan Gonzalez',
-      customerPhone: '+54 11 5555-5555',
+      customerPhone: '1124546622',
+      customerEmail: '',
+      skipCustomerContact: false,
     });
+    await vi.advanceTimersByTimeAsync(300);
     component.confirmBooking();
 
     expect(bookingService.createBooking).toHaveBeenCalledWith({
@@ -96,8 +114,147 @@ describe('BookingPage', () => {
       date: '2026-08-17',
       startsAt: '10:00',
       customerName: 'Juan Gonzalez',
-      customerPhone: '+54 11 5555-5555',
+      customerPhone: '1124546622',
+      skipCustomerContact: null,
     });
+  });
+
+  it('should require and send customerEmail when the phone does not exist', async () => {
+    vi.useFakeTimers();
+    authService.isAuthenticated = true;
+    bookingService.searchCustomerContact.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+    bookingService.createBooking.mockReturnValue(
+      of({
+        id: 'booking-1',
+        businessName: 'Turnos SA',
+        serviceName: 'Corte',
+        startsAt: '2026-08-17T10:00:00',
+        status: 'CONFIRMED',
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      customerForm: {
+        patchValue: (value: {
+          customerName?: string;
+          customerPhone?: string;
+          customerEmail?: string;
+          skipCustomerContact?: boolean;
+        }) => void;
+      };
+      isNewCustomer: () => boolean;
+      confirmBooking: () => void;
+    };
+
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    fixture.detectChanges();
+
+    expect(bookingService.searchCustomerContact).toHaveBeenCalledWith('business-1', '1124546622');
+    expect(component.isNewCustomer()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Email');
+
+    component.confirmBooking();
+
+    expect(bookingService.createBooking).not.toHaveBeenCalled();
+
+    component.customerForm.patchValue({ customerEmail: 'juan@example.com' });
+    component.confirmBooking();
+
+    expect(bookingService.createBooking).toHaveBeenCalledWith({
+      businessId: 'business-1',
+      branchId: 'branch-1',
+      serviceOfferingId: 'service-1',
+      resourceId: undefined,
+      date: '2026-08-17',
+      startsAt: '10:00',
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+      customerEmail: 'juan@example.com',
+      skipCustomerContact: null,
+    });
+  });
+
+  it('should skip customer contact creation when a new customer has no email', async () => {
+    vi.useFakeTimers();
+    authService.isAuthenticated = true;
+    bookingService.searchCustomerContact.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+    bookingService.createBooking.mockReturnValue(
+      of({
+        id: 'booking-1',
+        businessName: 'Turnos SA',
+        serviceName: 'Corte',
+        startsAt: '2026-08-17T10:00:00',
+        status: 'CONFIRMED',
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      customerForm: {
+        patchValue: (value: {
+          customerName?: string;
+          customerPhone?: string;
+          customerEmail?: string;
+          skipCustomerContact?: boolean;
+        }) => void;
+      };
+      confirmBooking: () => void;
+    };
+
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No tengo el email del cliente');
+
+    component.customerForm.patchValue({ skipCustomerContact: true });
+    fixture.detectChanges();
+    component.confirmBooking();
+
+    expect(bookingService.createBooking).toHaveBeenCalledWith({
+      businessId: 'business-1',
+      branchId: 'branch-1',
+      serviceOfferingId: 'service-1',
+      resourceId: undefined,
+      date: '2026-08-17',
+      startsAt: '10:00',
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+      skipCustomerContact: true,
+    });
+  });
+
+  it('should not show contact fields when the customer exists', async () => {
+    vi.useFakeTimers();
+    authService.isAuthenticated = true;
+    const component = fixture.componentInstance as unknown as {
+      customerForm: {
+        patchValue: (value: {
+          customerName?: string;
+          customerPhone?: string;
+          customerEmail?: string;
+          skipCustomerContact?: boolean;
+        }) => void;
+      };
+    };
+
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    fixture.detectChanges();
+
+    expect(bookingService.searchCustomerContact).toHaveBeenCalledWith('business-1', '1124546622');
+    expect(fixture.nativeElement.textContent).not.toContain('No tengo el email del cliente');
   });
 
   it('should recover the selected slot from storage when route params are missing', () => {

@@ -12,8 +12,8 @@ import {
   BranchSummary,
   BusinessSummary,
   BusinessAvailability,
-  BusinessDetail,
   CreateBookingRequest,
+  CustomerContact,
   CustomerBooking,
   ServiceOfferingSummary,
 } from './booking.models';
@@ -103,10 +103,13 @@ export class BookingService {
       .pipe(map((response) => this.toServiceOfferings(response)));
   }
 
-  getBusiness(businessId: string): Observable<BusinessDetail> {
-    return this.http.get<BusinessDetail>(this.apiUrl.build(`/public/businesses/${businessId}`), {
-      context: this.publicHttpContext(),
-    });
+  searchCustomerContact(businessId: string, phone: string): Observable<CustomerContact> {
+    const params = new HttpParams().set('phone', phone);
+
+    return this.http.get<CustomerContact>(
+      this.apiUrl.build(`/businesses/${businessId}/customer-contacts/search`),
+      { params },
+    );
   }
 
   createBooking(request: CreateBookingRequest): Observable<CustomerBooking> {

@@ -49,6 +49,22 @@ describe('authInterceptor', () => {
     request.flush({});
   });
 
+  it('should attach bearer token to customer contact searches', () => {
+    http
+      .get(
+        'http://localhost:8080/api/v1/businesses/fba2206c-840d-4ba4-aec6-b0b1b16f48cd/customer-contacts/search?phone=1124541102',
+      )
+      .subscribe();
+
+    const request = httpTesting.expectOne(
+      'http://localhost:8080/api/v1/businesses/fba2206c-840d-4ba4-aec6-b0b1b16f48cd/customer-contacts/search?phone=1124541102',
+    );
+
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jwt-token');
+
+    request.flush({});
+  });
+
   it('should not attach bearer token to auth endpoints', () => {
     http.post('http://localhost:8080/api/v1/auth/login', {}).subscribe();
 
@@ -88,11 +104,11 @@ describe('authInterceptor', () => {
   });
 
   it('should not attach stale tokens or redirect for public booking requests', () => {
-    http.get('/api/public/businesses/business-1').subscribe({
+    http.get('/api/public/bookings').subscribe({
       error: () => undefined,
     });
 
-    const request = httpTesting.expectOne('/api/public/businesses/business-1');
+    const request = httpTesting.expectOne('/api/public/bookings');
 
     expect(request.request.headers.has('Authorization')).toBe(false);
 

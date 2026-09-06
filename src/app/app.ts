@@ -10,8 +10,9 @@ import {
 } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { filter, map, startWith } from 'rxjs';
+import { filter, map, startWith, tap } from 'rxjs';
 import { AuthService } from './features/auth/auth.service';
+import { clearChunkLoadRecoveryFlag } from './shared/chunk-load-recovery';
 
 @Component({
   selector: 'app-root',
@@ -33,6 +34,7 @@ export class App {
   protected readonly session$ = this.authService.session$;
   protected readonly showShellNavigation$ = this.router.events.pipe(
     filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+    tap(() => clearChunkLoadRecoveryFlag()),
     startWith(null),
     map(() => !this.deepestRoute().snapshot.data['standalone']),
   );

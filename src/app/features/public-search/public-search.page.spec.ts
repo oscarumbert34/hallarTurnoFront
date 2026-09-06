@@ -28,6 +28,8 @@ describe('PublicSearchPage', () => {
   };
 
   beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 1, 8, 0));
     sessionStorage.clear();
     bookingService = {
       listBusinesses: vi.fn(() =>
@@ -124,6 +126,7 @@ describe('PublicSearchPage', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     sessionStorage.clear();
   });
 
@@ -146,6 +149,57 @@ describe('PublicSearchPage', () => {
 
     expect(bookingService.searchAvailability).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Turnos SA');
+  });
+
+  it('should not search availability for dates before today', () => {
+    vi.setSystemTime(new Date(2026, 7, 17, 10, 0));
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    bookingService.searchAvailability.mockClear();
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        patchValue: (value: { service?: string; date?: Date; timeFrom?: string }) => void;
+        invalid: boolean;
+      };
+      search: () => void;
+    };
+
+    component.form.patchValue({
+      service: 'Corte',
+      date: new Date(2026, 7, 16),
+      timeFrom: '11:00',
+    });
+    component.search();
+
+    expect(component.form.invalid).toBe(true);
+    expect(bookingService.searchAvailability).not.toHaveBeenCalled();
+  });
+
+  it('should clamp today start time to the current time', () => {
+    vi.setSystemTime(new Date(2026, 7, 17, 13, 15));
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        controls: {
+          date: { value: Date | string };
+          timeFrom: { value: string; hasError: (error: string) => boolean };
+        };
+      };
+      setSearchDate: (value: Date) => void;
+      setTimeFilter: (controlName: 'timeFrom' | 'timeTo', event: Event) => void;
+      minimumStartTime: () => string;
+    };
+
+    component.setSearchDate(new Date(2026, 7, 17));
+
+    expect(component.minimumStartTime()).toBe('13:15');
+    expect(component.form.controls.timeFrom.value).toBe('13:15');
+
+    component.setTimeFilter('timeFrom', { target: { value: '12:30' } } as unknown as Event);
+
+    expect(component.form.controls.timeFrom.value).toBe('13:15');
+    expect(component.form.controls.timeFrom.hasError('pastTime')).toBe(false);
   });
 
   it('should use the logged business and hide the business filter in scoped mode', () => {

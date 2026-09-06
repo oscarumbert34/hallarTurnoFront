@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -99,12 +99,17 @@ import { BookingService } from '../booking/booking.service';
               <input
                 matInput
                 [matDatepicker]="searchDatePicker"
+                [min]="minSearchDate"
                 formControlName="date"
                 (dateChange)="setSearchDate($event.value)"
               />
               <mat-datepicker-toggle matIconSuffix [for]="searchDatePicker" />
               <mat-datepicker #searchDatePicker />
-              <mat-error>Indica la fecha.</mat-error>
+              @if (form.controls.date.hasError('required')) {
+                <mat-error>Indica la fecha.</mat-error>
+              } @else {
+                <mat-error>No se pueden buscar turnos para fechas anteriores.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -120,6 +125,7 @@ import { BookingService } from '../booking/booking.service';
                 class="native-time-input"
                 type="time"
                 step="1800"
+                [min]="minimumStartTime()"
                 [value]="timeValue(form.controls.timeFrom.value)"
                 (change)="setTimeFilter('timeFrom', $event)"
                 tabindex="-1"
@@ -135,6 +141,7 @@ import { BookingService } from '../booking/booking.service';
               >
                 <span class="clock-icon" aria-hidden="true"></span>
               </button>
+              <mat-error>El horario debe ser posterior a la hora actual.</mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -254,6 +261,7 @@ export class PublicSearchPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly businessScoped = Boolean(this.route.snapshot.data['businessScoped']);
+  protected readonly minSearchDate = this.startOfToday();
 
   protected readonly businesses = signal<BusinessSummary[]>([]);
   protected readonly branches = signal<BranchSummary[]>([]);
@@ -274,8 +282,11 @@ export class PublicSearchPage implements OnInit {
     business: [''],
     branchId: [''],
     service: ['', Validators.required],
-    date: [new Date() as Date | string, Validators.required],
-    timeFrom: ['09:00'],
+    date: [
+      new Date() as Date | string,
+      [Validators.required, this.notPastDateValidator.bind(this)],
+    ],
+    timeFrom: ['09:00', [this.notPastStartTimeValidator.bind(this)]],
     timeTo: ['18:00'],
   });
 
@@ -308,10 +319,16 @@ export class PublicSearchPage implements OnInit {
     this.form.controls.branchId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.pruneServiceForBranch());
+    this.form.controls.date.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.syncMinimumStartTime();
+      this.form.controls.timeFrom.updateValueAndValidity({ emitEvent: false });
+    });
 
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.resetPagination();
     });
+
+    this.syncMinimumStartTime();
 
     if (this.businessScoped) {
       this.loadSessionBusinessOptions();
@@ -458,7 +475,7 @@ export class PublicSearchPage implements OnInit {
     const value = (event.target as HTMLInputElement).value;
 
     if (value) {
-      this.form.controls[controlName].setValue(value);
+      this.form.controls[controlName].setValue(this.timeFilterValue(controlName, value));
     }
   }
 
@@ -532,6 +549,10 @@ export class PublicSearchPage implements OnInit {
 
   protected slotLoading(business: BusinessAvailability): boolean {
     return this.slotState(business).loading;
+  }
+
+  protected minimumStartTime(): string {
+    return this.isSelectedDateToday() ? this.currentTimeValue() : '00:00';
   }
 
   private availabilitySearch() {
@@ -717,6 +738,77 @@ export class PublicSearchPage implements OnInit {
     }
 
     return value;
+  }
+
+  private notPastDateValidator(control: AbstractControl<Date | string>): { pastDate: true } | null {
+    const value = control.value;
+
+    if (!value) {
+      return null;
+    }
+
+    return this.startOfDay(value).getTime() < this.minSearchDate.getTime()
+      ? { pastDate: true }
+      : null;
+  }
+
+  private notPastStartTimeValidator(control: AbstractControl<string>): { pastTime: true } | null {
+    const rawDate = control.parent?.get('date')?.value as Date | string | undefined;
+
+    if (!rawDate || this.startOfDay(rawDate).getTime() !== this.minSearchDate.getTime()) {
+      return null;
+    }
+
+    return this.timeValue(control.value) < this.currentTimeValue() ? { pastTime: true } : null;
+  }
+
+  private syncMinimumStartTime(): void {
+    const timeFromControl = this.form.controls.timeFrom;
+    const minimumStartTime = this.minimumStartTime();
+
+    if (this.isSelectedDateToday() && this.timeValue(timeFromControl.value) < minimumStartTime) {
+      timeFromControl.setValue(minimumStartTime, { emitEvent: false });
+    }
+
+    timeFromControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private timeFilterValue(controlName: 'timeFrom' | 'timeTo', value: string): string {
+    if (controlName !== 'timeFrom' || !this.isSelectedDateToday()) {
+      return value;
+    }
+
+    return value < this.currentTimeValue() ? this.currentTimeValue() : value;
+  }
+
+  private isSelectedDateToday(): boolean {
+    return (
+      this.startOfDay(this.form.controls.date.value).getTime() === this.minSearchDate.getTime()
+    );
+  }
+
+  private startOfToday(): Date {
+    return this.startOfDay(new Date());
+  }
+
+  private startOfDay(value: Date | string): Date {
+    const date = this.dateInputValue(value);
+
+    if (date instanceof Date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    const [year, month, day] = date.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+  }
+
+  private currentTimeValue(): string {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    return `${hours}:${minutes}`;
   }
 
   private loadBusinesses(): void {

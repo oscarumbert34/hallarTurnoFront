@@ -1,21 +1,27 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  map,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { AuthService } from '../auth/auth.service';
 import { bookingErrorMessage } from './booking-error';
-import {
-  AvailabilitySearch,
-  BusinessDetail,
-  CustomerBooking,
-  SelectedSlot,
-} from './booking.models';
+import { AvailabilitySearch, CustomerBooking, SelectedSlot } from './booking.models';
 import { BookingService } from './booking.service';
 
 @Component({
@@ -23,6 +29,7 @@ import { BookingService } from './booking.service';
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     ReactiveFormsModule,
@@ -45,12 +52,6 @@ import { BookingService } from './booking.service';
             <mat-card-subtitle>{{ selectedSlot.branchName }}</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
-            @if (businessDetail(); as businessDetail) {
-              <p>
-                {{ businessDetail.description || businessDetail.address || 'Detalle del comercio' }}
-              </p>
-            }
-
             <dl class="summary">
               <div>
                 <dt>Servicio</dt>
@@ -79,9 +80,45 @@ import { BookingService } from './booking.service';
 
               <mat-form-field appearance="outline">
                 <mat-label>Teléfono</mat-label>
-                <input matInput formControlName="customerPhone" maxlength="40" />
-                <mat-error>Ingresa un teléfono válido.</mat-error>
+                <input matInput formControlName="customerPhone" maxlength="10" />
+                <mat-hint
+                  >Ingresa 10 dígitos sin 0, 15, espacios ni guiones. Ejemplo: 1124546622.</mat-hint
+                >
+                @if (customerForm.controls.customerPhone.hasError('required')) {
+                  <mat-error>Ingresa tu teléfono.</mat-error>
+                } @else {
+                  <mat-error>Usa el formato 1124546622.</mat-error>
+                }
               </mat-form-field>
+
+              @if (customerContactLookupLoading()) {
+                <p class="customer-lookup" role="status">Buscando datos del cliente...</p>
+              }
+
+              @if (isNewCustomer()) {
+                <mat-checkbox class="customer-skip-contact" formControlName="skipCustomerContact">
+                  No tengo el email del cliente
+                </mat-checkbox>
+
+                @if (!skipCustomerContact()) {
+                  <mat-form-field appearance="outline">
+                    <mat-label>Email</mat-label>
+                    <input
+                      matInput
+                      type="email"
+                      autocomplete="email"
+                      formControlName="customerEmail"
+                      maxlength="160"
+                    />
+                    <mat-hint>Lo necesitamos para registrar este cliente nuevo.</mat-hint>
+                    @if (customerForm.controls.customerEmail.hasError('required')) {
+                      <mat-error>Ingresa un email.</mat-error>
+                    } @else {
+                      <mat-error>Ingresa un email válido.</mat-error>
+                    }
+                  </mat-form-field>
+                }
+              }
             </form>
 
             @if (confirmedBooking(); as confirmedBooking) {
@@ -93,7 +130,7 @@ import { BookingService } from './booking.service';
               <button
                 mat-flat-button
                 type="button"
-                [disabled]="customerForm.invalid || saving()"
+                [disabled]="customerForm.invalid || saving() || !canConfirmCustomer()"
                 (click)="confirmBooking()"
               >
                 Confirmar turno
@@ -119,30 +156,45 @@ import { BookingService } from './booking.service';
 export class BookingPage implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly bookingService = inject(BookingService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   protected readonly searchRoute = this.authService.isAuthenticated ? '/search' : '/public-search';
 
   protected readonly selectedSlot = signal<SelectedSlot | null>(null);
-  protected readonly businessDetail = signal<BusinessDetail | null>(null);
   protected readonly confirmedBooking = signal<CustomerBooking | null>(null);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
+  protected readonly customerContactLookupStatus = signal<CustomerContactLookupStatus>('idle');
+  protected readonly customerContactLookupLoading = computed(
+    () => this.customerContactLookupStatus() === 'loading',
+  );
+  protected readonly canConfirmCustomer = computed(() => {
+    const phoneControl = this.customerForm.controls.customerPhone;
+
+    return (
+      phoneControl.invalid ||
+      this.customerContactLookupStatus() === 'existing' ||
+      this.customerContactLookupStatus() === 'new'
+    );
+  });
+  protected readonly isNewCustomer = signal(false);
+  protected readonly skipCustomerContact = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly customerForm = this.formBuilder.nonNullable.group({
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
-    customerPhone: [
-      '',
-      [Validators.required, Validators.maxLength(40), Validators.pattern(/^[0-9+()\-\s]{6,40}$/)],
-    ],
+    customerPhone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+    customerEmail: ['', [Validators.maxLength(160), Validators.email]],
+    skipCustomerContact: [false],
   });
 
   ngOnInit(): void {
     this.selectedSlot.set(this.slotFromRoute());
     const selectedSlot = this.selectedSlot();
+    this.watchSkipCustomerContact();
 
     if (selectedSlot) {
-      this.loadBusinessDetail(selectedSlot.businessId);
+      this.watchCustomerPhone(selectedSlot.businessId);
     }
   }
 
@@ -153,7 +205,7 @@ export class BookingPage implements OnInit {
       return;
     }
 
-    if (this.customerForm.invalid) {
+    if (this.customerForm.invalid || !this.canConfirmCustomer()) {
       this.customerForm.markAllAsTouched();
       return;
     }
@@ -162,6 +214,8 @@ export class BookingPage implements OnInit {
     this.errorMessage.set('');
     const { date, time } = this.bookingDateTime(selectedSlot.startsAt);
     const customer = this.customerForm.getRawValue();
+    const customerEmail = customer.customerEmail.trim();
+    const skipCustomerContact = this.isNewCustomer() && customer.skipCustomerContact;
 
     this.bookingService
       .createBooking({
@@ -173,6 +227,8 @@ export class BookingPage implements OnInit {
         startsAt: time,
         customerName: customer.customerName.trim(),
         customerPhone: customer.customerPhone.trim(),
+        skipCustomerContact: skipCustomerContact ? true : null,
+        ...(this.isNewCustomer() && !skipCustomerContact && customerEmail ? { customerEmail } : {}),
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -211,16 +267,92 @@ export class BookingPage implements OnInit {
     };
   }
 
-  private loadBusinessDetail(businessId: string): void {
-    this.loading.set(true);
+  private watchCustomerPhone(businessId: string): void {
+    this.customerForm.controls.customerPhone.valueChanges
+      .pipe(
+        debounceTime(300),
+        map((phone) => phone.trim()),
+        distinctUntilChanged(),
+        tap(() => {
+          this.errorMessage.set('');
+          this.setNewCustomer(false);
+          this.customerContactLookupStatus.set('idle');
+        }),
+        switchMap((phone) => {
+          if (this.customerForm.controls.customerPhone.invalid) {
+            return of<'idle' | 'existing' | 'new' | 'error'>('idle');
+          }
 
-    this.bookingService
-      .getBusiness(businessId)
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: (detail) => this.businessDetail.set(detail),
-        error: () => this.businessDetail.set(null),
+          if (!this.authService.isAuthenticated) {
+            return of('existing' as const);
+          }
+
+          this.customerContactLookupStatus.set('loading');
+
+          return this.bookingService.searchCustomerContact(businessId, phone).pipe(
+            map(() => 'existing' as const),
+            catchError((error: unknown) => {
+              if (error instanceof HttpErrorResponse && error.status === 404) {
+                return of('new' as const);
+              }
+
+              return of('error' as const);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((status) => {
+        this.customerContactLookupStatus.set(status);
+
+        if (status === 'new') {
+          this.setNewCustomer(true);
+          return;
+        }
+
+        if (status === 'error') {
+          this.errorMessage.set(
+            'No pudimos validar si el cliente existe. Intenta de nuevo en unos segundos.',
+          );
+        }
       });
+  }
+
+  private watchSkipCustomerContact(): void {
+    this.customerForm.controls.skipCustomerContact.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((skipCustomerContact) => {
+        this.skipCustomerContact.set(skipCustomerContact);
+        this.updateCustomerEmailValidators();
+      });
+  }
+
+  private setNewCustomer(isNewCustomer: boolean): void {
+    this.isNewCustomer.set(isNewCustomer);
+
+    if (!isNewCustomer) {
+      this.customerForm.controls.skipCustomerContact.setValue(false, { emitEvent: false });
+      this.skipCustomerContact.set(false);
+    }
+
+    this.updateCustomerEmailValidators();
+  }
+
+  private updateCustomerEmailValidators(): void {
+    const emailControl = this.customerForm.controls.customerEmail;
+
+    if (this.isNewCustomer() && !this.skipCustomerContact()) {
+      emailControl.setValidators([
+        Validators.required,
+        Validators.maxLength(160),
+        Validators.email,
+      ]);
+    } else {
+      emailControl.setValue('', { emitEvent: false });
+      emailControl.setValidators([Validators.maxLength(160), Validators.email]);
+    }
+
+    emailControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private refreshSearchAfterConflict(): void {
@@ -289,3 +421,5 @@ export class BookingPage implements OnInit {
     }
   }
 }
+
+type CustomerContactLookupStatus = 'idle' | 'loading' | 'existing' | 'new' | 'error';

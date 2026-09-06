@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '../../shared/api-base-url.token';
+import { SKIP_AUTH } from '../auth/auth.interceptor';
 import { BookingService } from './booking.service';
 
 describe('BookingService', () => {
@@ -325,6 +326,27 @@ describe('BookingService', () => {
       serviceName: 'Corte',
       startsAt: '2026-08-17T10:00:00',
       status: 'CONFIRMED',
+    });
+  });
+
+  it('should search customer contacts by phone', () => {
+    service.searchCustomerContact('business-1', '1124546622').subscribe((contact) => {
+      expect(contact.id).toBe('contact-1');
+      expect(contact.email).toBe('juan@example.com');
+    });
+
+    const request = httpTesting.expectOne(
+      '/api/businesses/business-1/customer-contacts/search?phone=1124546622',
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.context.get(SKIP_AUTH)).toBe(false);
+    request.flush({
+      id: 'contact-1',
+      businessId: 'business-1',
+      name: 'Juan Perez',
+      phone: '+54 11 5555-1234',
+      email: 'juan@example.com',
     });
   });
 });

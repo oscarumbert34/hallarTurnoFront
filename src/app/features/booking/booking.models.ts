@@ -78,15 +78,6 @@ export interface BusinessAvailability {
   slots: AvailabilitySlot[];
 }
 
-export interface BusinessDetail {
-  id: string;
-  name: string;
-  description?: string;
-  shortDescription?: string;
-  address?: string;
-  phone?: string;
-}
-
 export interface CreateBookingRequest {
   businessId: string;
   branchId: string;
@@ -96,6 +87,16 @@ export interface CreateBookingRequest {
   startsAt: string;
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
+  skipCustomerContact?: boolean | null;
+}
+
+export interface CustomerContact {
+  id: string;
+  businessId: string;
+  name: string;
+  phone: string;
+  email?: string;
 }
 
 export interface CustomerBooking {
