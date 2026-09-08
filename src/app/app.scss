@@ -9,6 +9,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  min-height: 136px;
   gap: 24px;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   background: color-mix(in srgb, var(--mat-sys-surface) 94%, transparent);
@@ -16,28 +17,25 @@
 }
 
 .brand {
+  position: absolute;
+  left: 50%;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  color: var(--mat-sys-on-surface);
-  font-weight: 700;
+  transform: translateX(-50%);
   text-decoration: none;
 }
 
-.brand-mark {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+.brand img {
+  display: block;
+  width: 180px;
+  height: auto;
 }
 
 .desktop-nav {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-right: auto;
 }
 
 .logout-button {
@@ -74,6 +72,13 @@
 @media (max-width: 720px) {
   .app-toolbar {
     justify-content: center;
+    min-height: 112px;
+    padding-inline: 12px;
+  }
+
+  .brand img {
+    width: 150px;
+    height: auto;
   }
 
   .desktop-nav {

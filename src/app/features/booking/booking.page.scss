@@ -29,6 +29,21 @@ p {
   margin-top: 18px;
 }
 
+.customer-form mat-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+mat-card-actions {
+  gap: 8px;
+  padding: 8px 16px 16px;
+}
+
+.confirm-booking {
+  --mat-button-filled-container-color: #0866f5;
+  --mat-button-filled-label-text-color: white;
+}
+
 .customer-skip-contact {
   align-self: center;
 }
@@ -41,6 +56,7 @@ dt {
 dd {
   margin: 0;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .success {
@@ -64,5 +80,28 @@ dd {
 
   .customer-skip-contact {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 699px) {
+  mat-card-header,
+  mat-card-content {
+    padding-inline: 14px;
+  }
+
+  .field-with-hint {
+    margin-bottom: 28px;
+  }
+
+  mat-card-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 16px;
+    padding: 10px 14px 16px;
+  }
+
+  mat-card-actions button,
+  mat-card-actions a {
+    width: 100%;
   }
 }

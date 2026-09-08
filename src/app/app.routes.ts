@@ -3,6 +3,14 @@ import { authGuard } from './features/auth/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'business/:slug',
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/public-business/public-business.page').then(
+        (m) => m.PublicBusinessPageComponent,
+      ),
+  },
+  {
     path: '',
     pathMatch: 'full',
     redirectTo: 'public-search',
@@ -33,8 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    canActivate: [authGuard],
-    data: { roles: ['ADMIN', 'BUSINESS'], businessScoped: true },
+    data: { businessScoped: true, standalone: true },
     loadComponent: () =>
       import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
   },

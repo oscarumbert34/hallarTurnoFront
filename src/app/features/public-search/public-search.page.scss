@@ -1,29 +1,95 @@
+:host {
+  display: block;
+}
+
 .search-page {
+  position: relative;
   display: grid;
-  gap: 18px;
+  width: min(100%, 820px);
+  margin: 0 auto;
+  gap: 22px;
+}
+
+.search-page > header {
+  text-align: center;
 }
 
 h1 {
-  margin: 0 0 10px;
-  font-size: 1.75rem;
+  margin: 0 0 6px;
+  color: #10284e;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
 p {
   margin: 0;
 }
 
+.search-page > header p {
+  color: #667895;
+  font-size: 1rem;
+}
+
+.search-card {
+  border: 1px solid #e5eef9;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 40px rgba(29, 83, 137, 0.12);
+}
+
+.search-card mat-card-content {
+  padding: 28px;
+}
+
 .search-form {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.search-form mat-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.search-form > button[type='submit'] {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  --mat-button-filled-container-color: #0866f5;
+  --mat-button-filled-label-text-color: white;
+  background: #0866f5;
+  color: white;
+  box-shadow: 0 8px 18px rgba(8, 121, 223, 0.2);
+}
+
+.search-form > button[type='submit']:disabled {
+  background: #d7dce4;
+  color: #8993a2;
+  box-shadow: none;
+}
+
+.field-icon {
+  margin-right: 8px;
+  color: #0879df;
+}
+
+.service-icon {
+  color: #0bbdac;
 }
 
 .results {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .result-card {
   overflow: hidden;
+  border-radius: 16px;
+  border-color: #e2eaf5;
 }
 
 .service-line {
@@ -35,8 +101,8 @@ p {
 }
 
 .price {
-  font-weight: 700;
   color: var(--mat-sys-primary);
+  font-weight: 700;
 }
 
 .slots {
@@ -58,6 +124,7 @@ p {
 
 .empty {
   color: var(--mat-sys-on-surface-variant);
+  text-align: center;
 }
 
 .load-more {
@@ -115,9 +182,31 @@ p {
   transform: translate(-50%, -100%) rotate(90deg);
 }
 
-@media (min-width: 760px) {
+@media (max-width: 620px) {
+  .search-page {
+    gap: 18px;
+  }
+
+  .search-page > header p {
+    padding-inline: 8px;
+    font-size: 0.92rem;
+  }
+
+  .search-card {
+    border-radius: 18px;
+  }
+
+  .search-card mat-card-content {
+    padding: 20px 14px;
+  }
+
   .search-form {
-    grid-template-columns: 1.2fr 1.2fr 170px 1fr 140px 140px auto;
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .search-form > button[type='submit'] {
+    grid-column: 1;
+    margin-top: 4px;
   }
 }

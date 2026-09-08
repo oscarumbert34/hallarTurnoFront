@@ -1,0 +1,127 @@
+<main class="business-page">
+  @if (loading()) {
+    <p role="status">Cargando negocio...</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+  @if (business(); as business) {
+    <header class="panel business-header">
+      <div class="avatar" aria-hidden="true"><mat-icon>storefront</mat-icon></div>
+      <div class="business-info">
+        <h1>{{ business.name }}</h1>
+        @if (business.shortDescription) {
+          <p class="description">{{ business.shortDescription }}</p>
+        }
+        <div class="contact-details">
+          @if (localities()) {
+            <span><mat-icon aria-hidden="true">location_on</mat-icon>{{ localities() }}</span>
+          }
+          @if (business.phone) {
+            <a [href]="'tel:' + business.phone"
+              ><mat-icon aria-hidden="true">call</mat-icon>{{ business.phone }}</a
+            >
+          }
+        </div>
+      </div>
+      <button mat-flat-button class="reserve" (click)="reserve()">
+        <mat-icon aria-hidden="true">calendar_today</mat-icon>Reservar turno
+      </button>
+    </header>
+    <section class="panel" aria-labelledby="branches-title">
+      <div class="section-heading">
+        <mat-icon aria-hidden="true">location_on</mat-icon>
+        <div>
+          <h2 id="branches-title">Sucursales</h2>
+          <p>Seleccioná la sucursal donde querés atenderte.</p>
+        </div>
+      </div>
+      <div class="branches">
+        @for (branch of business.branches; track branch.id) {
+          <label class="branch" [class.selected]="selectedBranch()?.id === branch.id">
+            <input
+              type="radio"
+              name="branch"
+              [checked]="selectedBranch()?.id === branch.id"
+              (change)="selectBranch(branch)"
+            />
+            <span
+              ><strong>{{ branch.name }}</strong>
+              @if (branch.address) {
+                <span>{{ branch.address }}</span>
+              }
+              @if (branch.city || branch.province) {
+                <span
+                  >{{ branch.city }}{{ branch.city && branch.province ? ', ' : ''
+                  }}{{ branch.province }}</span
+                >
+              }
+            </span>
+          </label>
+        } @empty {
+          <p>No hay sucursales disponibles.</p>
+        }
+      </div>
+    </section>
+    @if (selectedBranch()) {
+      <section class="panel" aria-labelledby="services-title">
+        <div class="section-heading">
+          <mat-icon aria-hidden="true">settings_suggest</mat-icon>
+          <div>
+            <h2 id="services-title">Servicios</h2>
+            <p>Elegí el servicio que necesitás y consultá los turnos disponibles.</p>
+          </div>
+        </div>
+        @if (servicesLoading()) {
+          <p role="status">Cargando servicios...</p>
+        }
+        @if (servicesError()) {
+          <p role="alert">{{ servicesError() }}</p>
+        }
+        <div class="services">
+          @for (service of services(); track service.id) {
+            <article>
+              <div class="service-avatar" aria-hidden="true">
+                <mat-icon>design_services</mat-icon>
+              </div>
+              <div class="service-copy">
+                <h3>{{ service.name }}</h3>
+                @if (service.description) {
+                  <p>{{ service.description }}</p>
+                }
+              </div>
+              <div class="details">
+                @if (service.durationMinutes != null) {
+                  <span
+                    ><mat-icon aria-hidden="true">schedule</mat-icon
+                    >{{ service.durationMinutes }} minutos</span
+                  >
+                }
+                @if (service.price != null && service.currency) {
+                  <strong><mat-icon aria-hidden="true">sell</mat-icon>{{ price(service) }}</strong>
+                }
+              </div>
+              <button mat-stroked-button (click)="openAvailability(service)">Ver turnos</button>
+            </article>
+          } @empty {
+            @if (!servicesLoading() && !servicesError()) {
+              <p>No hay servicios disponibles en esta sucursal.</p>
+            }
+          }
+        </div>
+        @if (services().length) {
+          <aside class="booking-help" aria-label="Cómo reservar un turno">
+            <h3>
+              <mat-icon aria-hidden="true">format_list_numbered</mat-icon>¿Cómo reservar un turno?
+            </h3>
+            <ol>
+              <li>Elegí un servicio</li>
+              <li>Tocá “Ver turnos” y elegí un horario</li>
+              <li>Completá tus datos y confirmá</li>
+            </ol>
+          </aside>
+        }
+      </section>
+    }
+  }
+</main>

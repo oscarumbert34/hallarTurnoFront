@@ -1,10 +1,9 @@
-@if (showShellNavigation$ | async) {
-  <mat-toolbar class="app-toolbar">
-    <a class="brand" routerLink="/search" aria-label="HallarTurno inicio">
-      <span class="brand-mark">H</span>
-      <span>HallarTurno</span>
-    </a>
+<mat-toolbar class="app-toolbar">
+  <a class="brand" routerLink="/" aria-label="HallarTurno inicio">
+    <img src="hallarturno-logo.png" alt="HallarTurno — Tu próximo turno, más fácil" />
+  </a>
 
+  @if (showShellNavigation$ | async) {
     <nav class="desktop-nav" aria-label="Principal">
       @for (item of navItems; track item.path) {
         <a
@@ -21,8 +20,8 @@
     @if (session$ | async) {
       <button mat-button type="button" class="logout-button" (click)="logout()">Salir</button>
     }
-  </mat-toolbar>
-}
+  }
+</mat-toolbar>
 
 <main class="shell">
   <router-outlet />

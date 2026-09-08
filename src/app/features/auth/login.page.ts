@@ -58,7 +58,12 @@ import { authErrorMessage } from './auth-errors';
               <p class="form-error" role="alert">{{ errorMessage }}</p>
             }
 
-            <button mat-flat-button type="submit" [disabled]="form.invalid || isSubmitting">
+            <button
+              mat-flat-button
+              class="login-button"
+              type="submit"
+              [disabled]="form.invalid || isSubmitting"
+            >
               Ingresar
             </button>
           </form>
@@ -90,6 +95,11 @@ import { authErrorMessage } from './auth-errors';
     .form-error {
       margin: 0;
       color: var(--mat-sys-error);
+    }
+
+    .login-button {
+      --mat-button-filled-container-color: #0866f5;
+      --mat-button-filled-label-text-color: white;
     }
   `,
 })

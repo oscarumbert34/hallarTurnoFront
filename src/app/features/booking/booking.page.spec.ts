@@ -28,10 +28,7 @@ describe('BookingPage', () => {
     bookingService = {
       searchCustomerContact: vi.fn(() =>
         of({
-          id: 'customer-1',
-          businessId: 'business-1',
-          name: 'Juan Gonzalez',
-          phone: '1124546622',
+          emailRequired: false,
         }),
       ),
       createBooking: vi.fn(),
@@ -119,12 +116,10 @@ describe('BookingPage', () => {
     });
   });
 
-  it('should require and send customerEmail when the phone does not exist', async () => {
+  it('should require and send customerEmail when emailRequired is true', async () => {
     vi.useFakeTimers();
     authService.isAuthenticated = true;
-    bookingService.searchCustomerContact.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 404 })),
-    );
+    bookingService.searchCustomerContact.mockReturnValue(of({ emailRequired: true }));
     bookingService.createBooking.mockReturnValue(
       of({
         id: 'booking-1',
@@ -143,7 +138,7 @@ describe('BookingPage', () => {
           skipCustomerContact?: boolean;
         }) => void;
       };
-      isNewCustomer: () => boolean;
+      emailRequired: () => boolean;
       confirmBooking: () => void;
     };
 
@@ -155,7 +150,7 @@ describe('BookingPage', () => {
     fixture.detectChanges();
 
     expect(bookingService.searchCustomerContact).toHaveBeenCalledWith('business-1', '1124546622');
-    expect(component.isNewCustomer()).toBe(true);
+    expect(component.emailRequired()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Email');
 
     component.confirmBooking();
@@ -182,9 +177,7 @@ describe('BookingPage', () => {
   it('should skip customer contact creation when a new customer has no email', async () => {
     vi.useFakeTimers();
     authService.isAuthenticated = true;
-    bookingService.searchCustomerContact.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 404 })),
-    );
+    bookingService.searchCustomerContact.mockReturnValue(of({ emailRequired: true }));
     bookingService.createBooking.mockReturnValue(
       of({
         id: 'booking-1',
@@ -232,29 +225,49 @@ describe('BookingPage', () => {
     });
   });
 
-  it('should not show contact fields when the customer exists', async () => {
-    vi.useFakeTimers();
-    authService.isAuthenticated = true;
-    const component = fixture.componentInstance as unknown as {
-      customerForm: {
-        patchValue: (value: {
-          customerName?: string;
-          customerPhone?: string;
-          customerEmail?: string;
-          skipCustomerContact?: boolean;
-        }) => void;
+  it.each([true, false])(
+    'should look up existing customers with authenticated=%s',
+    async (authenticated) => {
+      vi.useFakeTimers();
+      authService.isAuthenticated = authenticated;
+      const component = fixture.componentInstance as unknown as {
+        customerForm: {
+          patchValue: (value: {
+            customerName?: string;
+            customerPhone?: string;
+            customerEmail?: string;
+            skipCustomerContact?: boolean;
+          }) => void;
+        };
       };
-    };
 
-    component.customerForm.patchValue({
-      customerName: 'Juan Gonzalez',
-      customerPhone: '1124546622',
-    });
+      component.customerForm.patchValue({
+        customerName: 'Juan Gonzalez',
+        customerPhone: '1124546622',
+      });
+      await vi.advanceTimersByTimeAsync(300);
+      fixture.detectChanges();
+
+      expect(bookingService.searchCustomerContact).toHaveBeenCalledWith('business-1', '1124546622');
+      expect(fixture.nativeElement.textContent).not.toContain('No tengo el email del cliente');
+    },
+  );
+
+  it('should block confirmation when the email requirement cannot be retrieved', async () => {
+    vi.useFakeTimers();
+    bookingService.searchCustomerContact.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+    const component = fixture.componentInstance as unknown as {
+      customerForm: { patchValue: (value: { customerName: string; customerPhone: string }) => void };
+      confirmBooking: () => void;
+    };
+    component.customerForm.patchValue({ customerName: 'Juan', customerPhone: '1124546622' });
     await vi.advanceTimersByTimeAsync(300);
     fixture.detectChanges();
-
-    expect(bookingService.searchCustomerContact).toHaveBeenCalledWith('business-1', '1124546622');
-    expect(fixture.nativeElement.textContent).not.toContain('No tengo el email del cliente');
+    component.confirmBooking();
+    expect(bookingService.createBooking).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('No pudimos');
   });
 
   it('should recover the selected slot from storage when route params are missing', () => {

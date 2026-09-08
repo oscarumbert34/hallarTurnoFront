@@ -588,6 +588,7 @@ import {
                 </mat-form-field>
                 <button
                   mat-flat-button
+                  class="view-bookings-button"
                   type="submit"
                   [disabled]="bookingForm.invalid || loadingBookings()"
                 >

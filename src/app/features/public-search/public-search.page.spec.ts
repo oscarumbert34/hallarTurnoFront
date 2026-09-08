@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, ParamMap, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
@@ -21,11 +21,36 @@ describe('PublicSearchPage', () => {
   let route: {
     snapshot: {
       data: Record<string, unknown>;
+      queryParamMap?: ParamMap;
     };
   };
   let authService: {
     businessId: string | null;
   };
+
+  it('limits public search to the linked business and clears previously stored branch filters', () => {
+    route.snapshot.queryParamMap = convertToParamMap({ businessId: 'linked-business' });
+    sessionStorage.setItem(
+      'turnero.search',
+      JSON.stringify({
+        business: 'Other',
+        branchId: 'old-branch',
+        service: 'Old service',
+        date: '2026-08-17',
+      }),
+    );
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+    expect(component.form.controls.branchId.value).toBe('');
+    expect(bookingService.listBranches).toHaveBeenCalledWith('linked-business');
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
+    component.search();
+    expect(bookingService.searchAvailability).toHaveBeenCalledWith(
+      expect.objectContaining({ businessId: 'linked-business' }),
+      expect.anything(),
+    );
+  });
 
   beforeEach(async () => {
     vi.useFakeTimers();

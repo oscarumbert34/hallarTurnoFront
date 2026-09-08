@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
 import { SKIP_AUTH } from '../auth/auth.interceptor';
+import { PublicBusiness, PublicService } from '../public-business/public-business.models';
 import {
   AvailabilityPage,
   AvailabilityPagination,
@@ -13,7 +14,7 @@ import {
   BusinessSummary,
   BusinessAvailability,
   CreateBookingRequest,
-  CustomerContact,
+  CustomerContactSearchResponse,
   CustomerBooking,
   ServiceOfferingSummary,
 } from './booking.models';
@@ -22,6 +23,22 @@ import {
 export class BookingService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
+
+  getPublicBusiness(slug: string): Observable<PublicBusiness> {
+    return this.http.get<PublicBusiness>(
+      this.apiUrl.build(`/public/businesses/${encodeURIComponent(slug)}`),
+      { context: this.publicHttpContext() },
+    );
+  }
+
+  listPublicServices(slug: string, branchId: string): Observable<PublicService[]> {
+    return this.http.get<PublicService[]>(
+      this.apiUrl.build(
+        `/public/businesses/${encodeURIComponent(slug)}/branches/${encodeURIComponent(branchId)}/services`,
+      ),
+      { context: this.publicHttpContext() },
+    );
+  }
 
   searchAvailability(
     search: AvailabilitySearch,
@@ -103,10 +120,13 @@ export class BookingService {
       .pipe(map((response) => this.toServiceOfferings(response)));
   }
 
-  searchCustomerContact(businessId: string, phone: string): Observable<CustomerContact> {
+  searchCustomerContact(
+    businessId: string,
+    phone: string,
+  ): Observable<CustomerContactSearchResponse> {
     const params = new HttpParams().set('phone', phone);
 
-    return this.http.get<CustomerContact>(
+    return this.http.get<CustomerContactSearchResponse>(
       this.apiUrl.build(`/businesses/${businessId}/customer-contacts/search`),
       { params },
     );

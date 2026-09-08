@@ -27,6 +27,19 @@ describe('BookingService', () => {
     httpTesting.verify();
   });
 
+  it('loads business pages and branch services without authentication', () => {
+    service.getPublicBusiness('centro-piedica').subscribe();
+    const business = httpTesting.expectOne('/api/public/businesses/centro-piedica');
+    expect(business.request.context.get(SKIP_AUTH)).toBe(true);
+    business.flush({ id: 'b', branches: [] });
+    service.listPublicServices('centro-piedica', 'branch-1').subscribe();
+    const services = httpTesting.expectOne(
+      '/api/public/businesses/centro-piedica/branches/branch-1/services',
+    );
+    expect(services.request.context.get(SKIP_AUTH)).toBe(true);
+    services.flush([]);
+  });
+
   it('should search public availability with filters', () => {
     service
       .searchAvailability(
@@ -329,24 +342,22 @@ describe('BookingService', () => {
     });
   });
 
-  it('should search customer contacts by phone', () => {
-    service.searchCustomerContact('business-1', '1124546622').subscribe((contact) => {
-      expect(contact.id).toBe('contact-1');
-      expect(contact.email).toBe('juan@example.com');
-    });
+  it.each([true, false])(
+    'should read emailRequired=%s from the customer search',
+    (emailRequired) => {
+      service.searchCustomerContact('business-1', '1124546622').subscribe((contact) => {
+        expect(contact.emailRequired).toBe(emailRequired);
+      });
 
-    const request = httpTesting.expectOne(
-      '/api/businesses/business-1/customer-contacts/search?phone=1124546622',
-    );
+      const request = httpTesting.expectOne(
+        '/api/businesses/business-1/customer-contacts/search?phone=1124546622',
+      );
 
-    expect(request.request.method).toBe('GET');
-    expect(request.request.context.get(SKIP_AUTH)).toBe(false);
-    request.flush({
-      id: 'contact-1',
-      businessId: 'business-1',
-      name: 'Juan Perez',
-      phone: '+54 11 5555-1234',
-      email: 'juan@example.com',
-    });
-  });
+      expect(request.request.method).toBe('GET');
+      expect(request.request.context.get(SKIP_AUTH)).toBe(false);
+      request.flush({
+        emailRequired,
+      });
+    },
+  );
 });

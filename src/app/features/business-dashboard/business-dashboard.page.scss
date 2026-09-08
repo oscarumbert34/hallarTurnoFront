@@ -97,9 +97,19 @@ p {
   gap: 12px;
 }
 
+.view-bookings-button {
+  --mat-button-filled-container-color: #0866f5;
+  --mat-button-filled-label-text-color: white;
+}
+
 .entity-toolbar {
   display: flex;
   justify-content: flex-start;
+}
+
+.entity-toolbar button {
+  --mat-button-filled-container-color: #0866f5;
+  --mat-button-filled-label-text-color: white;
 }
 
 .expansion-form {

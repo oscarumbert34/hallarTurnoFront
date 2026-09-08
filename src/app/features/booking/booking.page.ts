@@ -78,7 +78,7 @@ import { BookingService } from './booking.service';
                 <mat-error>Indica tu nombre.</mat-error>
               </mat-form-field>
 
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" class="field-with-hint">
                 <mat-label>Teléfono</mat-label>
                 <input matInput formControlName="customerPhone" maxlength="10" />
                 <mat-hint
@@ -95,13 +95,13 @@ import { BookingService } from './booking.service';
                 <p class="customer-lookup" role="status">Buscando datos del cliente...</p>
               }
 
-              @if (isNewCustomer()) {
+              @if (emailRequired()) {
                 <mat-checkbox class="customer-skip-contact" formControlName="skipCustomerContact">
                   No tengo el email del cliente
                 </mat-checkbox>
 
                 @if (!skipCustomerContact()) {
-                  <mat-form-field appearance="outline">
+                  <mat-form-field appearance="outline" class="field-with-hint">
                     <mat-label>Email</mat-label>
                     <input
                       matInput
@@ -129,6 +129,7 @@ import { BookingService } from './booking.service';
             @if (!confirmedBooking()) {
               <button
                 mat-flat-button
+                class="confirm-booking"
                 type="button"
                 [disabled]="customerForm.invalid || saving() || !canConfirmCustomer()"
                 (click)="confirmBooking()"
@@ -178,7 +179,7 @@ export class BookingPage implements OnInit {
       this.customerContactLookupStatus() === 'new'
     );
   });
-  protected readonly isNewCustomer = signal(false);
+  protected readonly emailRequired = signal(false);
   protected readonly skipCustomerContact = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly customerForm = this.formBuilder.nonNullable.group({
@@ -215,7 +216,7 @@ export class BookingPage implements OnInit {
     const { date, time } = this.bookingDateTime(selectedSlot.startsAt);
     const customer = this.customerForm.getRawValue();
     const customerEmail = customer.customerEmail.trim();
-    const skipCustomerContact = this.isNewCustomer() && customer.skipCustomerContact;
+    const skipCustomerContact = this.emailRequired() && customer.skipCustomerContact;
 
     this.bookingService
       .createBooking({
@@ -228,7 +229,7 @@ export class BookingPage implements OnInit {
         customerName: customer.customerName.trim(),
         customerPhone: customer.customerPhone.trim(),
         skipCustomerContact: skipCustomerContact ? true : null,
-        ...(this.isNewCustomer() && !skipCustomerContact && customerEmail ? { customerEmail } : {}),
+        ...(this.emailRequired() && !skipCustomerContact && customerEmail ? { customerEmail } : {}),
       })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
@@ -275,7 +276,7 @@ export class BookingPage implements OnInit {
         distinctUntilChanged(),
         tap(() => {
           this.errorMessage.set('');
-          this.setNewCustomer(false);
+          this.setEmailRequired(false);
           this.customerContactLookupStatus.set('idle');
         }),
         switchMap((phone) => {
@@ -283,21 +284,11 @@ export class BookingPage implements OnInit {
             return of<'idle' | 'existing' | 'new' | 'error'>('idle');
           }
 
-          if (!this.authService.isAuthenticated) {
-            return of('existing' as const);
-          }
-
           this.customerContactLookupStatus.set('loading');
 
           return this.bookingService.searchCustomerContact(businessId, phone).pipe(
-            map(() => 'existing' as const),
-            catchError((error: unknown) => {
-              if (error instanceof HttpErrorResponse && error.status === 404) {
-                return of('new' as const);
-              }
-
-              return of('error' as const);
-            }),
+            map((response) => (response.emailRequired ? ('new' as const) : ('existing' as const))),
+            catchError(() => of('error' as const)),
           );
         }),
         takeUntilDestroyed(this.destroyRef),
@@ -306,13 +297,13 @@ export class BookingPage implements OnInit {
         this.customerContactLookupStatus.set(status);
 
         if (status === 'new') {
-          this.setNewCustomer(true);
+          this.setEmailRequired(true);
           return;
         }
 
         if (status === 'error') {
           this.errorMessage.set(
-            'No pudimos validar si el cliente existe. Intenta de nuevo en unos segundos.',
+            'No pudimos consultar si se requiere email. Intenta de nuevo en unos segundos.',
           );
         }
       });
@@ -327,10 +318,10 @@ export class BookingPage implements OnInit {
       });
   }
 
-  private setNewCustomer(isNewCustomer: boolean): void {
-    this.isNewCustomer.set(isNewCustomer);
+  private setEmailRequired(emailRequired: boolean): void {
+    this.emailRequired.set(emailRequired);
 
-    if (!isNewCustomer) {
+    if (!emailRequired) {
       this.customerForm.controls.skipCustomerContact.setValue(false, { emitEvent: false });
       this.skipCustomerContact.set(false);
     }
@@ -341,7 +332,7 @@ export class BookingPage implements OnInit {
   private updateCustomerEmailValidators(): void {
     const emailControl = this.customerForm.controls.customerEmail;
 
-    if (this.isNewCustomer() && !this.skipCustomerContact()) {
+    if (this.emailRequired() && !this.skipCustomerContact()) {
       emailControl.setValidators([
         Validators.required,
         Validators.maxLength(160),

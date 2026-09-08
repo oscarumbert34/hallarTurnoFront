@@ -91,12 +91,8 @@ export interface CreateBookingRequest {
   skipCustomerContact?: boolean | null;
 }
 
-export interface CustomerContact {
-  id: string;
-  businessId: string;
-  name: string;
-  phone: string;
-  email?: string;
+export interface CustomerContactSearchResponse {
+  emailRequired: boolean;
 }
 
 export interface CustomerBooking {

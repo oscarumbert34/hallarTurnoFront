@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { UiStateComponent } from '../../shared/ui-state.component';
@@ -22,6 +23,7 @@ import {
   BusinessSummary,
   ServiceOfferingSummary,
 } from '../booking/booking.models';
+import { navigateToBooking } from '../booking/booking-navigation';
 import { BookingService } from '../booking/booking.service';
 
 @Component({
@@ -33,6 +35,7 @@ import { BookingService } from '../booking/booking.service';
     MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatIconModule,
     MatSelectModule,
     ReactiveFormsModule,
     UiStateComponent,
@@ -45,12 +48,13 @@ import { BookingService } from '../booking/booking.service';
         <p>Encontrá disponibilidad por servicio, fecha y sucursal.</p>
       </header>
 
-      <mat-card appearance="outlined">
+      <mat-card appearance="outlined" class="search-card">
         <mat-card-content>
           <form class="search-form" [formGroup]="form" (ngSubmit)="search()">
             @if (!businessScoped) {
               <mat-form-field appearance="outline">
                 <mat-label>Negocio</mat-label>
+                <mat-icon matPrefix class="field-icon">storefront</mat-icon>
                 <input
                   matInput
                   formControlName="business"
@@ -74,6 +78,7 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Sucursal</mat-label>
+              <mat-icon matPrefix class="field-icon branch-icon">location_on</mat-icon>
               <mat-select formControlName="branchId" panelClass="search-select-panel">
                 <mat-option value="">Todas</mat-option>
                 @for (branch of branches(); track branch.id) {
@@ -84,6 +89,7 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Servicio</mat-label>
+              <mat-icon matPrefix class="field-icon service-icon">design_services</mat-icon>
               <mat-select formControlName="service" panelClass="search-select-panel">
                 @for (service of filteredServiceOfferings(); track service.id) {
                   <mat-option [value]="service.name">{{ service.name }}</mat-option>
@@ -96,6 +102,7 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Fecha</mat-label>
+              <mat-icon matPrefix class="field-icon branch-icon">calendar_today</mat-icon>
               <input
                 matInput
                 [matDatepicker]="searchDatePicker"
@@ -114,6 +121,7 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Desde</mat-label>
+              <mat-icon matPrefix class="field-icon branch-icon">schedule</mat-icon>
               <input
                 matInput
                 readonly
@@ -146,6 +154,7 @@ import { BookingService } from '../booking/booking.service';
 
             <mat-form-field appearance="outline">
               <mat-label>Hasta</mat-label>
+              <mat-icon matPrefix class="field-icon branch-icon">schedule</mat-icon>
               <input
                 matInput
                 readonly
@@ -175,7 +184,7 @@ import { BookingService } from '../booking/booking.service';
             </mat-form-field>
 
             <button mat-flat-button type="submit" [disabled]="form.invalid || loading()">
-              Buscar
+              <mat-icon aria-hidden="true">search</mat-icon>Buscar
             </button>
           </form>
         </mat-card-content>
@@ -260,7 +269,9 @@ export class PublicSearchPage implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  protected readonly businessScoped = Boolean(this.route.snapshot.data['businessScoped']);
+  protected readonly publicBusinessId = this.route.snapshot.queryParamMap?.get('businessId') ?? '';
+  protected readonly businessScoped =
+    Boolean(this.route.snapshot.data['businessScoped']) || !!this.publicBusinessId;
   protected readonly minSearchDate = this.startOfToday();
 
   protected readonly businesses = signal<BusinessSummary[]>([]);
@@ -331,6 +342,9 @@ export class PublicSearchPage implements OnInit {
     this.syncMinimumStartTime();
 
     if (this.businessScoped) {
+      if (this.publicBusinessId) {
+        this.form.patchValue({ business: '', branchId: '', service: '' }, { emitEvent: false });
+      }
       this.loadSessionBusinessOptions();
       return;
     }
@@ -480,43 +494,7 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected selectSlot(business: BusinessAvailability, slot: AvailabilitySlot): void {
-    const selectedSlot = {
-      businessId: business.businessId,
-      businessName: business.businessName,
-      branchId: business.branchId,
-      branchName: business.branchName,
-      serviceId: business.serviceId,
-      serviceName: business.serviceName,
-      slotId: slot.id,
-      startsAt: slot.startsAt,
-      endsAt: slot.endsAt,
-      resourceId: slot.resourceId,
-      resourceName: slot.resourceName,
-      price: business.price,
-    };
-
-    sessionStorage.setItem('turnero.selectedSlot', JSON.stringify(selectedSlot));
-
-    this.router.navigate(['/booking'], {
-      queryParams: {
-        businessId: selectedSlot.businessId,
-        businessName: selectedSlot.businessName,
-        branchId: selectedSlot.branchId,
-        branchName: selectedSlot.branchName,
-        serviceId: selectedSlot.serviceId,
-        serviceName: selectedSlot.serviceName,
-        slotId: selectedSlot.slotId,
-        startsAt: selectedSlot.startsAt,
-        endsAt: selectedSlot.endsAt,
-        resourceId: selectedSlot.resourceId,
-        resourceName: selectedSlot.resourceName,
-        price: selectedSlot.price,
-        search: JSON.stringify({
-          ...this.form.getRawValue(),
-          date: this.dateValue(this.form.controls.date.value),
-        }),
-      },
-    });
+    navigateToBooking(this.router, business, slot, this.availabilitySearch());
   }
 
   protected priceLabel(price: number | undefined): string {
@@ -823,7 +801,7 @@ export class PublicSearchPage implements OnInit {
   }
 
   private loadSessionBusinessOptions(): void {
-    const businessId = this.authService.businessId;
+    const businessId = this.publicBusinessId || this.authService.businessId;
 
     if (!businessId) {
       this.errorMessage.set('No encontramos el negocio asociado a la sesión.');
