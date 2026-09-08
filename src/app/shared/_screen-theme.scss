@@ -1,0 +1,123 @@
+// Shared presentation for search, reservations and business management.
+.turnero-screen {
+  color: #10284e;
+  font-family: Roboto, sans-serif;
+
+  > header h1 {
+    margin: 0 0 6px;
+    color: #10284e;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+
+  > header p {
+    color: #667895;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .field-icon {
+    margin-right: 8px;
+    color: #0879df;
+  }
+
+  .service-icon {
+    color: #0bbdac;
+  }
+
+  button[mat-flat-button] {
+    --mat-button-filled-container-color: #0866f5;
+    --mat-button-filled-label-text-color: white;
+    --mat-button-filled-disabled-container-color: #d7dce4;
+    --mat-button-filled-disabled-label-text-color: #8993a2;
+    min-height: 48px;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  button[mat-flat-button]:not(:disabled) {
+    box-shadow: 0 8px 18px rgb(8 121 223 / 20%);
+  }
+
+  button[mat-stroked-button],
+  button[mat-button] {
+    --mat-button-outlined-label-text-color: #0866f5;
+    --mat-button-text-label-text-color: #0866f5;
+    --mat-button-outlined-outline-color: #c5d7ee;
+    border-radius: 999px;
+    min-height: 44px;
+    font-weight: 500;
+  }
+
+  &.dashboard {
+    .dashboard-header {
+      display: grid;
+      justify-items: center;
+      text-align: center;
+    }
+
+    .dashboard-header > button {
+      justify-self: end;
+    }
+
+    .tab-panel > mat-card,
+    mat-expansion-panel {
+      background: rgb(255 255 255 / 98%);
+      border: 1px solid #e5eef9;
+      border-radius: 22px;
+      box-shadow: 0 14px 40px rgb(29 83 137 / 12%);
+    }
+
+    .tab-panel > mat-card > mat-card-content {
+      padding: 28px;
+    }
+
+    .row-card {
+      border-color: #e2eaf5;
+      border-radius: 16px;
+      background: white;
+    }
+
+    .booking-filter {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 14px 18px;
+    }
+
+    .booking-filter > mat-button-toggle-group,
+    .booking-filter > button[type='submit'] {
+      grid-column: 1 / -1;
+    }
+
+    mat-form-field {
+      min-width: 0;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 900px) {
+    &.dashboard .booking-filter {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    > header p {
+      font-size: 0.92rem;
+    }
+    &.dashboard {
+      .booking-filter {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .tab-panel > mat-card > mat-card-content {
+        padding: 20px 14px;
+      }
+      .tab-panel > mat-card,
+      mat-expansion-panel {
+        border-radius: 18px;
+      }
+    }
+  }
+}

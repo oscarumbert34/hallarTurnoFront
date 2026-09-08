@@ -41,7 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    data: { businessScoped: true, standalone: true },
+    data: { businessScoped: true },
     loadComponent: () =>
       import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
   },

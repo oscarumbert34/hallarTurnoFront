@@ -21,6 +21,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { provideNativeDateAdapter } from '@angular/material/core';
@@ -50,6 +51,7 @@ import {
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
+    MatIconModule,
     MatSelectModule,
     MatTabsModule,
     NgTemplateOutlet,
@@ -58,13 +60,15 @@ import {
   ],
   providers: [provideNativeDateAdapter()],
   template: `
-    <section class="dashboard">
+    <section class="dashboard turnero-screen">
       <header class="dashboard-header">
         <div>
           <h1>{{ pageTitle() }}</h1>
           <p>{{ pageSubtitle() }}</p>
         </div>
-        <button mat-stroked-button type="button" (click)="refreshAll()">Actualizar</button>
+        <button mat-stroked-button type="button" (click)="refreshAll()">
+          <mat-icon aria-hidden="true">refresh</mat-icon>Actualizar
+        </button>
       </header>
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
@@ -77,6 +81,7 @@ import {
             <section class="tab-panel">
               <div class="entity-toolbar">
                 <button mat-flat-button type="button" (click)="startCreateBranch()">
+                  <mat-icon aria-hidden="true">add_location_alt</mat-icon>
                   Crear sucursal
                 </button>
               </div>
@@ -96,41 +101,57 @@ import {
                   >
                     <mat-form-field appearance="outline">
                       <mat-label>Nombre</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">badge</mat-icon>
                       <input matInput formControlName="name" />
                       <mat-error>El nombre es obligatorio.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Dirección</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >location_on</mat-icon
+                      >
                       <input matInput formControlName="address" />
                       <mat-error>La dirección es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Localidad</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >location_city</mat-icon
+                      >
                       <input matInput formControlName="locality" />
                       <mat-error>La localidad es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Provincia</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">map</mat-icon>
                       <input matInput formControlName="province" />
                       <mat-error>La provincia es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>País</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">public</mat-icon>
                       <input matInput formControlName="country" />
                       <mat-error>El país es obligatorio.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Latitud</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >my_location</mat-icon
+                      >
                       <input matInput type="number" formControlName="latitude" />
                       <mat-error>La latitud es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Longitud</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >my_location</mat-icon
+                      >
                       <input matInput type="number" formControlName="longitude" />
                       <mat-error>La longitud es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Zona horaria</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">schedule</mat-icon>
                       <input matInput formControlName="zoneId" />
                       <mat-error>La zona horaria es obligatoria.</mat-error>
                     </mat-form-field>
@@ -155,6 +176,9 @@ import {
                                 <div class="schedule-range">
                                   <mat-form-field appearance="outline">
                                     <mat-label>Abre</mat-label>
+                                    <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                                      >schedule</mat-icon
+                                    >
                                     <input
                                       matInput
                                       type="time"
@@ -172,6 +196,9 @@ import {
                                   </mat-form-field>
                                   <mat-form-field appearance="outline">
                                     <mat-label>Cierra</mat-label>
+                                    <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                                      >schedule</mat-icon
+                                    >
                                     <input
                                       matInput
                                       type="time"
@@ -260,6 +287,7 @@ import {
             <section class="tab-panel">
               <div class="entity-toolbar">
                 <button mat-flat-button type="button" (click)="startCreateService()">
+                  <mat-icon aria-hidden="true">design_services</mat-icon>
                   Crear servicio
                 </button>
               </div>
@@ -282,16 +310,21 @@ import {
                   >
                     <mat-form-field appearance="outline">
                       <mat-label>Nombre</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">badge</mat-icon>
                       <input matInput formControlName="name" />
                       <mat-error>El nombre es obligatorio.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Duración minutos</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">schedule</mat-icon>
                       <input matInput type="number" min="5" formControlName="durationMinutes" />
                       <mat-error>La duración mínima es 5 minutos.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Sucursal</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >location_on</mat-icon
+                      >
                       <mat-select formControlName="branchId">
                         @for (branch of branches(); track branch.id) {
                           <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
@@ -301,6 +334,7 @@ import {
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Precio</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">sell</mat-icon>
                       <input matInput type="number" min="0" formControlName="price" />
                     </mat-form-field>
                     <mat-checkbox formControlName="active">Activo</mat-checkbox>
@@ -354,6 +388,7 @@ import {
             <section class="tab-panel">
               <div class="entity-toolbar">
                 <button mat-flat-button type="button" (click)="startCreateResource()">
+                  <mat-icon aria-hidden="true">person_add</mat-icon>
                   Crear recurso
                 </button>
               </div>
@@ -376,11 +411,15 @@ import {
                   >
                     <mat-form-field appearance="outline">
                       <mat-label>Nombre</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true">badge</mat-icon>
                       <input matInput formControlName="name" />
                       <mat-error>El nombre es obligatorio.</mat-error>
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Sucursal</mat-label>
+                      <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                        >location_on</mat-icon
+                      >
                       <mat-select formControlName="branchId">
                         <mat-option value="">Sin asignar</mat-option>
                         @for (branch of branches(); track branch.id) {
@@ -390,6 +429,9 @@ import {
                     </mat-form-field>
                     <mat-form-field appearance="outline">
                       <mat-label>Servicios que brinda</mat-label>
+                      <mat-icon matPrefix class="field-icon service-icon" aria-hidden="true"
+                        >design_services</mat-icon
+                      >
                       <mat-select formControlName="serviceOfferingIds" multiple>
                         @for (service of resourceServices(); track service.id) {
                           <mat-option [value]="service.id">{{ service.name }}</mat-option>
@@ -418,6 +460,9 @@ import {
                                 <div class="schedule-range">
                                   <mat-form-field appearance="outline">
                                     <mat-label>Desde</mat-label>
+                                    <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                                      >schedule</mat-icon
+                                    >
                                     <input
                                       matInput
                                       type="time"
@@ -435,6 +480,9 @@ import {
                                   </mat-form-field>
                                   <mat-form-field appearance="outline">
                                     <mat-label>Hasta</mat-label>
+                                    <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                                      >schedule</mat-icon
+                                    >
                                     <input
                                       matInput
                                       type="time"
@@ -540,6 +588,9 @@ import {
                 </mat-button-toggle-group>
                 <mat-form-field appearance="outline">
                   <mat-label>{{ bookingViewMode() === 'week' ? 'Semana' : 'Fecha' }}</mat-label>
+                  <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                    >calendar_today</mat-icon
+                  >
                   <input
                     matInput
                     [matDatepicker]="bookingDatePicker"
@@ -551,6 +602,7 @@ import {
                 </mat-form-field>
                 <mat-form-field appearance="outline">
                   <mat-label>Estado</mat-label>
+                  <mat-icon matPrefix class="field-icon" aria-hidden="true">fact_check</mat-icon>
                   <mat-select formControlName="status">
                     <mat-option value="ACTIVE">Activas</mat-option>
                     <mat-option value="CONFIRMED">Confirmadas</mat-option>
@@ -561,6 +613,7 @@ import {
                 </mat-form-field>
                 <mat-form-field appearance="outline">
                   <mat-label>Sucursal</mat-label>
+                  <mat-icon matPrefix class="field-icon" aria-hidden="true">location_on</mat-icon>
                   <mat-select formControlName="branchId">
                     <mat-option value="">Todas</mat-option>
                     @for (branch of branches(); track branch.id) {
@@ -570,6 +623,9 @@ import {
                 </mat-form-field>
                 <mat-form-field appearance="outline">
                   <mat-label>Servicio</mat-label>
+                  <mat-icon matPrefix class="field-icon service-icon" aria-hidden="true"
+                    >design_services</mat-icon
+                  >
                   <mat-select formControlName="serviceOfferingId">
                     <mat-option value="">Todos</mat-option>
                     @for (service of bookingServices(); track service.id) {
@@ -579,6 +635,7 @@ import {
                 </mat-form-field>
                 <mat-form-field appearance="outline">
                   <mat-label>Recurso</mat-label>
+                  <mat-icon matPrefix class="field-icon" aria-hidden="true">person</mat-icon>
                   <mat-select formControlName="resourceId">
                     <mat-option value="">Todos</mat-option>
                     @for (resource of bookingResources(); track resource.id) {
@@ -592,7 +649,7 @@ import {
                   type="submit"
                   [disabled]="bookingForm.invalid || loadingBookings()"
                 >
-                  Ver reservas
+                  <mat-icon aria-hidden="true">search</mat-icon>Ver reservas
                 </button>
               </form>
             </mat-card-content>
@@ -680,7 +737,9 @@ import {
                       </strong>
                       <span class="week-booking-main">
                         <b>{{ booking.customerName }}</b>
-                        <small>{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small>
+                        <small
+                          >{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small
+                        >
                       </span>
                       <small
                         class="booking-status"
@@ -1383,9 +1442,9 @@ export class BusinessDashboardPage implements OnInit {
   protected canCopyWeek(): boolean {
     return Boolean(
       this.weeklyBookingCopyEnabled() &&
-        this.bookingForm.controls.branchId.value &&
-        this.bookingForm.controls.resourceId.value &&
-        this.bookingForm.controls.serviceOfferingId.value,
+      this.bookingForm.controls.branchId.value &&
+      this.bookingForm.controls.resourceId.value &&
+      this.bookingForm.controls.serviceOfferingId.value,
     );
   }
 

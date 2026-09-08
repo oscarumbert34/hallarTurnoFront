@@ -42,7 +42,7 @@ import { BookingService } from '../booking/booking.service';
   ],
   providers: [provideNativeDateAdapter()],
   template: `
-    <section class="search-page">
+    <section class="search-page turnero-screen">
       <header>
         <h1>Buscar turno</h1>
         <p>Encontrá disponibilidad por servicio, fecha y sucursal.</p>
