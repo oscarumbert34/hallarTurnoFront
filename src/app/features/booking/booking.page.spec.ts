@@ -116,6 +116,34 @@ describe('BookingPage', () => {
     });
   });
 
+  it('should normalize a phone copied from WhatsApp when it is pasted', () => {
+    const component = fixture.componentInstance as unknown as {
+      customerForm: { controls: { customerPhone: { value: string } } };
+      normalizePastedPhone: (event: ClipboardEvent) => void;
+    };
+    const preventDefault = vi.fn();
+    component.normalizePastedPhone({
+      clipboardData: { getData: () => '+54 9 11 65684041' },
+      preventDefault,
+    } as unknown as ClipboardEvent);
+
+    expect(preventDefault).toHaveBeenCalled();
+    expect(component.customerForm.controls.customerPhone.value).toBe('1165684041');
+  });
+
+  it('should leave an already valid phone unchanged when it is pasted', () => {
+    const component = fixture.componentInstance as unknown as {
+      normalizePastedPhone: (event: ClipboardEvent) => void;
+    };
+    const preventDefault = vi.fn();
+    component.normalizePastedPhone({
+      clipboardData: { getData: () => '1165684041' },
+      preventDefault,
+    } as unknown as ClipboardEvent);
+
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
   it('should require and send customerEmail when emailRequired is true', async () => {
     vi.useFakeTimers();
     authService.isAuthenticated = true;

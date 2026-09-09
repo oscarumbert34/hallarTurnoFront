@@ -80,7 +80,15 @@ import { BookingService } from './booking.service';
 
               <mat-form-field appearance="outline" class="field-with-hint">
                 <mat-label>Teléfono</mat-label>
-                <input matInput formControlName="customerPhone" maxlength="10" />
+                <input
+                  matInput
+                  formControlName="customerPhone"
+                  maxlength="10"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  (paste)="normalizePastedPhone($event)"
+                  (blur)="normalizeCustomerPhone()"
+                />
                 <mat-hint
                   >Ingresa 10 dígitos sin 0, 15, espacios ni guiones. Ejemplo: 1124546622.</mat-hint
                 >
@@ -188,6 +196,36 @@ export class BookingPage implements OnInit {
     customerEmail: ['', [Validators.maxLength(160), Validators.email]],
     skipCustomerContact: [false],
   });
+
+  protected normalizePastedPhone(event: ClipboardEvent): void {
+    const pastedValue = event.clipboardData?.getData('text') ?? '';
+    const normalizedValue = this.normalizedPhone(pastedValue);
+
+    if (normalizedValue === pastedValue) {
+      return;
+    }
+
+    event.preventDefault();
+    this.customerForm.controls.customerPhone.setValue(normalizedValue);
+  }
+
+  protected normalizeCustomerPhone(): void {
+    const control = this.customerForm.controls.customerPhone;
+    const normalizedValue = this.normalizedPhone(control.value);
+
+    if (normalizedValue !== control.value) {
+      control.setValue(normalizedValue);
+    }
+  }
+
+  private normalizedPhone(value: string): string {
+    if (/^\d{10}$/.test(value)) {
+      return value;
+    }
+
+    const digits = value.replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
+  }
 
   ngOnInit(): void {
     this.selectedSlot.set(this.slotFromRoute());
