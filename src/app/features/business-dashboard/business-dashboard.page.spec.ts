@@ -773,7 +773,7 @@ describe('BusinessDashboardPage', () => {
       20,
       'branch-1',
       '',
-      'service-1',
+      '',
     );
   });
 
@@ -984,7 +984,7 @@ describe('BusinessDashboardPage', () => {
       20,
       'branch-1',
       '',
-      'service-1',
+      '',
     );
   });
 

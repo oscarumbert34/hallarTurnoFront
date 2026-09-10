@@ -2056,11 +2056,6 @@ export class BusinessDashboardPage implements OnInit {
       this.bookingForm.controls.branchId.setValue(firstBranch.id, { emitEvent: false });
     }
 
-    const firstService = this.bookingServices()[0];
-    if (firstService) {
-      this.bookingForm.controls.serviceOfferingId.setValue(firstService.id, { emitEvent: false });
-    }
-
     const firstResource = this.bookingResources()[0];
     if (firstResource) {
       this.bookingForm.controls.resourceId.setValue(firstResource.id, { emitEvent: false });

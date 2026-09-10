@@ -71,7 +71,7 @@ describe('PublicSearchPage', () => {
     const component = fixture.componentInstance as any;
 
     expect(component.form.controls.branchId.value).toBe('branch-1');
-    expect(component.form.controls.service.value).toBe('Corte');
+    expect(component.form.controls.service.value).toBe('');
     expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
     expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
   });
@@ -823,6 +823,6 @@ describe('PublicSearchPage', () => {
 
     component.form.patchValue({ branchId: 'branch-1' });
 
-    expect(component.form.controls.service.value).toBe('Corte');
+    expect(component.form.controls.service.value).toBe('');
   });
 });

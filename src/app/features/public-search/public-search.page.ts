@@ -91,6 +91,7 @@ import { BookingService } from '../booking/booking.service';
               <mat-label>Servicio</mat-label>
               <mat-icon matPrefix class="field-icon service-icon">design_services</mat-icon>
               <mat-select formControlName="service" panelClass="search-select-panel">
+                <mat-option value="">Todos</mat-option>
                 @for (service of filteredServiceOfferings(); track service.id) {
                   <mat-option [value]="service.name">{{ service.name }}</mat-option>
                 } @empty {
@@ -292,7 +293,7 @@ export class PublicSearchPage implements OnInit {
   protected readonly form = this.formBuilder.nonNullable.group({
     business: [''],
     branchId: [''],
-    service: ['', Validators.required],
+    service: [''],
     date: [
       new Date() as Date | string,
       [Validators.required, this.notPastDateValidator.bind(this)],
@@ -868,13 +869,6 @@ export class PublicSearchPage implements OnInit {
       !this.filteredServiceOfferings().some((service) => service.name === selectedService)
     ) {
       this.form.controls.service.setValue('');
-    }
-
-    if (!this.form.controls.service.value) {
-      const firstService = this.filteredServiceOfferings()[0];
-      if (firstService) {
-        this.form.controls.service.setValue(firstService.name);
-      }
     }
   }
 
