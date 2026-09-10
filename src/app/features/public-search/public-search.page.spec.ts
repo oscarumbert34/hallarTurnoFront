@@ -52,6 +52,30 @@ describe('PublicSearchPage', () => {
     );
   });
 
+  it('selects the first valid options when returning from a booking with stale filters', () => {
+    route.snapshot.data = { businessScoped: true };
+    sessionStorage.setItem(
+      'turnero.search',
+      JSON.stringify({
+        business: 'Otro negocio',
+        branchId: 'old-branch',
+        service: 'Old service',
+        date: '2026-08-17',
+        timeFrom: '09:00',
+        timeTo: '18:00',
+      }),
+    );
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    expect(component.form.controls.branchId.value).toBe('branch-1');
+    expect(component.form.controls.service.value).toBe('Corte');
+    expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
+    expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
+  });
+
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 1, 8, 0));

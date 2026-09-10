@@ -841,8 +841,9 @@ export class PublicSearchPage implements OnInit {
     this.bookingService.listBranches(businessId).subscribe({
       next: (branches) => {
         this.branches.set(branches);
-        if (!this.form.controls.branchId.value && branches.length) {
-          this.form.controls.branchId.setValue(branches[0].id);
+        const selectedBranchId = this.form.controls.branchId.value;
+        if (!branches.some((branch) => branch.id === selectedBranchId)) {
+          this.form.controls.branchId.setValue(branches[0]?.id ?? '');
         }
       },
       error: () => this.branches.set([]),
