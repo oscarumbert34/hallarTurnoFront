@@ -794,6 +794,10 @@ export class PublicSearchPage implements OnInit {
       next: (businesses) => {
         this.businesses.set(businesses);
         this.syncBusinessSelection(this.form.controls.business.value);
+        if (!this.selectedBusinessId() && businesses.length) {
+          this.form.controls.business.setValue(businesses[0].name);
+          return;
+        }
         this.syncBusinessOptions(false);
       },
       error: () => this.businesses.set([]),
@@ -835,7 +839,12 @@ export class PublicSearchPage implements OnInit {
 
   private loadBranches(businessId: string): void {
     this.bookingService.listBranches(businessId).subscribe({
-      next: (branches) => this.branches.set(branches),
+      next: (branches) => {
+        this.branches.set(branches);
+        if (!this.form.controls.branchId.value && branches.length) {
+          this.form.controls.branchId.setValue(branches[0].id);
+        }
+      },
       error: () => this.branches.set([]),
     });
   }
@@ -858,6 +867,13 @@ export class PublicSearchPage implements OnInit {
       !this.filteredServiceOfferings().some((service) => service.name === selectedService)
     ) {
       this.form.controls.service.setValue('');
+    }
+
+    if (!this.form.controls.service.value) {
+      const firstService = this.filteredServiceOfferings()[0];
+      if (firstService) {
+        this.form.controls.service.setValue(firstService.name);
+      }
     }
   }
 

@@ -936,6 +936,7 @@ export class BusinessDashboardPage implements OnInit {
   private lastBookingRequestKey = '';
   private lastBookingRequestStartedAt = 0;
   private lastCompletedBookingRequestKey = '';
+  private bookingDefaultsInitialized = false;
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
@@ -1053,6 +1054,11 @@ export class BusinessDashboardPage implements OnInit {
           this.resources.set(result.resources);
           this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
           this.pruneResourceServicesForBranch();
+          if (!this.bookingDefaultsInitialized) {
+            this.bookingDefaultsInitialized = true;
+            this.selectFirstBookingFilters();
+            this.loadCurrentBookings(true);
+          }
         },
         error: (error) => this.errorMessage.set(dashboardErrorMessage(error)),
       });
@@ -2041,6 +2047,23 @@ export class BusinessDashboardPage implements OnInit {
       !this.bookingResources().some((resource) => resource.id === selectedResourceId)
     ) {
       this.bookingForm.controls.resourceId.setValue('');
+    }
+  }
+
+  private selectFirstBookingFilters(): void {
+    const firstBranch = this.branches()[0];
+    if (firstBranch) {
+      this.bookingForm.controls.branchId.setValue(firstBranch.id, { emitEvent: false });
+    }
+
+    const firstService = this.bookingServices()[0];
+    if (firstService) {
+      this.bookingForm.controls.serviceOfferingId.setValue(firstService.id, { emitEvent: false });
+    }
+
+    const firstResource = this.bookingResources()[0];
+    if (firstResource) {
+      this.bookingForm.controls.resourceId.setValue(firstResource.id, { emitEvent: false });
     }
   }
 

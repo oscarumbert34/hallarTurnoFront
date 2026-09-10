@@ -42,7 +42,7 @@ describe('PublicSearchPage', () => {
     fixture = TestBed.createComponent(PublicSearchPage);
     fixture.detectChanges();
     const component = fixture.componentInstance as any;
-    expect(component.form.controls.branchId.value).toBe('');
+    expect(component.form.controls.branchId.value).toBe('branch-1');
     expect(bookingService.listBranches).toHaveBeenCalledWith('linked-business');
     component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
     component.search();
@@ -715,8 +715,8 @@ describe('PublicSearchPage', () => {
       };
     };
 
-    expect(bookingService.listServiceOfferings).not.toHaveBeenCalled();
-    expect(bookingService.listBranches).not.toHaveBeenCalled();
+    expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
+    expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
 
     component.form.patchValue({ business: 'Turnos SA' });
     fixture.detectChanges();
@@ -785,7 +785,6 @@ describe('PublicSearchPage', () => {
     expect(serviceField?.querySelector('input')).toBeFalsy();
     expect(component.filteredServiceOfferings().map((service) => service.id)).toEqual([
       'service-1',
-      'service-2',
     ]);
 
     component.form.patchValue({ branchId: 'branch-1' });
@@ -800,6 +799,6 @@ describe('PublicSearchPage', () => {
 
     component.form.patchValue({ branchId: 'branch-1' });
 
-    expect(component.form.controls.service.value).toBe('');
+    expect(component.form.controls.service.value).toBe('Corte');
   });
 });

@@ -767,7 +767,14 @@ describe('BusinessDashboardPage', () => {
     component.bookingForm.controls.date.setValue(new Date(2026, 7, 28));
     component.loadBookings();
 
-    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith('2026-08-28', 0, 20, '', '', '');
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
+      '2026-08-28',
+      0,
+      20,
+      'branch-1',
+      '',
+      'service-1',
+    );
   });
 
   it('should request bookings once with a date range when using the weekly view', () => {
@@ -977,7 +984,7 @@ describe('BusinessDashboardPage', () => {
       20,
       'branch-1',
       '',
-      '',
+      'service-1',
     );
   });
 
