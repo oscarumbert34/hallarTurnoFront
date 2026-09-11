@@ -9,6 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
@@ -26,15 +27,20 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { UiStateComponent } from '../../shared/ui-state.component';
+import { BookingService } from '../booking/booking.service';
+import { AvailabilitySlot } from '../booking/booking.models';
 import { BusinessDashboardService } from './business-dashboard.service';
 import { dashboardErrorMessage } from './dashboard-error';
 import {
   Booking,
   Branch,
   BranchSchedule,
+  BranchScheduleException,
+  BranchScheduleExceptionRequest,
   DayOfWeek,
   EntityCollection,
   Resource,
+  ResourceAbsence,
   ResourceSchedule,
   ServiceCatalogItem,
 } from './dashboard.models';
@@ -156,8 +162,18 @@ import {
                       <mat-error>La zona horaria es obligatoria.</mat-error>
                     </mat-form-field>
                     <mat-checkbox formControlName="active">Activa</mat-checkbox>
-                    <section class="schedule-editor" aria-label="Agenda semanal de la sucursal">
-                      <h3>Agenda semanal</h3>
+                    <mat-expansion-panel
+                      class="schedule-editor branch-schedule-panel"
+                      [expanded]="branchScheduleExpanded()"
+                      (opened)="branchScheduleExpanded.set(true)"
+                      (closed)="branchScheduleExpanded.set(false)"
+                    >
+                      <mat-expansion-panel-header>
+                        <mat-panel-title>Agenda semanal</mat-panel-title>
+                        <mat-panel-description>
+                          {{ branchScheduleSummary() }}
+                        </mat-panel-description>
+                      </mat-expansion-panel-header>
                       <div class="schedule-grid">
                         @for (day of branchSchedule(); track day.dayOfWeek) {
                           <div class="schedule-row">
@@ -240,6 +256,108 @@ import {
                         <p class="form-error">
                           Selecciona al menos un día y un rango horario válido.
                         </p>
+                      }
+                    </mat-expansion-panel>
+                    <section
+                      class="schedule-editor exception-editor"
+                      aria-label="Excepciones de la sucursal"
+                    >
+                      <div class="subsection-header">
+                        <h3>Excepciones</h3>
+                        @if (editingBranchId()) {
+                          <button mat-stroked-button type="button" (click)="startBranchException()">
+                            <mat-icon aria-hidden="true">add</mat-icon> Agregar excepción
+                          </button>
+                        }
+                      </div>
+                      @if (!editingBranchId()) {
+                        <p class="empty">Guardá la sucursal para poder agregar excepciones.</p>
+                      } @else {
+                        @if (showBranchExceptionForm()) {
+                          <div class="exception-form" [formGroup]="branchExceptionForm">
+                            <mat-form-field appearance="outline">
+                              <mat-label>Fecha</mat-label>
+                              <input
+                                matInput
+                                [matDatepicker]="exceptionDatePicker"
+                                formControlName="date"
+                              />
+                              <mat-datepicker-toggle matIconSuffix [for]="exceptionDatePicker" />
+                              <mat-datepicker #exceptionDatePicker />
+                            </mat-form-field>
+                            <mat-form-field appearance="outline">
+                              <mat-label>Tipo</mat-label>
+                              <mat-select formControlName="type">
+                                <mat-option value="CLOSED">Cerrado todo el día</mat-option>
+                                <mat-option value="CUSTOM_HOURS">Horario especial</mat-option>
+                              </mat-select>
+                            </mat-form-field>
+                            @if (branchExceptionForm.controls.type.value === 'CUSTOM_HOURS') {
+                              <mat-form-field appearance="outline"
+                                ><mat-label>Desde</mat-label
+                                ><input matInput type="time" formControlName="startTime"
+                              /></mat-form-field>
+                              <mat-form-field appearance="outline"
+                                ><mat-label>Hasta</mat-label
+                                ><input matInput type="time" formControlName="endTime"
+                              /></mat-form-field>
+                            }
+                            <mat-form-field appearance="outline" class="reason-field">
+                              <mat-label>Motivo (opcional)</mat-label>
+                              <textarea
+                                matInput
+                                maxlength="500"
+                                formControlName="reason"
+                              ></textarea>
+                            </mat-form-field>
+                            <div class="form-actions">
+                              <button
+                                mat-flat-button
+                                type="button"
+                                [disabled]="savingException()"
+                                (click)="saveBranchException()"
+                              >
+                                Guardar excepción
+                              </button>
+                              <button mat-button type="button" (click)="cancelBranchException()">
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        }
+                        @if (branchExceptionError()) {
+                          <p class="form-error">{{ branchExceptionError() }}</p>
+                        }
+                        <div class="exception-list">
+                          @for (exception of branchExceptions(); track exception.id) {
+                            <article>
+                              <div>
+                                <strong>{{ shortDateLabel(dateInputValue(exception.date)) }}</strong
+                                ><span>{{ branchExceptionLabel(exception) }}</span>
+                                @if (exception.reason) {
+                                  <small>{{ exception.reason }}</small>
+                                }
+                              </div>
+                              <div class="row-actions">
+                                <button
+                                  mat-button
+                                  type="button"
+                                  (click)="editBranchException(exception)"
+                                >
+                                  Editar</button
+                                ><button
+                                  mat-button
+                                  type="button"
+                                  (click)="removeBranchException(exception)"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            </article>
+                          } @empty {
+                            <p class="empty">No hay excepciones cargadas.</p>
+                          }
+                        </div>
                       }
                     </section>
                     <div class="form-actions">
@@ -521,6 +639,82 @@ import {
                         </p>
                       }
                     </section>
+                    <section
+                      class="schedule-editor exception-editor"
+                      aria-label="Ausencias del recurso"
+                    >
+                      <div class="subsection-header">
+                        <h3>Ausencias</h3>
+                        <button mat-stroked-button type="button" (click)="startResourceAbsence()">
+                          <mat-icon aria-hidden="true">add</mat-icon> Agregar ausencia
+                        </button>
+                      </div>
+                      @if (showResourceAbsenceForm()) {
+                        <div class="exception-form" [formGroup]="resourceAbsenceForm">
+                          <mat-form-field appearance="outline"
+                            ><mat-label>Fecha</mat-label
+                            ><input
+                              matInput
+                              [matDatepicker]="absenceDatePicker"
+                              formControlName="date"
+                              [min]="today" /><mat-datepicker-toggle
+                              matIconSuffix
+                              [for]="absenceDatePicker" /><mat-datepicker #absenceDatePicker
+                          /></mat-form-field>
+                          <mat-checkbox formControlName="allDay">Día completo</mat-checkbox>
+                          @if (!resourceAbsenceForm.controls.allDay.value) {
+                            <mat-form-field appearance="outline"
+                              ><mat-label>Desde</mat-label
+                              ><input matInput type="time" formControlName="startsAt"
+                            /></mat-form-field>
+                            <mat-form-field appearance="outline"
+                              ><mat-label>Hasta</mat-label
+                              ><input matInput type="time" formControlName="endsAt"
+                            /></mat-form-field>
+                          }
+                          <div class="form-actions">
+                            <button mat-flat-button type="button" (click)="saveResourceAbsence()">
+                              Guardar ausencia</button
+                            ><button mat-button type="button" (click)="cancelResourceAbsence()">
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      }
+                      @if (resourceAbsenceError()) {
+                        <p class="form-error">{{ resourceAbsenceError() }}</p>
+                      }
+                      <div class="exception-list">
+                        @for (
+                          absence of futureResourceAbsences();
+                          track absence.date + '-' + absence.startsAt
+                        ) {
+                          <article>
+                            <div>
+                              <strong>{{ shortDateLabel(dateInputValue(absence.date)) }}</strong
+                              ><span>{{ resourceAbsenceLabel(absence) }}</span>
+                            </div>
+                            <div class="row-actions">
+                              <button
+                                mat-button
+                                type="button"
+                                (click)="editResourceAbsence(absence)"
+                              >
+                                Editar</button
+                              ><button
+                                mat-button
+                                type="button"
+                                (click)="removeResourceAbsence(absence)"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </article>
+                        } @empty {
+                          <p class="empty">No hay ausencias futuras.</p>
+                        }
+                      </div>
+                    </section>
                     <div class="form-actions">
                       <button
                         mat-flat-button
@@ -562,6 +756,39 @@ import {
                   <p class="empty">No hay recursos cargados.</p>
                 }
               </div>
+            </section>
+          </mat-tab>
+          <mat-tab label="Configuración">
+            <section class="tab-panel business-configuration">
+              <mat-card appearance="outlined">
+                <mat-card-header
+                  ><mat-card-title>Configuración del negocio</mat-card-title></mat-card-header
+                >
+                <mat-card-content>
+                  <mat-checkbox
+                    [checked]="depositEnabled()"
+                    (change)="depositEnabled.set($event.checked)"
+                  >
+                    Habilitar manejo de señas
+                  </mat-checkbox>
+                  <p class="configuration-help">
+                    Al habilitarlo, las reservas podrán registrarse con la seña pagada o pendiente.
+                  </p>
+                  @if (configurationError()) {
+                    <p class="form-error">{{ configurationError() }}</p>
+                  }
+                </mat-card-content>
+                <mat-card-actions
+                  ><button
+                    mat-flat-button
+                    type="button"
+                    [disabled]="savingConfiguration()"
+                    (click)="saveConfiguration()"
+                  >
+                    Guardar configuración
+                  </button></mat-card-actions
+                >
+              </mat-card>
             </section>
           </mat-tab>
         </mat-tab-group>
@@ -656,6 +883,9 @@ import {
           </mat-card>
 
           <app-ui-state [loading]="loadingBookings()" [error]="bookingError()" />
+          @if (bookingSuccess()) {
+            <p class="booking-success" role="status">{{ bookingSuccess() }}</p>
+          }
 
           @if (bookingViewMode() === 'week') {
             <div class="week-nav">
@@ -677,6 +907,7 @@ import {
                 Semana siguiente
               </button>
             </div>
+            <p class="swipe-week-hint">Deslizá hacia los lados para cambiar de semana</p>
             @if (weeklyBookingCopyEnabled()) {
               <div class="copy-week-toolbar">
                 <button
@@ -693,7 +924,13 @@ import {
               </div>
             }
 
-            <div class="week-day-tabs" role="tablist" aria-label="Días de la semana">
+            <div
+              class="week-day-tabs"
+              role="tablist"
+              aria-label="Días de la semana"
+              (touchstart)="onWeekTouchStart($event)"
+              (touchend)="onWeekTouchEnd($event)"
+            >
               @for (day of weeklyBookings(); track day.date) {
                 <button
                   type="button"
@@ -713,7 +950,11 @@ import {
             </div>
 
             @if (selectedWeekDay(); as day) {
-              <section class="selected-week-day">
+              <section
+                class="selected-week-day"
+                (touchstart)="onWeekTouchStart($event)"
+                (touchend)="onWeekTouchEnd($event)"
+              >
                 <header>
                   <div>
                     <h3>{{ day.fullLabel }}</h3>
@@ -741,13 +982,25 @@ import {
                           >{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small
                         >
                       </span>
-                      <small
-                        class="booking-status"
-                        [class.pending]="booking.status === 'PENDING'"
-                        [class.cancelled]="booking.status === 'CANCELLED'"
-                      >
-                        {{ statusLabel(booking.status) }}
-                      </small>
+                      <span class="booking-statuses">
+                        <small
+                          class="booking-status"
+                          [class.pending]="booking.status === 'PENDING'"
+                          [class.cancelled]="booking.status === 'CANCELLED'"
+                        >
+                          {{ statusLabel(booking.status) }}
+                        </small>
+                        @if (
+                          depositEnabled() &&
+                          (booking.depositStatus === 'PAID' || booking.depositStatus === 'PENDING')
+                        ) {
+                          <small
+                            class="deposit-status"
+                            [class.paid]="booking.depositStatus === 'PAID'"
+                            >{{ depositStatusLabel(booking.depositStatus) }}</small
+                          >
+                        }
+                      </span>
                     </button>
                   } @empty {
                     <p class="empty">No hay reservas para este día.</p>
@@ -782,13 +1035,25 @@ import {
                       <b>{{ booking.customerName }}</b>
                       <small>{{ booking.serviceName }} · {{ bookingResourceName(booking) }}</small>
                     </span>
-                    <small
-                      class="booking-status"
-                      [class.pending]="booking.status === 'PENDING'"
-                      [class.cancelled]="booking.status === 'CANCELLED'"
-                    >
-                      {{ statusLabel(booking.status) }}
-                    </small>
+                    <span class="booking-statuses">
+                      <small
+                        class="booking-status"
+                        [class.pending]="booking.status === 'PENDING'"
+                        [class.cancelled]="booking.status === 'CANCELLED'"
+                      >
+                        {{ statusLabel(booking.status) }}
+                      </small>
+                      @if (
+                        depositEnabled() &&
+                        (booking.depositStatus === 'PAID' || booking.depositStatus === 'PENDING')
+                      ) {
+                        <small
+                          class="deposit-status"
+                          [class.paid]="booking.depositStatus === 'PAID'"
+                          >{{ depositStatusLabel(booking.depositStatus) }}</small
+                        >
+                      }
+                    </span>
                   </button>
                 } @empty {
                   <p class="empty">No hay reservas para la fecha seleccionada.</p>
@@ -900,11 +1165,34 @@ import {
                     </span>
                   </dd>
                 </div>
+                @if (depositEnabled() && booking.depositStatus !== 'NOT_REQUIRED') {
+                  <div>
+                    <dt>Seña</dt>
+                    <dd>{{ depositStatusLabel(booking.depositStatus ?? 'PENDING') }}</dd>
+                  </div>
+                }
               </dl>
             </mat-dialog-content>
             <mat-dialog-actions class="booking-detail-actions" align="end">
               <button mat-button type="button" mat-dialog-close>Cerrar</button>
               @if (booking.status !== 'CANCELLED') {
+                @if (depositEnabled() && booking.depositStatus !== 'NOT_REQUIRED') {
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [disabled]="updatingDeposit()"
+                    (click)="toggleDepositStatus(booking)"
+                  >
+                    {{
+                      booking.depositStatus === 'PAID'
+                        ? 'Marcar como pendiente'
+                        : 'Marcar como señado'
+                    }}
+                  </button>
+                }
+                <button mat-stroked-button type="button" (click)="openRescheduleDialog(booking)">
+                  Reprogramar turno
+                </button>
                 <button
                   mat-flat-button
                   type="button"
@@ -919,6 +1207,99 @@ import {
           </section>
         }
       </ng-template>
+
+      <ng-template #rescheduleDialog>
+        @if (selectedBooking(); as booking) {
+          <section class="reschedule-dialog">
+            <h2 mat-dialog-title>Reprogramar turno</h2>
+            <mat-dialog-content>
+              <div class="reschedule-context">
+                <p>
+                  <span>Turno actual</span><strong>{{ dateTimeLabel(booking.startsAt) }}</strong>
+                </p>
+                <p>
+                  <span>Sucursal</span><strong>{{ bookingBranchName(booking) }}</strong>
+                </p>
+                <p>
+                  <span>Servicio</span><strong>{{ booking.serviceName }}</strong>
+                </p>
+              </div>
+
+              <form class="reschedule-form" [formGroup]="rescheduleForm">
+                <mat-form-field appearance="outline">
+                  <mat-label>Nueva fecha</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="rescheduleDatePicker"
+                    formControlName="date"
+                    [min]="today"
+                  />
+                  <mat-datepicker-toggle matIconSuffix [for]="rescheduleDatePicker" />
+                  <mat-datepicker #rescheduleDatePicker />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Recurso</mat-label>
+                  <mat-select formControlName="resourceId">
+                    <mat-option value="">Cualquier recurso disponible</mat-option>
+                    @for (resource of rescheduleResources(booking); track resource.id) {
+                      <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </form>
+
+              @if (loadingSlots()) {
+                <p class="reschedule-message">Consultando horarios disponibles…</p>
+              }
+              @if (rescheduleError()) {
+                <p class="form-error" role="alert">{{ rescheduleError() }}</p>
+              }
+              @if (!loadingSlots()) {
+                <div class="reschedule-slots" aria-label="Horarios disponibles">
+                  @for (slot of availableRescheduleSlots(); track slot.id) {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      [class.selected]="selectedRescheduleSlot()?.id === slot.id"
+                      (click)="selectedRescheduleSlot.set(slot)"
+                    >
+                      {{ timeOnlyLabel(slot.startsAt) }}
+                      @if (slot.resourceName) {
+                        <small>{{ slot.resourceName }}</small>
+                      }
+                    </button>
+                  } @empty {
+                    <p>No hay horarios disponibles para la fecha y el recurso seleccionados.</p>
+                  }
+                </div>
+              }
+
+              @if (selectedRescheduleSlot(); as slot) {
+                <section class="reschedule-confirmation">
+                  <h3>Confirmá el cambio</h3>
+                  <p>
+                    <span>Actual</span><strong>{{ dateTimeLabel(booking.startsAt) }}</strong>
+                  </p>
+                  <p>
+                    <span>Nuevo</span><strong>{{ dateTimeLabel(slot.startsAt) }}</strong>
+                  </p>
+                </section>
+              }
+            </mat-dialog-content>
+            <mat-dialog-actions class="booking-detail-actions" align="end">
+              <button mat-button type="button" mat-dialog-close>Volver</button>
+              <button
+                mat-flat-button
+                type="button"
+                [disabled]="!selectedRescheduleSlot() || rescheduling()"
+                (click)="confirmReschedule()"
+              >
+                Confirmar reprogramación
+              </button>
+            </mat-dialog-actions>
+          </section>
+        }
+      </ng-template>
     </section>
   `,
   styleUrl: './business-dashboard.page.scss',
@@ -926,8 +1307,10 @@ import {
 export class BusinessDashboardPage implements OnInit {
   @ViewChild('bookingDetailDialog') private bookingDetailDialog?: TemplateRef<unknown>;
   @ViewChild('copyWeekDialog') private copyWeekDialog?: TemplateRef<unknown>;
+  @ViewChild('rescheduleDialog') private rescheduleDialog?: TemplateRef<unknown>;
 
   private readonly dashboardService = inject(BusinessDashboardService);
+  private readonly bookingService = inject(BookingService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
@@ -937,6 +1320,8 @@ export class BusinessDashboardPage implements OnInit {
   private lastBookingRequestStartedAt = 0;
   private lastCompletedBookingRequestKey = '';
   private bookingDefaultsInitialized = false;
+  private weekTouchStartX: number | null = null;
+  private weekTouchStartY: number | null = null;
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
@@ -948,6 +1333,13 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly copyingWeek = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly bookingError = signal('');
+  protected readonly bookingSuccess = signal('');
+  protected readonly rescheduleError = signal('');
+  protected readonly loadingSlots = signal(false);
+  protected readonly rescheduling = signal(false);
+  protected readonly rescheduleSlots = signal<AvailabilitySlot[]>([]);
+  protected readonly selectedRescheduleSlot = signal<AvailabilitySlot | null>(null);
+  protected readonly today = new Date();
   protected readonly copyWeekError = signal('');
   protected readonly bookingPage = signal(0);
   protected readonly bookingPageSize = signal(20);
@@ -956,6 +1348,10 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingHasMore = signal(false);
   protected readonly bookingViewMode = signal<BookingViewMode>('day');
   protected readonly weeklyBookingCopyEnabled = signal(false);
+  protected readonly depositEnabled = signal(false);
+  protected readonly savingConfiguration = signal(false);
+  protected readonly configurationError = signal('');
+  protected readonly updatingDeposit = signal(false);
   protected readonly weeklyBookings = signal<WeekBookingDay[]>([]);
   protected readonly selectedWeekDate = signal(this.dateValue(new Date()));
   protected readonly selectedBooking = signal<Booking | null>(null);
@@ -966,9 +1362,19 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly serviceFormExpanded = signal(false);
   protected readonly resourceFormExpanded = signal(false);
   protected readonly branchSchedule = signal<BranchScheduleDay[]>(this.defaultBranchScheduleDays());
+  protected readonly branchScheduleExpanded = signal(false);
   protected readonly branchScheduleInvalid = signal(false);
+  protected readonly branchExceptions = signal<BranchScheduleException[]>([]);
+  protected readonly showBranchExceptionForm = signal(false);
+  protected readonly editingBranchExceptionId = signal('');
+  protected readonly branchExceptionError = signal('');
+  protected readonly savingException = signal(false);
   protected readonly resourceSchedule = signal<ResourceScheduleDay[]>(this.defaultSchedule());
   protected readonly scheduleInvalid = signal(false);
+  protected readonly resourceAbsences = signal<ResourceAbsence[]>([]);
+  protected readonly showResourceAbsenceForm = signal(false);
+  protected readonly editingResourceAbsenceKey = signal('');
+  protected readonly resourceAbsenceError = signal('');
   protected readonly bookingsStandalone = signal(
     this.route.snapshot.data['section'] === 'bookings',
   );
@@ -992,6 +1398,13 @@ export class BusinessDashboardPage implements OnInit {
     zoneId: ['America/Argentina/Buenos_Aires', Validators.required],
     active: [true],
   });
+  protected readonly branchExceptionForm = this.formBuilder.nonNullable.group({
+    date: [new Date() as Date | string, Validators.required],
+    type: ['CLOSED' as 'CLOSED' | 'CUSTOM_HOURS', Validators.required],
+    startTime: [''],
+    endTime: [''],
+    reason: ['', Validators.maxLength(500)],
+  });
   protected readonly serviceForm = this.formBuilder.nonNullable.group({
     name: ['', Validators.required],
     branchId: ['', Validators.required],
@@ -1005,6 +1418,12 @@ export class BusinessDashboardPage implements OnInit {
     serviceOfferingIds: [[] as string[], Validators.required],
     active: [true],
   });
+  protected readonly resourceAbsenceForm = this.formBuilder.nonNullable.group({
+    date: [new Date() as Date | string, Validators.required],
+    allDay: [true],
+    startsAt: [''],
+    endsAt: [''],
+  });
   protected readonly bookingForm = this.formBuilder.nonNullable.group({
     date: [new Date() as Date | string, Validators.required],
     status: ['ACTIVE' as BookingStatusFilter],
@@ -1014,6 +1433,10 @@ export class BusinessDashboardPage implements OnInit {
   });
   protected readonly copyWeekForm = this.formBuilder.nonNullable.group({
     targetWeekStart: [this.defaultTargetWeekStart(), Validators.required],
+  });
+  protected readonly rescheduleForm = this.formBuilder.nonNullable.group({
+    date: [new Date() as Date | string, Validators.required],
+    resourceId: [''],
   });
 
   ngOnInit(): void {
@@ -1029,6 +1452,9 @@ export class BusinessDashboardPage implements OnInit {
     this.resourceForm.controls.branchId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.pruneResourceServicesForBranch());
+    this.rescheduleForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadRescheduleSlots());
 
     this.refreshAll();
     this.loadCurrentBookings();
@@ -1044,7 +1470,7 @@ export class BusinessDashboardPage implements OnInit {
       resources: this.dashboardService.listResources().pipe(catchError(() => of([]))),
       configuration: this.dashboardService
         .getConfiguration()
-        .pipe(catchError(() => of({ weeklyBookingCopyEnabled: false }))),
+        .pipe(catchError(() => of({ weeklyBookingCopyEnabled: false, depositEnabled: false }))),
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -1053,6 +1479,7 @@ export class BusinessDashboardPage implements OnInit {
           this.services.set(result.services);
           this.resources.set(result.resources);
           this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
+          this.depositEnabled.set(result.configuration.depositEnabled ?? false);
           this.pruneResourceServicesForBranch();
           if (!this.bookingDefaultsInitialized) {
             this.bookingDefaultsInitialized = true;
@@ -1085,12 +1512,14 @@ export class BusinessDashboardPage implements OnInit {
 
   protected startCreateBranch(): void {
     this.resetBranchFields();
+    this.branchScheduleExpanded.set(true);
     this.branchFormExpanded.set(true);
   }
 
   protected editBranch(branch: Branch): void {
     this.editingBranchId.set(branch.id);
     this.branchFormExpanded.set(true);
+    this.branchScheduleExpanded.set(false);
     this.branchForm.setValue({
       name: branch.name,
       address: branch.address,
@@ -1104,6 +1533,7 @@ export class BusinessDashboardPage implements OnInit {
     });
     this.branchSchedule.set(this.scheduleDaysFromBranch(branch.weeklySchedule));
     this.branchScheduleInvalid.set(false);
+    this.loadBranchExceptions(branch.id);
   }
 
   protected resetBranchForm(): void {
@@ -1126,6 +1556,103 @@ export class BusinessDashboardPage implements OnInit {
     });
     this.branchSchedule.set(this.defaultBranchScheduleDays());
     this.branchScheduleInvalid.set(false);
+    this.branchExceptions.set([]);
+    this.cancelBranchException();
+  }
+
+  protected startBranchException(): void {
+    this.editingBranchExceptionId.set('');
+    this.branchExceptionError.set('');
+    this.branchExceptionForm.reset({
+      date: new Date(),
+      type: 'CLOSED',
+      startTime: '',
+      endTime: '',
+      reason: '',
+    });
+    this.showBranchExceptionForm.set(true);
+  }
+
+  protected editBranchException(exception: BranchScheduleException): void {
+    this.editingBranchExceptionId.set(exception.id);
+    this.branchExceptionError.set('');
+    this.branchExceptionForm.setValue({
+      date: this.dateInputValue(exception.date),
+      type: exception.type,
+      startTime: exception.startTime?.slice(0, 5) ?? '',
+      endTime: exception.endTime?.slice(0, 5) ?? '',
+      reason: exception.reason ?? '',
+    });
+    this.showBranchExceptionForm.set(true);
+  }
+
+  protected cancelBranchException(): void {
+    this.showBranchExceptionForm.set(false);
+    this.editingBranchExceptionId.set('');
+    this.branchExceptionError.set('');
+  }
+
+  protected saveBranchException(): void {
+    const branchId = this.editingBranchId();
+    const value = this.branchExceptionForm.getRawValue();
+    if (!branchId || this.branchExceptionForm.invalid) return;
+    if (
+      value.type === 'CUSTOM_HOURS' &&
+      (!value.startTime || !value.endTime || value.startTime >= value.endTime)
+    ) {
+      this.branchExceptionError.set(
+        'Ingresá un horario especial válido: desde debe ser anterior a hasta.',
+      );
+      return;
+    }
+    const payload: BranchScheduleExceptionRequest = {
+      date: this.dateValue(value.date),
+      type: value.type,
+      ...(value.type === 'CUSTOM_HOURS'
+        ? { startTime: value.startTime, endTime: value.endTime }
+        : {}),
+      ...(value.reason.trim() ? { reason: value.reason.trim() } : {}),
+    };
+    const exceptionId = this.editingBranchExceptionId();
+    const request = exceptionId
+      ? this.dashboardService.updateBranchScheduleException(branchId, exceptionId, payload)
+      : this.dashboardService.createBranchScheduleException(branchId, payload);
+    this.savingException.set(true);
+    request.pipe(finalize(() => this.savingException.set(false))).subscribe({
+      next: () => {
+        this.cancelBranchException();
+        this.loadBranchExceptions(branchId);
+      },
+      error: (error) => this.branchExceptionError.set(dashboardErrorMessage(error)),
+    });
+  }
+
+  protected removeBranchException(exception: BranchScheduleException): void {
+    if (!confirm('¿Deseas eliminar esta excepción?')) return;
+    this.dashboardService
+      .deleteBranchScheduleException(exception.branchId, exception.id)
+      .subscribe({
+        next: () => this.loadBranchExceptions(exception.branchId),
+        error: (error) => this.branchExceptionError.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  protected branchExceptionLabel(exception: BranchScheduleException): string {
+    return exception.type === 'CLOSED'
+      ? 'Cerrado todo el día'
+      : `Horario especial: ${exception.startTime?.slice(0, 5)}–${exception.endTime?.slice(0, 5)}`;
+  }
+
+  protected branchScheduleSummary(): string {
+    const activeDays = this.branchSchedule().filter((day) => day.active).length;
+    return activeDays === 1 ? '1 día con atención' : `${activeDays} días con atención`;
+  }
+
+  private loadBranchExceptions(branchId: string): void {
+    this.dashboardService.listBranchScheduleExceptions(branchId).subscribe({
+      next: (exceptions) => this.branchExceptions.set(exceptions),
+      error: (error) => this.branchExceptionError.set(dashboardErrorMessage(error)),
+    });
   }
 
   protected saveService(): void {
@@ -1176,7 +1703,11 @@ export class BusinessDashboardPage implements OnInit {
   }
 
   protected saveResource(): void {
-    if (this.resourceForm.invalid || this.invalidResourceSchedule()) {
+    if (
+      this.resourceForm.invalid ||
+      this.invalidResourceSchedule() ||
+      this.resourceAbsenceError()
+    ) {
       this.resourceForm.markAllAsTouched();
       this.scheduleInvalid.set(true);
       return;
@@ -1186,6 +1717,7 @@ export class BusinessDashboardPage implements OnInit {
     const resource = {
       ...this.resourceForm.getRawValue(),
       weeklySchedule: this.resourceSchedulePayload(),
+      absences: this.resourceAbsences(),
     };
     const request = editingResourceId
       ? this.dashboardService.updateResource(editingResourceId, resource)
@@ -1209,6 +1741,7 @@ export class BusinessDashboardPage implements OnInit {
       active: resource.active,
     });
     this.resourceSchedule.set(this.scheduleDaysFromResource(resource.weeklySchedule));
+    this.resourceAbsences.set(resource.absences ?? []);
     this.scheduleInvalid.set(false);
   }
 
@@ -1221,7 +1754,89 @@ export class BusinessDashboardPage implements OnInit {
     this.editingResourceId.set('');
     this.resourceForm.reset({ name: '', branchId: '', serviceOfferingIds: [], active: true });
     this.resourceSchedule.set(this.defaultSchedule());
+    this.resourceAbsences.set([]);
+    this.cancelResourceAbsence();
     this.scheduleInvalid.set(false);
+  }
+
+  protected startResourceAbsence(): void {
+    this.editingResourceAbsenceKey.set('');
+    this.resourceAbsenceError.set('');
+    this.resourceAbsenceForm.reset({ date: new Date(), allDay: true, startsAt: '', endsAt: '' });
+    this.showResourceAbsenceForm.set(true);
+  }
+
+  protected editResourceAbsence(absence: ResourceAbsence): void {
+    this.editingResourceAbsenceKey.set(this.absenceKey(absence));
+    this.resourceAbsenceError.set('');
+    this.resourceAbsenceForm.setValue({
+      date: this.dateInputValue(absence.date),
+      allDay: absence.allDay,
+      startsAt: absence.startsAt ?? '',
+      endsAt: absence.endsAt ?? '',
+    });
+    this.showResourceAbsenceForm.set(true);
+  }
+
+  protected cancelResourceAbsence(): void {
+    this.showResourceAbsenceForm.set(false);
+    this.editingResourceAbsenceKey.set('');
+    this.resourceAbsenceError.set('');
+  }
+
+  protected saveResourceAbsence(): void {
+    const value = this.resourceAbsenceForm.getRawValue();
+    if (this.resourceAbsenceForm.invalid) return;
+    if (!value.allDay && (!value.startsAt || !value.endsAt || value.startsAt >= value.endsAt)) {
+      this.resourceAbsenceError.set('Ingresá un rango de ausencia válido.');
+      return;
+    }
+    const absence: ResourceAbsence = {
+      date: this.dateValue(value.date),
+      allDay: value.allDay,
+      ...(value.allDay ? {} : { startsAt: value.startsAt, endsAt: value.endsAt }),
+    };
+    const editingKey = this.editingResourceAbsenceKey();
+    const others = this.resourceAbsences().filter((item) => this.absenceKey(item) !== editingKey);
+    const sameDate = others.filter((item) => item.date === absence.date);
+    const overlaps =
+      absence.allDay || sameDate.some((item) => item.allDay || this.absencesOverlap(item, absence));
+    if (sameDate.length && overlaps) {
+      this.resourceAbsenceError.set('La ausencia se superpone con otra cargada para esa fecha.');
+      return;
+    }
+    this.resourceAbsences.set(
+      [...others, absence].sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || (a.startsAt ?? '').localeCompare(b.startsAt ?? ''),
+      ),
+    );
+    this.cancelResourceAbsence();
+  }
+
+  protected removeResourceAbsence(absence: ResourceAbsence): void {
+    this.resourceAbsences.update((items) =>
+      items.filter((item) => this.absenceKey(item) !== this.absenceKey(absence)),
+    );
+  }
+
+  protected futureResourceAbsences(): ResourceAbsence[] {
+    const today = this.dateValue(new Date());
+    return this.resourceAbsences().filter((absence) => absence.date >= today);
+  }
+
+  protected resourceAbsenceLabel(absence: ResourceAbsence): string {
+    return absence.allDay ? 'Día completo' : `${absence.startsAt}–${absence.endsAt}`;
+  }
+
+  private absenceKey(absence: ResourceAbsence): string {
+    return `${absence.date}|${absence.allDay}|${absence.startsAt ?? ''}|${absence.endsAt ?? ''}`;
+  }
+
+  private absencesOverlap(left: ResourceAbsence, right: ResourceAbsence): boolean {
+    return (
+      (left.startsAt ?? '') < (right.endsAt ?? '') && (right.startsAt ?? '') < (left.endsAt ?? '')
+    );
   }
 
   protected setBranchScheduleDayActive(dayOfWeek: DayOfWeek, active: boolean): void {
@@ -1428,6 +2043,164 @@ export class BusinessDashboardPage implements OnInit {
     });
   }
 
+  protected openRescheduleDialog(booking: Booking): void {
+    if (!this.rescheduleDialog) {
+      return;
+    }
+
+    const currentResourceId =
+      booking.resourceId ??
+      this.resources().find((resource) => resource.name === booking.resourceName)?.id ??
+      '';
+    this.selectedBooking.set(booking);
+    this.bookingSuccess.set('');
+    this.rescheduleError.set('');
+    this.rescheduleSlots.set([]);
+    this.selectedRescheduleSlot.set(null);
+    this.rescheduleForm.setValue(
+      { date: this.dateInputValue(booking.startsAt), resourceId: currentResourceId },
+      { emitEvent: false },
+    );
+    this.dialog.closeAll();
+    this.dialog.open(this.rescheduleDialog, {
+      panelClass: 'booking-detail-dialog',
+      width: 'min(600px, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)',
+    });
+    this.loadRescheduleSlots();
+  }
+
+  protected rescheduleResources(booking: Booking): Resource[] {
+    const branchId = booking.branchId;
+    const serviceId = this.bookingServiceId(booking);
+
+    return this.resources().filter(
+      (resource) =>
+        (!branchId || resource.branchId === branchId) &&
+        (!serviceId ||
+          !resource.serviceOfferingIds.length ||
+          resource.serviceOfferingIds.includes(serviceId)),
+    );
+  }
+
+  protected availableRescheduleSlots(): AvailabilitySlot[] {
+    const resourceId = this.rescheduleForm.controls.resourceId.value;
+    const now = new Date();
+
+    return this.rescheduleSlots().filter((slot) => {
+      if (resourceId && slot.resourceId !== resourceId) {
+        return false;
+      }
+
+      const startsAt = new Date(slot.startsAt);
+      return Number.isNaN(startsAt.getTime()) || startsAt.getTime() > now.getTime();
+    });
+  }
+
+  protected loadRescheduleSlots(preserveError = false): void {
+    const booking = this.selectedBooking();
+    const dateControl = this.rescheduleForm.controls.date;
+
+    if (!booking || dateControl.invalid) {
+      return;
+    }
+
+    const serviceId = this.bookingServiceId(booking);
+    if (!booking.branchId || !serviceId) {
+      this.rescheduleError.set('No pudimos identificar la sucursal o el servicio de la reserva.');
+      return;
+    }
+
+    const selectedDate = this.dateValue(dateControl.value);
+    const now = new Date();
+    const timeFrom =
+      selectedDate === this.dateValue(now)
+        ? `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+        : '00:00';
+
+    this.loadingSlots.set(true);
+    if (!preserveError) {
+      this.rescheduleError.set('');
+    }
+    this.selectedRescheduleSlot.set(null);
+    this.bookingService
+      .listAvailabilitySlots(
+        { branchId: booking.branchId, serviceId },
+        {
+          businessId: booking.businessId,
+          branchId: booking.branchId,
+          service: booking.serviceName,
+          date: selectedDate,
+          timeFrom,
+          timeTo: '23:59',
+        },
+        { offset: 0, limit: 10 },
+      )
+      .pipe(finalize(() => this.loadingSlots.set(false)))
+      .subscribe({
+        next: (page) => this.rescheduleSlots.set(page.slots),
+        error: () => {
+          this.rescheduleSlots.set([]);
+          this.rescheduleError.set(
+            'No pudimos consultar los horarios disponibles. Intentá nuevamente.',
+          );
+        },
+      });
+  }
+
+  protected confirmReschedule(): void {
+    const booking = this.selectedBooking();
+    const slot = this.selectedRescheduleSlot();
+    if (!booking || !slot || this.rescheduling()) {
+      return;
+    }
+
+    const resourceId =
+      slot.resourceId || this.rescheduleForm.controls.resourceId.value || undefined;
+    this.rescheduling.set(true);
+    this.rescheduleError.set('');
+    this.dashboardService
+      .rescheduleBooking(booking.id, {
+        date: this.dateValue(this.rescheduleForm.controls.date.value),
+        startTime: slot.startsAt.slice(11, 16),
+        ...(resourceId ? { resourceId } : {}),
+      })
+      .pipe(finalize(() => this.rescheduling.set(false)))
+      .subscribe({
+        next: (updated) => {
+          this.selectedBooking.set(updated);
+          this.bookings.update((bookings) =>
+            bookings.map((item) => (item.id === updated.id ? updated : item)),
+          );
+          this.dialog.closeAll();
+          this.bookingSuccess.set('El turno fue reprogramado correctamente.');
+          this.loadCurrentBookings(true);
+        },
+        error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 409) {
+            this.rescheduleError.set(
+              'Ese horario ya no está disponible. Elegí otro horario para continuar.',
+            );
+            this.loadRescheduleSlots(true);
+            return;
+          }
+          this.rescheduleError.set(dashboardErrorMessage(error));
+        },
+      });
+  }
+
+  private bookingServiceId(booking: Booking): string {
+    return (
+      booking.serviceOfferingId ??
+      this.services().find(
+        (service) =>
+          service.name === booking.serviceName &&
+          (!booking.branchId || service.branchId === booking.branchId),
+      )?.id ??
+      ''
+    );
+  }
+
   protected setBookingViewMode(value: BookingViewMode): void {
     if (value === this.bookingViewMode()) {
       return;
@@ -1443,6 +2216,43 @@ export class BusinessDashboardPage implements OnInit {
     this.bookingForm.controls.date.setValue(date);
     this.selectedWeekDate.set(this.dateValue(date));
     this.loadWeeklyBookings(true);
+  }
+
+  protected onWeekTouchStart(event: TouchEvent): void {
+    const touch = event.changedTouches[0];
+    this.weekTouchStartX = touch?.clientX ?? null;
+    this.weekTouchStartY = touch?.clientY ?? null;
+  }
+
+  protected onWeekTouchEnd(event: TouchEvent): void {
+    const touch = event.changedTouches[0];
+    if (
+      !touch ||
+      this.weekTouchStartX === null ||
+      this.weekTouchStartY === null ||
+      this.loadingBookings()
+    ) {
+      this.resetWeekTouch();
+      return;
+    }
+
+    const horizontalDistance = touch.clientX - this.weekTouchStartX;
+    const verticalDistance = touch.clientY - this.weekTouchStartY;
+    this.resetWeekTouch();
+
+    if (
+      Math.abs(horizontalDistance) < 60 ||
+      Math.abs(horizontalDistance) <= Math.abs(verticalDistance)
+    ) {
+      return;
+    }
+
+    this.changeWeek(horizontalDistance < 0 ? 1 : -1);
+  }
+
+  private resetWeekTouch(): void {
+    this.weekTouchStartX = null;
+    this.weekTouchStartY = null;
   }
 
   protected canCopyWeek(): boolean {
@@ -1518,6 +2328,52 @@ export class BusinessDashboardPage implements OnInit {
       next: () => this.loadCurrentBookings(),
       error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
     });
+  }
+
+  protected saveConfiguration(): void {
+    this.savingConfiguration.set(true);
+    this.configurationError.set('');
+    this.dashboardService
+      .updateConfiguration({
+        weeklyBookingCopyEnabled: this.weeklyBookingCopyEnabled(),
+        depositEnabled: this.depositEnabled(),
+      })
+      .pipe(finalize(() => this.savingConfiguration.set(false)))
+      .subscribe({
+        next: (configuration) => {
+          this.weeklyBookingCopyEnabled.set(configuration.weeklyBookingCopyEnabled);
+          this.depositEnabled.set(configuration.depositEnabled ?? false);
+        },
+        error: (error) => this.configurationError.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  protected toggleDepositStatus(booking: Booking): void {
+    const depositStatus = booking.depositStatus === 'PAID' ? 'PENDING' : 'PAID';
+    this.updatingDeposit.set(true);
+    this.bookingError.set('');
+    this.dashboardService
+      .updateBookingDepositStatus(booking.id, depositStatus)
+      .pipe(finalize(() => this.updatingDeposit.set(false)))
+      .subscribe({
+        next: (updated) => {
+          this.selectedBooking.set(updated);
+          this.bookings.update((bookings) =>
+            bookings.map((item) => (item.id === updated.id ? updated : item)),
+          );
+          this.weeklyBookings.update((days) =>
+            days.map((day) => ({
+              ...day,
+              bookings: day.bookings.map((item) => (item.id === updated.id ? updated : item)),
+            })),
+          );
+        },
+        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  protected depositStatusLabel(status: 'NOT_REQUIRED' | 'PENDING' | 'PAID'): string {
+    return status === 'PAID' ? 'Señado' : status === 'PENDING' ? 'Seña pendiente' : '';
   }
 
   protected filteredBookings(): Booking[] {
@@ -1745,7 +2601,7 @@ export class BusinessDashboardPage implements OnInit {
     return value;
   }
 
-  private dateInputValue(value: Date | string): Date {
+  protected dateInputValue(value: Date | string): Date {
     if (value instanceof Date) {
       return new Date(value);
     }
@@ -1874,7 +2730,7 @@ export class BusinessDashboardPage implements OnInit {
     };
   }
 
-  private shortDateLabel(date: Date): string {
+  protected shortDateLabel(date: Date): string {
     return new Intl.DateTimeFormat('es-AR', {
       day: 'numeric',
       month: 'short',
@@ -2039,17 +2895,6 @@ export class BusinessDashboardPage implements OnInit {
     }
   }
 
-  private pruneBookingResourceForService(): void {
-    const selectedResourceId = this.bookingForm.controls.resourceId.value;
-
-    if (
-      selectedResourceId &&
-      !this.bookingResources().some((resource) => resource.id === selectedResourceId)
-    ) {
-      this.bookingForm.controls.resourceId.setValue('');
-    }
-  }
-
   private selectFirstBookingFilters(): void {
     const firstBranch = this.branches()[0];
     if (firstBranch) {
@@ -2059,6 +2904,17 @@ export class BusinessDashboardPage implements OnInit {
     const firstResource = this.bookingResources()[0];
     if (firstResource) {
       this.bookingForm.controls.resourceId.setValue(firstResource.id, { emitEvent: false });
+    }
+  }
+
+  private pruneBookingResourceForService(): void {
+    const selectedResourceId = this.bookingForm.controls.resourceId.value;
+
+    if (
+      selectedResourceId &&
+      !this.bookingResources().some((resource) => resource.id === selectedResourceId)
+    ) {
+      this.bookingForm.controls.resourceId.setValue('');
     }
   }
 

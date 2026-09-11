@@ -7,10 +7,13 @@ import {
   Booking,
   BookingListPage,
   Branch,
+  BranchScheduleException,
+  BranchScheduleExceptionRequest,
   BranchSchedule,
   DayOfWeek,
   Resource,
   ResourceSchedule,
+  RescheduleBookingRequest,
   ScheduleTimeRange,
   ServiceCatalogItem,
 } from './dashboard.models';
@@ -50,6 +53,39 @@ export class BusinessDashboardService {
   deleteBranch(id: string): Observable<void> {
     return this.http.delete<void>(
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/branches/${id}`),
+    );
+  }
+
+  listBranchScheduleExceptions(branchId: string): Observable<BranchScheduleException[]> {
+    return this.http.get<BranchScheduleException[]>(
+      this.apiUrl.build(`/branches/${branchId}/schedule-exceptions`),
+    );
+  }
+
+  createBranchScheduleException(
+    branchId: string,
+    payload: BranchScheduleExceptionRequest,
+  ): Observable<BranchScheduleException> {
+    return this.http.post<BranchScheduleException>(
+      this.apiUrl.build(`/branches/${branchId}/schedule-exceptions`),
+      payload,
+    );
+  }
+
+  updateBranchScheduleException(
+    branchId: string,
+    exceptionId: string,
+    payload: BranchScheduleExceptionRequest,
+  ): Observable<BranchScheduleException> {
+    return this.http.put<BranchScheduleException>(
+      this.apiUrl.build(`/branches/${branchId}/schedule-exceptions/${exceptionId}`),
+      payload,
+    );
+  }
+
+  deleteBranchScheduleException(branchId: string, exceptionId: string): Observable<void> {
+    return this.http.delete<void>(
+      this.apiUrl.build(`/branches/${branchId}/schedule-exceptions/${exceptionId}`),
     );
   }
 
@@ -147,6 +183,15 @@ export class BusinessDashboardService {
     );
   }
 
+  updateConfiguration(
+    configuration: Omit<BusinessConfiguration, 'businessId'>,
+  ): Observable<BusinessConfiguration> {
+    return this.http.put<BusinessConfiguration>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/configuration`),
+      configuration,
+    );
+  }
+
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
   }
@@ -228,6 +273,20 @@ export class BusinessDashboardService {
     return this.http.post<Booking>(this.apiUrl.build(`/bookings/${id}/cancel`), {});
   }
 
+  updateBookingDepositStatus(id: string, depositStatus: 'PENDING' | 'PAID'): Observable<Booking> {
+    return this.http
+      .patch<BookingResponse>(this.apiUrl.build(`/bookings/${id}/deposit-status`), {
+        depositStatus,
+      })
+      .pipe(map((booking) => this.toBooking(booking)));
+  }
+
+  rescheduleBooking(id: string, payload: RescheduleBookingRequest): Observable<Booking> {
+    return this.http
+      .put<BookingResponse>(this.apiUrl.build(`/bookings/${id}/reschedule`), payload)
+      .pipe(map((booking) => this.toBooking(booking)));
+  }
+
   private get currentBusinessId(): string {
     const businessId = this.authService.businessId;
 
@@ -297,6 +356,12 @@ export class BusinessDashboardService {
       branchId,
       serviceOfferingIds: resource.serviceOfferingIds ?? [],
       weeklySchedule: this.toSchedule(resource.schedule ?? resource.weeklySchedule),
+      absences: (resource.absences ?? []).map((absence) => ({
+        date: absence.date,
+        allDay: absence.allDay,
+        startsAt: absence.startsAt?.slice(0, 5),
+        endsAt: absence.endsAt?.slice(0, 5),
+      })),
       active: resource.active ?? resource.status === 'ACTIVE',
     };
   }
@@ -307,8 +372,16 @@ export class BusinessDashboardService {
       type: 'EMPLOYEE',
       status: resource.active ? 'ACTIVE' : 'INACTIVE',
       serviceOfferingIds: resource.serviceOfferingIds,
-      schedule: resource.weeklySchedule,
-      absences: [],
+      weeklySchedule: resource.weeklySchedule,
+      absences: (resource.absences ?? []).map((absence) =>
+        absence.allDay
+          ? { date: absence.date, allDay: true }
+          : {
+              date: absence.date,
+              startTime: absence.startsAt,
+              endTime: absence.endsAt,
+            },
+      ),
     };
   }
 
@@ -341,8 +414,15 @@ export class BusinessDashboardService {
   private toBookings(response: BookingsResponse): Booking[] {
     const bookings = this.getResults(response);
 
-    return bookings.map((booking) => ({
+    return bookings.map((booking) => this.toBooking(booking));
+  }
+
+  private toBooking(booking: BookingResponse): Booking {
+    return {
       id: booking.id,
+      businessId: booking.businessId,
+      serviceOfferingId: booking.serviceOfferingId ?? booking.serviceId,
+      resourceId: booking.resourceId,
       customerName:
         this.firstText(booking.customerName, booking.customerNameSnapshot, booking.customerEmail) ??
         'Sin nombre',
@@ -354,7 +434,8 @@ export class BusinessDashboardService {
       branchName: booking.branchName,
       startsAt: booking.startsAt,
       status: booking.status,
-    }));
+      depositStatus: booking.depositStatus,
+    };
   }
 
   private toBookingPage(response: BookingsResponse): BookingListPage {
@@ -471,6 +552,7 @@ interface ResourceResponse {
   weeklySchedule?: ScheduleResponse[];
   active?: boolean;
   status?: string;
+  absences?: ResourceAbsenceResponse[];
 }
 
 interface ResourceRequest {
@@ -478,8 +560,17 @@ interface ResourceRequest {
   type: 'EMPLOYEE';
   status: 'ACTIVE' | 'INACTIVE';
   serviceOfferingIds: string[];
-  schedule: ResourceSchedule[];
-  absences: [];
+  weeklySchedule: ResourceSchedule[];
+  absences: Array<
+    { date: string; allDay: true } | { date: string; startTime?: string; endTime?: string }
+  >;
+}
+
+interface ResourceAbsenceResponse {
+  date: string;
+  allDay: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
 }
 
 interface ScheduleDayResponse {
@@ -514,6 +605,10 @@ type BookingsResponse =
 
 interface BookingResponse {
   id: string;
+  businessId?: string;
+  serviceOfferingId?: string;
+  serviceId?: string;
+  resourceId?: string;
   customerName?: string;
   customerPhone?: string;
   customerNameSnapshot?: string;
@@ -526,6 +621,7 @@ interface BookingResponse {
   branchName?: string;
   startsAt: string;
   status: string;
+  depositStatus?: 'NOT_REQUIRED' | 'PENDING' | 'PAID';
 }
 
 interface CopyBookingsWeekRequest {
@@ -539,4 +635,5 @@ interface CopyBookingsWeekRequest {
 interface BusinessConfiguration {
   businessId: string;
   weeklyBookingCopyEnabled: boolean;
+  depositEnabled?: boolean;
 }

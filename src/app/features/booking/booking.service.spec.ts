@@ -184,6 +184,7 @@ describe('BookingService', () => {
           name: 'Barberia pepito',
           shortDescription: 'Cortes y barba',
           status: 'ACTIVE',
+          depositEnabled: false,
         },
       ]);
     });

@@ -4,12 +4,15 @@ import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { BusinessDashboardPage } from './business-dashboard.page';
 import { BusinessDashboardService } from './business-dashboard.service';
+import { BookingService } from '../booking/booking.service';
 
 describe('BusinessDashboardPage', () => {
   let fixture: ComponentFixture<BusinessDashboardPage>;
   let dashboardService: BusinessDashboardServiceMock;
+  let bookingService: { listAvailabilitySlots: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    bookingService = { listAvailabilitySlots: vi.fn(() => of({ slots: [] })) };
     dashboardService = {
       listBranches: vi.fn(() =>
         of([
@@ -55,6 +58,7 @@ describe('BusinessDashboardPage', () => {
           weeklyBookingCopyEnabled: true,
         }),
       ),
+      updateConfiguration: vi.fn(),
       listBookings: vi.fn(() => of([])),
       listBookingsPage: vi.fn(() =>
         of({
@@ -79,6 +83,10 @@ describe('BusinessDashboardPage', () => {
       createBranch: vi.fn(),
       updateBranch: vi.fn(),
       deleteBranch: vi.fn(),
+      listBranchScheduleExceptions: vi.fn(() => of([])),
+      createBranchScheduleException: vi.fn(),
+      updateBranchScheduleException: vi.fn(),
+      deleteBranchScheduleException: vi.fn(),
       createService: vi.fn(),
       updateService: vi.fn(),
       deleteService: vi.fn(),
@@ -87,12 +95,15 @@ describe('BusinessDashboardPage', () => {
       deleteResource: vi.fn(),
       copyBookingsWeek: vi.fn(() => of(undefined)),
       cancelBooking: vi.fn(),
+      updateBookingDepositStatus: vi.fn(),
+      rescheduleBooking: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [BusinessDashboardPage],
       providers: [
         { provide: BusinessDashboardService, useValue: dashboardService },
+        { provide: BookingService, useValue: bookingService },
         { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
       ],
     }).compileComponents();
@@ -107,6 +118,66 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.listResources).toHaveBeenCalled();
     expect(dashboardService.listBookingsPage).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Centro');
+  });
+
+  it('should request reschedule slots using the existing availability page size', () => {
+    const component = fixture.componentInstance as unknown as {
+      selectedBooking: { set: (booking: unknown) => void };
+      rescheduleForm: {
+        setValue: (
+          value: { date: Date; resourceId: string },
+          options: { emitEvent: boolean },
+        ) => void;
+      };
+      loadRescheduleSlots: () => void;
+    };
+    component.selectedBooking.set({
+      id: 'booking-1',
+      branchId: 'branch-1',
+      serviceOfferingId: 'service-1',
+      serviceName: 'Corte',
+      customerName: 'Ana',
+      startsAt: '2026-09-09T17:30:00',
+      status: 'CONFIRMED',
+    });
+    component.rescheduleForm.setValue(
+      { date: new Date(2026, 8, 11), resourceId: '' },
+      { emitEvent: false },
+    );
+
+    component.loadRescheduleSlots();
+
+    expect(bookingService.listAvailabilitySlots).toHaveBeenCalledWith(
+      { branchId: 'branch-1', serviceId: 'service-1' },
+      expect.objectContaining({ date: '2026-09-11', timeFrom: '00:00', timeTo: '23:59' }),
+      { offset: 0, limit: 10 },
+    );
+  });
+
+  it('should hide reschedule slots whose start time has already passed', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 8, 14, 15));
+    const component = fixture.componentInstance as unknown as {
+      rescheduleSlots: {
+        set: (slots: Array<{ id: string; startsAt: string; endsAt: string }>) => void;
+      };
+      availableRescheduleSlots: () => Array<{ id: string }>;
+    };
+    component.rescheduleSlots.set([
+      {
+        id: 'past-slot',
+        startsAt: '2026-09-08T14:00:00',
+        endsAt: '2026-09-08T14:30:00',
+      },
+      {
+        id: 'future-slot',
+        startsAt: '2026-09-08T14:30:00',
+        endsAt: '2026-09-08T15:00:00',
+      },
+    ]);
+
+    expect(component.availableRescheduleSlots().map((slot) => slot.id)).toEqual(['future-slot']);
+    vi.useRealTimers();
   });
 
   it('should keep entity forms collapsed until create or edit is selected', () => {
@@ -535,6 +606,7 @@ describe('BusinessDashboardPage', () => {
           timeRanges: [],
         },
       ],
+      absences: [],
       active: true,
     });
   });
@@ -849,6 +921,32 @@ describe('BusinessDashboardPage', () => {
       '2026-08-29',
       '2026-08-30',
     ]);
+  });
+
+  it('should change weeks with a horizontal swipe but ignore vertical scrolling', () => {
+    const component = fixture.componentInstance as unknown as {
+      changeWeek: ReturnType<typeof vi.fn>;
+      onWeekTouchStart: (event: TouchEvent) => void;
+      onWeekTouchEnd: (event: TouchEvent) => void;
+    };
+    component.changeWeek = vi.fn();
+
+    component.onWeekTouchStart({
+      changedTouches: [{ clientX: 220, clientY: 100 }],
+    } as unknown as TouchEvent);
+    component.onWeekTouchEnd({
+      changedTouches: [{ clientX: 120, clientY: 108 }],
+    } as unknown as TouchEvent);
+    expect(component.changeWeek).toHaveBeenCalledWith(1);
+
+    component.changeWeek.mockClear();
+    component.onWeekTouchStart({
+      changedTouches: [{ clientX: 120, clientY: 100 }],
+    } as unknown as TouchEvent);
+    component.onWeekTouchEnd({
+      changedTouches: [{ clientX: 130, clientY: 210 }],
+    } as unknown as TouchEvent);
+    expect(component.changeWeek).not.toHaveBeenCalled();
   });
 
   it('should copy the selected week to the target week', () => {

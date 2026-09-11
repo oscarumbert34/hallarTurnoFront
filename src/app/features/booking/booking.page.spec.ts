@@ -89,6 +89,7 @@ describe('BookingPage', () => {
           customerPhone: string;
           customerEmail: string;
           skipCustomerContact: boolean;
+          depositPaid: boolean;
         }) => void;
       };
       confirmBooking: () => void;
@@ -99,6 +100,7 @@ describe('BookingPage', () => {
       customerPhone: '1124546622',
       customerEmail: '',
       skipCustomerContact: false,
+      depositPaid: false,
     });
     await vi.advanceTimersByTimeAsync(300);
     component.confirmBooking();
@@ -142,6 +144,56 @@ describe('BookingPage', () => {
     } as unknown as ClipboardEvent);
 
     expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('should show and send the paid deposit option when deposits are enabled', async () => {
+    vi.useFakeTimers();
+    route.snapshot.queryParamMap = convertToParamMap({
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      slotId: 'slot-1',
+      startsAt: '2026-08-17T10:00:00',
+      depositEnabled: 'true',
+    });
+    bookingService.createBooking.mockReturnValue(
+      of({
+        id: 'booking-1',
+        businessName: 'Turnos SA',
+        serviceName: 'Corte',
+        startsAt: '2026-08-17T10:00:00',
+        status: 'CONFIRMED',
+        depositStatus: 'PAID',
+      }),
+    );
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      customerForm: {
+        patchValue: (value: {
+          customerName: string;
+          customerPhone: string;
+          depositPaid: boolean;
+        }) => void;
+      };
+      confirmBooking: () => void;
+    };
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+      depositPaid: true,
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Seña pagada');
+    component.confirmBooking();
+    expect(bookingService.createBooking).toHaveBeenCalledWith(
+      expect.objectContaining({ depositPaid: true }),
+    );
   });
 
   it('should require and send customerEmail when emailRequired is true', async () => {
@@ -287,7 +339,9 @@ describe('BookingPage', () => {
       throwError(() => new HttpErrorResponse({ status: 404 })),
     );
     const component = fixture.componentInstance as unknown as {
-      customerForm: { patchValue: (value: { customerName: string; customerPhone: string }) => void };
+      customerForm: {
+        patchValue: (value: { customerName: string; customerPhone: string }) => void;
+      };
       confirmBooking: () => void;
     };
     component.customerForm.patchValue({ customerName: 'Juan', customerPhone: '1124546622' });

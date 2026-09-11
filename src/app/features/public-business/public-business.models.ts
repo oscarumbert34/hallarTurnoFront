@@ -5,6 +5,7 @@ export interface PublicBusiness {
   shortDescription: string | null;
   phone: string | null;
   email: string | null;
+  depositEnabled?: boolean;
   branches: PublicBranch[];
 }
 

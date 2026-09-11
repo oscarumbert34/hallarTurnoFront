@@ -195,6 +195,7 @@ export class BookingService {
           .map((service) => ({
             businessId: business.id,
             businessName: business.name,
+            depositEnabled: business.depositEnabled ?? false,
             branchId: branch.id,
             branchName: branch.name,
             address: branch.address,
@@ -231,6 +232,7 @@ export class BookingService {
       name: business.name,
       shortDescription: business.shortDescription,
       status: business.status,
+      depositEnabled: business.depositEnabled ?? false,
     }));
   }
 
@@ -270,6 +272,7 @@ interface BusinessResponse {
   name: string;
   shortDescription?: string;
   status?: string;
+  depositEnabled?: boolean;
 }
 
 interface BranchResponse {
@@ -316,6 +319,7 @@ interface AvailabilityBusinessResponse {
   id: string;
   name: string;
   shortDescription?: string;
+  depositEnabled?: boolean;
   branches: AvailabilityBranchResponse[];
 }
 

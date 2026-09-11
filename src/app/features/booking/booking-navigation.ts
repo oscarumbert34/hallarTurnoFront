@@ -25,6 +25,7 @@ export function navigateToBooking(
     resourceId: slot.resourceId,
     resourceName: slot.resourceName,
     price: business.price,
+    depositEnabled: business.depositEnabled ?? false,
   };
   sessionStorage.setItem('turnero.selectedSlot', JSON.stringify(selectedSlot));
   sessionStorage.setItem('turnero.search', JSON.stringify(search));

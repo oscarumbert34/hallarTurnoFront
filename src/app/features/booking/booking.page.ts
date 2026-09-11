@@ -99,6 +99,10 @@ import { BookingService } from './booking.service';
                 }
               </mat-form-field>
 
+              @if (selectedSlot.depositEnabled) {
+                <mat-checkbox formControlName="depositPaid">Seña pagada</mat-checkbox>
+              }
+
               @if (customerContactLookupLoading()) {
                 <p class="customer-lookup" role="status">Buscando datos del cliente...</p>
               }
@@ -195,6 +199,7 @@ export class BookingPage implements OnInit {
     customerPhone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     customerEmail: ['', [Validators.maxLength(160), Validators.email]],
     skipCustomerContact: [false],
+    depositPaid: [false],
   });
 
   protected normalizePastedPhone(event: ClipboardEvent): void {
@@ -267,6 +272,7 @@ export class BookingPage implements OnInit {
         customerName: customer.customerName.trim(),
         customerPhone: customer.customerPhone.trim(),
         skipCustomerContact: skipCustomerContact ? true : null,
+        ...(selectedSlot.depositEnabled ? { depositPaid: customer.depositPaid } : {}),
         ...(this.emailRequired() && !skipCustomerContact && customerEmail ? { customerEmail } : {}),
       })
       .pipe(finalize(() => this.saving.set(false)))
@@ -428,6 +434,7 @@ export class BookingPage implements OnInit {
       resourceId: params.get('resourceId') ?? undefined,
       resourceName: params.get('resourceName') ?? undefined,
       price: price ? Number(price) : undefined,
+      depositEnabled: params.get('depositEnabled') === 'true',
     };
   }
 

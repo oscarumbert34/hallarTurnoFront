@@ -185,6 +185,7 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
       {
         businessId: business.id,
         businessName: business.name,
+        depositEnabled: business.depositEnabled ?? false,
         branchId: branch.id,
         branchName: branch.name,
         address: branch.address,

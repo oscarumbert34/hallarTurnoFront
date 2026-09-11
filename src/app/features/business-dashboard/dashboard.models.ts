@@ -34,7 +34,35 @@ export interface Resource {
   branchId?: string;
   serviceOfferingIds: string[];
   weeklySchedule: ResourceSchedule[];
+  absences?: ResourceAbsence[];
   active: boolean;
+}
+
+export interface ResourceAbsence {
+  date: string;
+  allDay: boolean;
+  startsAt?: string;
+  endsAt?: string;
+}
+
+export type BranchScheduleExceptionType = 'CLOSED' | 'CUSTOM_HOURS';
+
+export interface BranchScheduleException {
+  id: string;
+  branchId: string;
+  date: string;
+  type: BranchScheduleExceptionType;
+  startTime?: string;
+  endTime?: string;
+  reason?: string;
+}
+
+export interface BranchScheduleExceptionRequest {
+  date: string;
+  type: BranchScheduleExceptionType;
+  startTime?: string;
+  endTime?: string;
+  reason?: string;
 }
 
 export interface ResourceSchedule {
@@ -50,16 +78,13 @@ export interface ScheduleTimeRange {
 }
 
 export type DayOfWeek =
-  | 'MONDAY'
-  | 'TUESDAY'
-  | 'WEDNESDAY'
-  | 'THURSDAY'
-  | 'FRIDAY'
-  | 'SATURDAY'
-  | 'SUNDAY';
+  'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 
 export interface Booking {
   id: string;
+  businessId?: string;
+  serviceOfferingId?: string;
+  resourceId?: string;
   customerName: string;
   customerPhone?: string;
   customerEmail?: string;
@@ -69,6 +94,13 @@ export interface Booking {
   branchName?: string;
   startsAt: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | string;
+  depositStatus?: 'NOT_REQUIRED' | 'PENDING' | 'PAID';
+}
+
+export interface RescheduleBookingRequest {
+  date: string;
+  startTime: string;
+  resourceId?: string;
 }
 
 export interface BookingListPage {

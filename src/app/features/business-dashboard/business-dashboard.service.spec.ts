@@ -32,6 +32,98 @@ describe('BusinessDashboardService', () => {
     localStorage.clear();
   });
 
+  it('should manage branch schedule exceptions through the administrative API', () => {
+    const closed = { date: '2026-09-15', type: 'CLOSED' as const, reason: 'Feriado' };
+    service.createBranchScheduleException('branch-1', closed).subscribe();
+    const createRequest = httpTesting.expectOne('/api/branches/branch-1/schedule-exceptions');
+    expect(createRequest.request.method).toBe('POST');
+    expect(createRequest.request.body).toEqual(closed);
+    createRequest.flush({ id: 'exception-1', branchId: 'branch-1', ...closed });
+
+    const customHours = {
+      date: '2026-09-15',
+      type: 'CUSTOM_HOURS' as const,
+      startTime: '09:00',
+      endTime: '13:00',
+    };
+    service.updateBranchScheduleException('branch-1', 'exception-1', customHours).subscribe();
+    const updateRequest = httpTesting.expectOne(
+      '/api/branches/branch-1/schedule-exceptions/exception-1',
+    );
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual(customHours);
+    updateRequest.flush({ id: 'exception-1', branchId: 'branch-1', ...customHours });
+
+    service.deleteBranchScheduleException('branch-1', 'exception-1').subscribe();
+    const deleteRequest = httpTesting.expectOne(
+      '/api/branches/branch-1/schedule-exceptions/exception-1',
+    );
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+  });
+
+  it('should send all-day and partial absences with the complete resource', () => {
+    service
+      .updateResource('resource-1', {
+        name: 'Sandra',
+        branchId: 'branch-1',
+        serviceOfferingIds: ['service-1'],
+        weeklySchedule: [],
+        absences: [
+          { date: '2026-09-15', allDay: true },
+          { date: '2026-09-16', allDay: false, startsAt: '14:00', endsAt: '17:00' },
+        ],
+        active: true,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne('/api/resources/resource-1');
+    expect(request.request.body.absences).toEqual([
+      { date: '2026-09-15', allDay: true },
+      { date: '2026-09-16', startTime: '14:00', endTime: '17:00' },
+    ]);
+    request.flush({
+      id: 'resource-1',
+      branchId: 'branch-1',
+      visibleName: 'Sandra',
+      serviceOfferingIds: ['service-1'],
+      weeklySchedule: [],
+      absences: [],
+      status: 'ACTIVE',
+    });
+  });
+
+  it('should reschedule a booking through the authenticated booking API', () => {
+    service
+      .rescheduleBooking('booking-1', {
+        date: '2026-09-15',
+        startTime: '17:00',
+        resourceId: 'resource-1',
+      })
+      .subscribe((booking) => {
+        expect(booking.id).toBe('booking-1');
+        expect(booking.startsAt).toBe('2026-09-15T17:00:00');
+        expect(booking.resourceId).toBe('resource-1');
+      });
+
+    const request = httpTesting.expectOne('/api/bookings/booking-1/reschedule');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      date: '2026-09-15',
+      startTime: '17:00',
+      resourceId: 'resource-1',
+    });
+    request.flush({
+      id: 'booking-1',
+      customerName: 'Ana',
+      serviceName: 'Corte',
+      serviceOfferingId: 'service-1',
+      resourceId: 'resource-1',
+      startsAt: '2026-09-15T17:00:00',
+      status: 'CONFIRMED',
+    });
+  });
+
   it('should create a branch through the business API', () => {
     const payload = {
       name: 'Centro',
@@ -272,7 +364,7 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'ACTIVE',
       serviceOfferingIds: ['service-1'],
-      schedule: [
+      weeklySchedule: [
         {
           day: 'MONDAY',
           timeRanges: [{ start: '09:00', end: '18:00' }],
@@ -380,7 +472,7 @@ describe('BusinessDashboardService', () => {
       type: 'EMPLOYEE',
       status: 'INACTIVE',
       serviceOfferingIds: ['service-1', 'service-2'],
-      schedule: [
+      weeklySchedule: [
         {
           day: 'TUESDAY',
           timeRanges: [{ start: '10:00', end: '16:00' }],
@@ -472,6 +564,35 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should update the complete deposit configuration', () => {
+    service
+      .updateConfiguration({ weeklyBookingCopyEnabled: true, depositEnabled: true })
+      .subscribe((configuration) => expect(configuration.depositEnabled).toBe(true));
+
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/configuration`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ weeklyBookingCopyEnabled: true, depositEnabled: true });
+    request.flush({ businessId, weeklyBookingCopyEnabled: true, depositEnabled: true });
+  });
+
+  it('should update a booking deposit status', () => {
+    service
+      .updateBookingDepositStatus('booking-1', 'PAID')
+      .subscribe((booking) => expect(booking.depositStatus).toBe('PAID'));
+
+    const request = httpTesting.expectOne('/api/bookings/booking-1/deposit-status');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ depositStatus: 'PAID' });
+    request.flush({
+      id: 'booking-1',
+      customerName: 'Cliente',
+      serviceName: 'Corte',
+      startsAt: '2026-09-15T18:30:00Z',
+      status: 'CONFIRMED',
+      depositStatus: 'PAID',
+    });
+  });
+
   it('should expose booking pagination metadata', () => {
     service
       .listBookingsPage('2026-08-17', 1, 50, 'branch-1', 'resource-1', 'service-1')
@@ -557,9 +678,7 @@ describe('BusinessDashboardService', () => {
 
     service.copyBookingsWeek(payload).subscribe();
 
-    const request = httpTesting.expectOne(
-      `/api/businesses/${businessId}/bookings/copy-week`,
-    );
+    const request = httpTesting.expectOne(`/api/businesses/${businessId}/bookings/copy-week`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(payload);
 

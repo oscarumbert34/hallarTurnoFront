@@ -37,6 +37,7 @@ export interface BusinessSummary {
   name: string;
   shortDescription?: string;
   status?: string;
+  depositEnabled?: boolean;
 }
 
 export interface BranchSummary {
@@ -67,6 +68,7 @@ export interface AvailabilitySlot {
 export interface BusinessAvailability {
   businessId: string;
   businessName: string;
+  depositEnabled?: boolean;
   branchId: string;
   branchName: string;
   address: string;
@@ -89,6 +91,7 @@ export interface CreateBookingRequest {
   customerPhone: string;
   customerEmail?: string;
   skipCustomerContact?: boolean | null;
+  depositPaid?: boolean;
 }
 
 export interface CustomerContactSearchResponse {
@@ -104,7 +107,10 @@ export interface CustomerBooking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | string;
   canCancel?: boolean;
   price?: number;
+  depositStatus?: DepositStatus;
 }
+
+export type DepositStatus = 'NOT_REQUIRED' | 'PENDING' | 'PAID';
 
 export interface SelectedSlot {
   businessId: string;
@@ -119,4 +125,5 @@ export interface SelectedSlot {
   resourceId?: string;
   resourceName?: string;
   price?: number;
+  depositEnabled?: boolean;
 }
