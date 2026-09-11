@@ -1056,6 +1056,38 @@ describe('BusinessDashboardPage', () => {
     expect(component.canCopyWeek()).toBe(false);
   });
 
+  it('should save appointment confirmation in the existing business configuration', () => {
+    dashboardService.updateConfiguration.mockReturnValue(
+      of({
+        businessId: 'business-1',
+        weeklyBookingCopyEnabled: true,
+        depositEnabled: false,
+        appointmentConfirmationEnabled: true,
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      weeklyBookingCopyEnabled: { set: (value: boolean) => void };
+      depositEnabled: { set: (value: boolean) => void };
+      appointmentConfirmationEnabled: {
+        set: (value: boolean) => void;
+        (): boolean;
+      };
+      saveConfiguration: () => void;
+    };
+
+    component.weeklyBookingCopyEnabled.set(true);
+    component.depositEnabled.set(false);
+    component.appointmentConfirmationEnabled.set(true);
+    component.saveConfiguration();
+
+    expect(dashboardService.updateConfiguration).toHaveBeenCalledWith({
+      weeklyBookingCopyEnabled: true,
+      depositEnabled: false,
+      appointmentConfirmationEnabled: true,
+    });
+    expect(component.appointmentConfirmationEnabled()).toBe(true);
+  });
+
   it('should request bookings with the selected branch filter', () => {
     dashboardService.listBookingsPage.mockClear();
     const component = fixture.componentInstance as unknown as {

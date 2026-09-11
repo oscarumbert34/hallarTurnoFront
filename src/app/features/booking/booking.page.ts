@@ -134,7 +134,13 @@ import { BookingService } from './booking.service';
             </form>
 
             @if (confirmedBooking(); as confirmedBooking) {
-              <p class="success" role="status">Reserva confirmada.</p>
+              <p class="success" role="status">
+                @if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
+                  Reserva creada. El cliente deberá confirmarla desde el email.
+                } @else {
+                  Reserva confirmada.
+                }
+              </p>
             }
           </mat-card-content>
           <mat-card-actions>

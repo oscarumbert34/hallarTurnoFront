@@ -774,6 +774,22 @@ import {
                   <p class="configuration-help">
                     Al habilitarlo, las reservas podrán registrarse con la seña pagada o pendiente.
                   </p>
+                  <section class="configuration-section" aria-labelledby="notifications-title">
+                    <h3 id="notifications-title">Notificaciones</h3>
+                    <mat-checkbox
+                      [checked]="appointmentConfirmationEnabled()"
+                      (change)="appointmentConfirmationEnabled.set($event.checked)"
+                    >
+                      Solicitar confirmación de turnos
+                    </mat-checkbox>
+                    <p class="configuration-help">
+                      Si esta opción está activa, los emails programados solicitarán al cliente
+                      confirmar su turno.
+                    </p>
+                    <p class="configuration-help">
+                      Si está desactivada, se enviará el recordatorio habitual.
+                    </p>
+                  </section>
                   @if (configurationError()) {
                     <p class="form-error">{{ configurationError() }}</p>
                   }
@@ -985,7 +1001,10 @@ import {
                       <span class="booking-statuses">
                         <small
                           class="booking-status"
-                          [class.pending]="booking.status === 'PENDING'"
+                          [class.pending]="
+                            booking.status === 'PENDING' ||
+                            booking.status === 'PENDING_CONFIRMATION'
+                          "
                           [class.cancelled]="booking.status === 'CANCELLED'"
                         >
                           {{ statusLabel(booking.status) }}
@@ -1038,7 +1057,9 @@ import {
                     <span class="booking-statuses">
                       <small
                         class="booking-status"
-                        [class.pending]="booking.status === 'PENDING'"
+                        [class.pending]="
+                          booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                        "
                         [class.cancelled]="booking.status === 'CANCELLED'"
                       >
                         {{ statusLabel(booking.status) }}
@@ -1158,7 +1179,9 @@ import {
                   <dd>
                     <span
                       class="booking-status"
-                      [class.pending]="booking.status === 'PENDING'"
+                      [class.pending]="
+                        booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                      "
                       [class.cancelled]="booking.status === 'CANCELLED'"
                     >
                       {{ statusLabel(booking.status) }}
@@ -1349,6 +1372,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingViewMode = signal<BookingViewMode>('day');
   protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly depositEnabled = signal(false);
+  protected readonly appointmentConfirmationEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
   protected readonly updatingDeposit = signal(false);
@@ -1468,9 +1492,15 @@ export class BusinessDashboardPage implements OnInit {
       branches: this.dashboardService.listBranches().pipe(catchError(() => of([]))),
       services: this.dashboardService.listServices().pipe(catchError(() => of([]))),
       resources: this.dashboardService.listResources().pipe(catchError(() => of([]))),
-      configuration: this.dashboardService
-        .getConfiguration()
-        .pipe(catchError(() => of({ weeklyBookingCopyEnabled: false, depositEnabled: false }))),
+      configuration: this.dashboardService.getConfiguration().pipe(
+        catchError(() =>
+          of({
+            weeklyBookingCopyEnabled: false,
+            depositEnabled: false,
+            appointmentConfirmationEnabled: false,
+          }),
+        ),
+      ),
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -1480,6 +1510,9 @@ export class BusinessDashboardPage implements OnInit {
           this.resources.set(result.resources);
           this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
           this.depositEnabled.set(result.configuration.depositEnabled ?? false);
+          this.appointmentConfirmationEnabled.set(
+            result.configuration.appointmentConfirmationEnabled ?? false,
+          );
           this.pruneResourceServicesForBranch();
           if (!this.bookingDefaultsInitialized) {
             this.bookingDefaultsInitialized = true;
@@ -2337,12 +2370,16 @@ export class BusinessDashboardPage implements OnInit {
       .updateConfiguration({
         weeklyBookingCopyEnabled: this.weeklyBookingCopyEnabled(),
         depositEnabled: this.depositEnabled(),
+        appointmentConfirmationEnabled: this.appointmentConfirmationEnabled(),
       })
       .pipe(finalize(() => this.savingConfiguration.set(false)))
       .subscribe({
         next: (configuration) => {
           this.weeklyBookingCopyEnabled.set(configuration.weeklyBookingCopyEnabled);
           this.depositEnabled.set(configuration.depositEnabled ?? false);
+          this.appointmentConfirmationEnabled.set(
+            configuration.appointmentConfirmationEnabled ?? false,
+          );
         },
         error: (error) => this.configurationError.set(dashboardErrorMessage(error)),
       });
@@ -2425,7 +2462,9 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     const confirmed = bookings.filter((booking) => booking.status === 'CONFIRMED').length;
-    const pending = bookings.filter((booking) => booking.status === 'PENDING').length;
+    const pending = bookings.filter(
+      (booking) => booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION',
+    ).length;
 
     return `${this.reservationCountLabel(bookings.length)} · ${confirmed} confirmadas · ${pending} pendientes`;
   }
@@ -2584,6 +2623,7 @@ export class BusinessDashboardPage implements OnInit {
       CANCELLED: 'Cancelada',
       CONFIRMED: 'Confirmada',
       PENDING: 'Pendiente',
+      PENDING_CONFIRMATION: 'Confirmación pendiente',
     };
 
     return labels[status] ?? status;

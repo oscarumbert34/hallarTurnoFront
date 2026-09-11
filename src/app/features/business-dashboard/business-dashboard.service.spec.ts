@@ -553,6 +553,7 @@ describe('BusinessDashboardService', () => {
     service.getConfiguration().subscribe((configuration) => {
       expect(configuration.businessId).toBe(businessId);
       expect(configuration.weeklyBookingCopyEnabled).toBe(true);
+      expect(configuration.appointmentConfirmationEnabled).toBe(true);
     });
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/configuration`);
@@ -561,18 +562,32 @@ describe('BusinessDashboardService', () => {
     request.flush({
       businessId,
       weeklyBookingCopyEnabled: true,
+      appointmentConfirmationEnabled: true,
     });
   });
 
   it('should update the complete deposit configuration', () => {
     service
-      .updateConfiguration({ weeklyBookingCopyEnabled: true, depositEnabled: true })
+      .updateConfiguration({
+        weeklyBookingCopyEnabled: true,
+        depositEnabled: true,
+        appointmentConfirmationEnabled: true,
+      })
       .subscribe((configuration) => expect(configuration.depositEnabled).toBe(true));
 
     const request = httpTesting.expectOne(`/api/businesses/${businessId}/configuration`);
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ weeklyBookingCopyEnabled: true, depositEnabled: true });
-    request.flush({ businessId, weeklyBookingCopyEnabled: true, depositEnabled: true });
+    expect(request.request.body).toEqual({
+      weeklyBookingCopyEnabled: true,
+      depositEnabled: true,
+      appointmentConfirmationEnabled: true,
+    });
+    request.flush({
+      businessId,
+      weeklyBookingCopyEnabled: true,
+      depositEnabled: true,
+      appointmentConfirmationEnabled: true,
+    });
   });
 
   it('should update a booking deposit status', () => {

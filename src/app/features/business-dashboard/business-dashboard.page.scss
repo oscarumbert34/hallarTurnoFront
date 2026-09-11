@@ -20,6 +20,22 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+.configuration-section {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.configuration-section h3 {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+}
+
+.configuration-section .configuration-help {
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
 .swipe-week-hint {
   display: none;
 }

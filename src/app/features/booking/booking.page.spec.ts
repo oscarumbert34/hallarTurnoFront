@@ -133,6 +133,37 @@ describe('BookingPage', () => {
     expect(component.customerForm.controls.customerPhone.value).toBe('1165684041');
   });
 
+  it('should explain when the created booking requires confirmation by email', async () => {
+    vi.useFakeTimers();
+    bookingService.createBooking.mockReturnValue(
+      of({
+        id: 'booking-1',
+        businessName: 'Turnos SA',
+        serviceName: 'Corte',
+        startsAt: '2026-08-17T10:00:00',
+        status: 'PENDING_CONFIRMATION',
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      customerForm: {
+        patchValue: (value: { customerName: string; customerPhone: string }) => void;
+      };
+      confirmBooking: () => void;
+    };
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+    });
+    await vi.advanceTimersByTimeAsync(300);
+
+    component.confirmBooking();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Reserva creada. El cliente deberá confirmarla desde el email.',
+    );
+  });
+
   it('should leave an already valid phone unchanged when it is pasted', () => {
     const component = fixture.componentInstance as unknown as {
       normalizePastedPhone: (event: ClipboardEvent) => void;

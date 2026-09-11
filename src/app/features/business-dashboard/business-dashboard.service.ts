@@ -636,4 +636,5 @@ interface BusinessConfiguration {
   businessId: string;
   weeklyBookingCopyEnabled: boolean;
   depositEnabled?: boolean;
+  appointmentConfirmationEnabled?: boolean;
 }

@@ -11,6 +11,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'turno/:token',
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/appointment-action/appointment-action.page').then(
+        (m) => m.AppointmentActionPage,
+      ),
+  },
+  {
     path: '',
     pathMatch: 'full',
     redirectTo: 'public-search',
