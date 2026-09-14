@@ -78,7 +78,7 @@ export class AuthService {
       return '/booking';
     }
 
-    return '/public-search';
+    return '/auth/login';
   }
 
   private storeSession(session: AuthSession): void {

@@ -42,7 +42,7 @@ src/environments
 
 Las rutas iniciales son placeholders y se cargan de forma lazy:
 
-- `/public-search`
+- `/public-search` (temporalmente deshabilitada y redirigida al login)
 - `/booking`
 - `/business-dashboard`
 - `/auth`
@@ -109,7 +109,8 @@ Con backend local en `http://localhost:8080`:
 ## Flujo Manual E2E De Reserva
 
 1. Ejecutar `npm start`.
-2. Entrar a `/public-search`.
+2. La búsqueda pública se encuentra temporalmente deshabilitada. Para probar el buscador,
+   iniciar sesión como negocio y entrar a `/search`.
 3. Buscar por servicio, fecha, zona y rango horario.
 4. Elegir un slot de un negocio disponible.
 5. Confirmar reserva sin sesion.

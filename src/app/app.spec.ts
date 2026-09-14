@@ -24,13 +24,23 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should navigate to the public search page by default', async () => {
+  it('should navigate to login by default while public search is disabled', async () => {
     const harness = await RouterTestingHarness.create();
     const router = TestBed.inject(Router);
 
     await harness.navigateByUrl('/');
 
-    expect(router.url).toBe('/public-search');
-    expect(harness.routeNativeElement?.textContent).toContain('Buscar turno');
+    expect(router.url).toBe('/auth/login');
+    expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
+  });
+
+  it('should redirect the former public search URL to login', async () => {
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+
+    await harness.navigateByUrl('/public-search');
+
+    expect(router.url).toBe('/auth/login');
+    expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
   });
 });

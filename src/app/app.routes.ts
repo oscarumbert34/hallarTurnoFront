@@ -21,7 +21,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'public-search',
+    redirectTo: 'auth/login',
   },
   {
     path: 'auth',
@@ -40,12 +40,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/register.page').then((m) => m.RegisterPage),
       },
     ],
-  },
-  {
-    path: 'public-search',
-    data: { standalone: true },
-    loadComponent: () =>
-      import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
   },
   {
     path: 'search',
@@ -77,6 +71,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'public-search',
+    redirectTo: 'auth/login',
   },
 ];
