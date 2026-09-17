@@ -127,6 +127,13 @@ export class PublicBusinessPageComponent implements OnInit {
     return `https://instagram.com/${handle.replace(/\/$/, '')}`;
   }
 
+  protected googleMapsUrl(branch: PublicBranch): string {
+    const address = [branch.address, branch.city, branch.province, branch.country]
+      .filter(Boolean)
+      .join(', ');
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+
   protected openingHours(branch: PublicBranch): string[] {
     const labels: Record<string, string> = {
       MONDAY: 'Lun',

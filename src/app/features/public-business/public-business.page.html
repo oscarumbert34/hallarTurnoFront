@@ -34,13 +34,19 @@
           </div>
           <div class="detail-grid" aria-label="Datos del negocio">
             @if (selectedBranch(); as branch) {
-              <div>
+              <a
+                class="contact-link address-link"
+                [href]="googleMapsUrl(branch)"
+                target="_blank"
+                rel="noopener"
+                aria-label="Abrir dirección en Google Maps"
+              >
                 <mat-icon aria-hidden="true">location_on</mat-icon>
                 <span
                   ><strong>Dirección</strong>{{ branch.address
                   }}{{ branch.city ? ', ' + branch.city : '' }}</span
                 >
-              </div>
+              </a>
             }
             @if (business.instagram) {
               <a
