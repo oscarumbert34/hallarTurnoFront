@@ -59,6 +59,7 @@ describe('BusinessDashboardPage', () => {
         }),
       ),
       updateConfiguration: vi.fn(),
+      updatePublicProfile: vi.fn(),
       listBookings: vi.fn(() => of([])),
       listBookingsPage: vi.fn(() =>
         of({

@@ -62,6 +62,45 @@ describe('BusinessDashboardService', () => {
     deleteRequest.flush(null);
   });
 
+  it('should update public profile data and upload selected images using the documented API', () => {
+    const logo = new File(['logo'], 'logo.png', { type: 'image/png' });
+    service
+      .updatePublicProfile({
+        publicDescription: 'Cortes y barba',
+        aboutUs: 'Atención personalizada',
+        whatsapp: '541112345678',
+        instagram: 'barberianorte',
+        logo,
+      })
+      .subscribe((profile) => expect(profile.logoUrl).toBe('https://storage.test/logo'));
+
+    const profileRequest = httpTesting.expectOne(`/api/businesses/${businessId}/public-profile`);
+    expect(profileRequest.request.method).toBe('PUT');
+    expect(profileRequest.request.body).toEqual({
+      publicDescription: 'Cortes y barba',
+      aboutUs: 'Atención personalizada',
+      whatsapp: '541112345678',
+      instagram: 'barberianorte',
+    });
+    profileRequest.flush({
+      businessId,
+      publicDescription: 'Cortes y barba',
+      aboutUs: 'Atención personalizada',
+      whatsapp: '541112345678',
+      instagram: 'barberianorte',
+    });
+
+    const logoRequest = httpTesting.expectOne(`/api/businesses/${businessId}/public-profile/logo`);
+    expect(logoRequest.request.method).toBe('POST');
+    expect(logoRequest.request.body.get('file')).toBe(logo);
+    logoRequest.flush({
+      imageKey: 'business/logo.png',
+      imageUrl: 'https://storage.test/logo',
+      contentType: 'image/png',
+      size: 4,
+    });
+  });
+
   it('should send all-day and partial absences with the complete resource', () => {
     service
       .updateResource('resource-1', {

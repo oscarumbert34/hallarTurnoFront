@@ -30,6 +30,7 @@ import { UiStateComponent } from '../../shared/ui-state.component';
 import { BookingService } from '../booking/booking.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import { BusinessDashboardService } from './business-dashboard.service';
+import { ImageUploadComponent } from './image-upload.component';
 import { dashboardErrorMessage } from './dashboard-error';
 import {
   Booking,
@@ -63,6 +64,7 @@ import {
     NgTemplateOutlet,
     ReactiveFormsModule,
     UiStateComponent,
+    ImageUploadComponent,
   ],
   providers: [provideNativeDateAdapter()],
   template: `
@@ -807,6 +809,99 @@ import {
               </mat-card>
             </section>
           </mat-tab>
+          <mat-tab label="Página pública">
+            <section class="tab-panel public-profile">
+              <mat-card appearance="outlined">
+                <mat-card-header>
+                  <mat-card-title>Página pública</mat-card-title>
+                  <mat-card-subtitle
+                    >Completá la información que verán tus clientes.</mat-card-subtitle
+                  >
+                </mat-card-header>
+                <mat-card-content>
+                  <form
+                    class="public-profile-form"
+                    [formGroup]="publicProfileForm"
+                    (ngSubmit)="savePublicProfile()"
+                  >
+                    <div class="profile-fields">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Descripción corta</mat-label>
+                        <textarea
+                          matInput
+                          rows="2"
+                          maxlength="180"
+                          formControlName="shortDescription"
+                        ></textarea>
+                        <mat-hint align="end"
+                          >{{
+                            publicProfileForm.controls.shortDescription.value.length
+                          }}/180</mat-hint
+                        >
+                      </mat-form-field>
+                      <mat-form-field appearance="outline">
+                        <mat-label>Sobre nosotros</mat-label>
+                        <textarea
+                          matInput
+                          rows="5"
+                          maxlength="2000"
+                          formControlName="aboutUs"
+                        ></textarea>
+                        <mat-hint align="end"
+                          >{{ publicProfileForm.controls.aboutUs.value.length }}/2000</mat-hint
+                        >
+                      </mat-form-field>
+                      <mat-form-field appearance="outline">
+                        <mat-label>WhatsApp</mat-label>
+                        <mat-icon matPrefix class="field-icon" aria-hidden="true">chat</mat-icon>
+                        <input
+                          matInput
+                          formControlName="whatsapp"
+                          placeholder="Ej. +54 9 11 1234 5678"
+                        />
+                      </mat-form-field>
+                      <mat-form-field appearance="outline">
+                        <mat-label>Instagram</mat-label>
+                        <mat-icon matPrefix class="field-icon" aria-hidden="true"
+                          >alternate_email</mat-icon
+                        >
+                        <input matInput formControlName="instagram" placeholder="Ej. minegocio" />
+                      </mat-form-field>
+                    </div>
+
+                    <div class="profile-images">
+                      <app-image-upload
+                        label="Logo del negocio"
+                        recommendation="Recomendado: imagen cuadrada (500 × 500 px)."
+                        [maxSizeMb]="1"
+                        [currentUrl]="logoUrl()"
+                        (fileChange)="logoFile.set($event)"
+                      />
+                      <app-image-upload
+                        label="Imagen de portada"
+                        recommendation="Recomendado: imagen horizontal (1600 × 600 px)."
+                        [maxSizeMb]="3"
+                        variant="cover"
+                        [currentUrl]="coverImageUrl()"
+                        (fileChange)="coverImageFile.set($event)"
+                      />
+                    </div>
+                    @if (publicProfileError()) {
+                      <p class="form-error" role="alert">{{ publicProfileError() }}</p>
+                    }
+                    @if (publicProfileSuccess()) {
+                      <p class="form-success" role="status">{{ publicProfileSuccess() }}</p>
+                    }
+                    <div class="form-actions">
+                      <button mat-flat-button type="submit" [disabled]="savingPublicProfile()">
+                        {{ savingPublicProfile() ? 'Guardando...' : 'Guardar cambios' }}
+                      </button>
+                    </div>
+                  </form>
+                </mat-card-content>
+              </mat-card>
+            </section>
+          </mat-tab>
         </mat-tab-group>
       }
 
@@ -1375,6 +1470,13 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly appointmentConfirmationEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
+  protected readonly savingPublicProfile = signal(false);
+  protected readonly publicProfileError = signal('');
+  protected readonly publicProfileSuccess = signal('');
+  protected readonly logoUrl = signal<string | null>(null);
+  protected readonly coverImageUrl = signal<string | null>(null);
+  protected readonly logoFile = signal<File | null>(null);
+  protected readonly coverImageFile = signal<File | null>(null);
   protected readonly updatingDeposit = signal(false);
   protected readonly weeklyBookings = signal<WeekBookingDay[]>([]);
   protected readonly selectedWeekDate = signal(this.dateValue(new Date()));
@@ -1461,6 +1563,12 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly rescheduleForm = this.formBuilder.nonNullable.group({
     date: [new Date() as Date | string, Validators.required],
     resourceId: [''],
+  });
+  protected readonly publicProfileForm = this.formBuilder.nonNullable.group({
+    shortDescription: ['', Validators.maxLength(180)],
+    aboutUs: ['', Validators.maxLength(2000)],
+    whatsapp: ['', Validators.maxLength(40)],
+    instagram: ['', Validators.maxLength(100)],
   });
 
   ngOnInit(): void {
@@ -2382,6 +2490,37 @@ export class BusinessDashboardPage implements OnInit {
           );
         },
         error: (error) => this.configurationError.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  protected savePublicProfile(): void {
+    if (this.publicProfileForm.invalid) {
+      this.publicProfileForm.markAllAsTouched();
+      return;
+    }
+
+    this.savingPublicProfile.set(true);
+    this.publicProfileError.set('');
+    this.publicProfileSuccess.set('');
+    this.dashboardService
+      .updatePublicProfile({
+        publicDescription: this.publicProfileForm.controls.shortDescription.value,
+        aboutUs: this.publicProfileForm.controls.aboutUs.value,
+        whatsapp: this.publicProfileForm.controls.whatsapp.value,
+        instagram: this.publicProfileForm.controls.instagram.value,
+        logo: this.logoFile(),
+        coverImage: this.coverImageFile(),
+      })
+      .pipe(finalize(() => this.savingPublicProfile.set(false)))
+      .subscribe({
+        next: (profile) => {
+          this.logoUrl.set(profile.logoUrl ?? null);
+          this.coverImageUrl.set(profile.coverImageUrl ?? null);
+          this.logoFile.set(null);
+          this.coverImageFile.set(null);
+          this.publicProfileSuccess.set('Los cambios se guardaron correctamente.');
+        },
+        error: (error) => this.publicProfileError.set(dashboardErrorMessage(error)),
       });
   }
 

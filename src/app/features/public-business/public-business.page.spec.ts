@@ -66,7 +66,7 @@ describe('PublicBusinessPageComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/search'], {
       queryParams: { businessId: 'business-1' },
     });
-    buttons.find((button) => button.textContent?.includes('Ver turnos'))!.click();
+    buttons.find((button) => button.textContent?.trim() === 'Reservar')!.click();
     expect(open).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ data: { business, branch, service } }),

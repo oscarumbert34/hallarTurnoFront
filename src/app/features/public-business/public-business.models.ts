@@ -3,10 +3,17 @@ export interface PublicBusiness {
   name: string;
   slug: string;
   shortDescription: string | null;
+  publicDescription?: string | null;
+  aboutUs?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
   phone: string | null;
   email: string | null;
   depositEnabled?: boolean;
   branches: PublicBranch[];
+  services?: PublicService[];
 }
 
 export interface PublicBranch {
@@ -15,6 +22,14 @@ export interface PublicBranch {
   address: string;
   city: string;
   province: string;
+  country?: string;
+  zoneId?: string;
+  openingHours?: PublicOpeningHours[];
+}
+
+export interface PublicOpeningHours {
+  day: string;
+  timeRanges: Array<{ start: string; end: string }>;
 }
 
 export interface PublicService {

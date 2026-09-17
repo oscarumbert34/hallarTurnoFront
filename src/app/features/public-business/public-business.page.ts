@@ -77,6 +77,12 @@ export class PublicBusinessPageComponent implements OnInit {
     this.services.set([]);
     this.servicesLoading.set(true);
     this.servicesError.set('');
+    const includedServices = this.business()?.services;
+    if (includedServices) {
+      this.services.set(includedServices);
+      this.servicesLoading.set(false);
+      return;
+    }
     this.servicesRequest = this.api
       .listPublicServices(this.business()!.slug, branch.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -104,6 +110,55 @@ export class PublicBusinessPageComponent implements OnInit {
     void this.router.navigate(['/search'], {
       queryParams: { businessId: this.business()!.id },
     });
+  }
+
+  protected scrollToServices(): void {
+    document
+      .getElementById('services-title')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  protected whatsappUrl(value: string): string {
+    return `https://wa.me/${value.replace(/\D/g, '')}`;
+  }
+
+  protected instagramUrl(value: string): string {
+    const handle = value.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '');
+    return `https://instagram.com/${handle.replace(/\/$/, '')}`;
+  }
+
+  protected openingHours(branch: PublicBranch): string[] {
+    const labels: Record<string, string> = {
+      MONDAY: 'Lun',
+      TUESDAY: 'Mar',
+      WEDNESDAY: 'Mié',
+      THURSDAY: 'Jue',
+      FRIDAY: 'Vie',
+      SATURDAY: 'Sáb',
+      SUNDAY: 'Dom',
+    };
+    const groups: Array<{ first: string; last: string; times: string }> = [];
+    let previousDayWasOpen = false;
+
+    for (const schedule of branch.openingHours ?? []) {
+      if (!schedule.timeRanges.length) {
+        previousDayWasOpen = false;
+        continue;
+      }
+      const day = labels[schedule.day] ?? schedule.day;
+      const times = schedule.timeRanges
+        .map((range) => `${range.start.slice(0, 5)}–${range.end.slice(0, 5)}`)
+        .join(', ');
+      const previous = groups.at(-1);
+
+      if (previousDayWasOpen && previous?.times === times) previous.last = day;
+      else groups.push({ first: day, last: day, times });
+      previousDayWasOpen = true;
+    }
+
+    return groups.map(
+      ({ first, last, times }) => `${first === last ? first : `${first} a ${last}`} · ${times}`,
+    );
   }
 
   protected openAvailability(service: PublicService): void {

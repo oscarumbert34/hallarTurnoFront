@@ -114,3 +114,23 @@ export interface BookingListPage {
 }
 
 export type EntityCollection = 'branches' | 'services' | 'resources';
+
+export interface PublicProfile {
+  publicDescription: string;
+  aboutUs: string;
+  whatsapp: string;
+  instagram: string;
+  logoImageKey?: string | null;
+  coverImageKey?: string | null;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+}
+
+export interface PublicProfileUpdate {
+  publicDescription: string;
+  aboutUs: string;
+  whatsapp: string;
+  instagram: string;
+  logo?: File | null;
+  coverImage?: File | null;
+}

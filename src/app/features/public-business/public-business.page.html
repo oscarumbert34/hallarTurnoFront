@@ -6,69 +6,135 @@
     <p role="alert">{{ error() }}</p>
   }
   @if (business(); as business) {
-    <header class="panel business-header">
-      <div class="avatar" aria-hidden="true"><mat-icon>storefront</mat-icon></div>
-      <div class="business-info">
-        <h1>{{ business.name }}</h1>
-        @if (business.shortDescription) {
-          <p class="description">{{ business.shortDescription }}</p>
-        }
-        <div class="contact-details">
-          @if (localities()) {
-            <span><mat-icon aria-hidden="true">location_on</mat-icon>{{ localities() }}</span>
-          }
-          @if (business.phone) {
-            <a [href]="'tel:' + business.phone"
-              ><mat-icon aria-hidden="true">call</mat-icon>{{ business.phone }}</a
-            >
-          }
-        </div>
-      </div>
-      <button mat-flat-button class="reserve" (click)="reserve()">
-        <mat-icon aria-hidden="true">calendar_today</mat-icon>Reservar turno
-      </button>
-    </header>
-    <section class="panel" aria-labelledby="branches-title">
-      <div class="section-heading">
-        <mat-icon aria-hidden="true">location_on</mat-icon>
-        <div>
-          <h2 id="branches-title">Sucursales</h2>
-          <p>Seleccioná la sucursal donde querés atenderte.</p>
-        </div>
-      </div>
-      <div class="branches">
-        @for (branch of business.branches; track branch.id) {
-          <label class="branch" [class.selected]="selectedBranch()?.id === branch.id">
-            <input
-              type="radio"
-              name="branch"
-              [checked]="selectedBranch()?.id === branch.id"
-              (change)="selectBranch(branch)"
-            />
-            <span
-              ><strong>{{ branch.name }}</strong>
-              @if (branch.address) {
-                <span>{{ branch.address }}</span>
-              }
-              @if (branch.city || branch.province) {
+    <header class="business-header">
+      <div class="hero-main">
+        <div class="header-content">
+          <div class="avatar" [class.has-logo]="business.logoUrl">
+            @if (business.logoUrl) {
+              <img [src]="business.logoUrl" [alt]="'Logo de ' + business.name" />
+            } @else {
+              <mat-icon aria-hidden="true">storefront</mat-icon>
+            }
+          </div>
+          <div class="business-info">
+            <h1>{{ business.name }}</h1>
+            @if (business.publicDescription || business.shortDescription) {
+              <p class="description">
+                {{ business.publicDescription || business.shortDescription }}
+              </p>
+            }
+          </div>
+          <div class="header-actions">
+            <button mat-flat-button class="reserve" (click)="reserve()">
+              <mat-icon aria-hidden="true">calendar_today</mat-icon>Reservar turno
+            </button>
+            @if (business.branches.length) {
+              <button mat-stroked-button (click)="scrollToServices()">Ver servicios</button>
+            }
+          </div>
+          <div class="detail-grid" aria-label="Datos del negocio">
+            @if (selectedBranch(); as branch) {
+              <div>
+                <mat-icon aria-hidden="true">location_on</mat-icon>
                 <span
-                  >{{ branch.city }}{{ branch.city && branch.province ? ', ' : ''
-                  }}{{ branch.province }}</span
+                  ><strong>Dirección</strong>{{ branch.address
+                  }}{{ branch.city ? ', ' + branch.city : '' }}</span
                 >
+              </div>
+            }
+            @if (business.instagram) {
+              <a
+                class="contact-link instagram-link"
+                [href]="instagramUrl(business.instagram)"
+                target="_blank"
+                rel="noopener"
+              >
+                <mat-icon class="brand-icon" aria-hidden="true">alternate_email</mat-icon>
+                <span><strong>Instagram</strong>{{ business.instagram }}</span>
+              </a>
+            }
+            @if (business.whatsapp || business.phone) {
+              <a
+                class="contact-link whatsapp-link"
+                [href]="
+                  business.whatsapp ? whatsappUrl(business.whatsapp) : 'tel:' + business.phone
+                "
+                [target]="business.whatsapp ? '_blank' : null"
+                rel="noopener"
+              >
+                <mat-icon class="brand-icon" aria-hidden="true">chat</mat-icon>
+                <span><strong>WhatsApp</strong>{{ business.whatsapp || business.phone }}</span>
+              </a>
+            }
+            @if (selectedBranch(); as branch) {
+              @if (openingHours(branch).length) {
+                <div>
+                  <mat-icon aria-hidden="true">schedule</mat-icon>
+                  <span
+                    ><strong>Horarios</strong>
+                    @for (hours of openingHours(branch); track hours) {
+                      <span>{{ hours }}</span>
+                    }
+                  </span>
+                </div>
               }
-            </span>
-          </label>
-        } @empty {
-          <p>No hay sucursales disponibles.</p>
-        }
+            }
+          </div>
+        </div>
+        <div class="hero-media">
+          @if (business.coverImageUrl) {
+            <img class="cover-image" [src]="business.coverImageUrl" alt="" />
+          } @else {
+            <div class="cover-placeholder" aria-hidden="true">
+              <mat-icon>storefront</mat-icon>
+            </div>
+          }
+        </div>
       </div>
-    </section>
+    </header>
+    @if (business.branches.length > 1) {
+      <section class="panel branches-panel" aria-labelledby="branches-title">
+        <div class="section-heading">
+          <mat-icon aria-hidden="true">location_on</mat-icon>
+          <div>
+            <h2 id="branches-title">Sucursales</h2>
+            <p>Seleccioná la sucursal donde querés atenderte.</p>
+          </div>
+        </div>
+        <div class="branches">
+          @for (branch of business.branches; track branch.id) {
+            <label class="branch" [class.selected]="selectedBranch()?.id === branch.id">
+              <input
+                type="radio"
+                name="branch"
+                [checked]="selectedBranch()?.id === branch.id"
+                (change)="selectBranch(branch)"
+              />
+              <span
+                ><strong>{{ branch.name }}</strong>
+                @if (branch.address) {
+                  <span>{{ branch.address }}</span>
+                }
+                @if (branch.city || branch.province) {
+                  <span
+                    >{{ branch.city }}{{ branch.city && branch.province ? ', ' : ''
+                    }}{{ branch.province }}</span
+                  >
+                }
+              </span>
+            </label>
+          } @empty {
+            <p>No hay sucursales disponibles.</p>
+          }
+        </div>
+      </section>
+    }
     @if (selectedBranch()) {
       <section class="panel" aria-labelledby="services-title">
         <div class="section-heading">
           <mat-icon aria-hidden="true">settings_suggest</mat-icon>
           <div>
-            <h2 id="services-title">Servicios</h2>
+            <h2 id="services-title">Nuestros servicios</h2>
             <p>Elegí el servicio que necesitás y consultá los turnos disponibles.</p>
           </div>
         </div>
@@ -101,7 +167,7 @@
                   <strong><mat-icon aria-hidden="true">sell</mat-icon>{{ price(service) }}</strong>
                 }
               </div>
-              <button mat-stroked-button (click)="openAvailability(service)">Ver turnos</button>
+              <button mat-stroked-button (click)="openAvailability(service)">Reservar</button>
             </article>
           } @empty {
             @if (!servicesLoading() && !servicesError()) {
@@ -121,6 +187,15 @@
             </ol>
           </aside>
         }
+      </section>
+    }
+    @if (business.aboutUs) {
+      <section class="panel about-us" aria-labelledby="about-title">
+        <div class="section-heading">
+          <mat-icon aria-hidden="true">groups</mat-icon>
+          <h2 id="about-title">Sobre nosotros</h2>
+        </div>
+        <p>{{ business.aboutUs }}</p>
       </section>
     }
   }

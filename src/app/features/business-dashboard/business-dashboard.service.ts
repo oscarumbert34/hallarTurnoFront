@@ -16,6 +16,8 @@ import {
   RescheduleBookingRequest,
   ScheduleTimeRange,
   ServiceCatalogItem,
+  PublicProfile,
+  PublicProfileUpdate,
 } from './dashboard.models';
 
 @Injectable({ providedIn: 'root' })
@@ -190,6 +192,49 @@ export class BusinessDashboardService {
       this.apiUrl.build(`/businesses/${this.currentBusinessId}/configuration`),
       configuration,
     );
+  }
+
+  updatePublicProfile(profile: PublicProfileUpdate): Observable<PublicProfile> {
+    return this.http
+      .put<PublicProfile>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile`),
+        {
+          publicDescription: profile.publicDescription || null,
+          aboutUs: profile.aboutUs || null,
+          whatsapp: profile.whatsapp || null,
+          instagram: profile.instagram || null,
+        },
+      )
+      .pipe(
+        switchMap((savedProfile) => {
+          const uploads: Observable<PublicProfile>[] = [of(savedProfile)];
+          if (profile.logo)
+            uploads.push(this.uploadPublicProfileImage('logo', profile.logo, savedProfile));
+          if (profile.coverImage)
+            uploads.push(this.uploadPublicProfileImage('cover', profile.coverImage, savedProfile));
+          return forkJoin(uploads).pipe(map((results) => Object.assign({}, ...results)));
+        }),
+      );
+  }
+
+  private uploadPublicProfileImage(
+    type: 'logo' | 'cover',
+    file: File,
+    profile: PublicProfile,
+  ): Observable<PublicProfile> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http
+      .post<ImageUploadResponse>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile/${type}`),
+        body,
+      )
+      .pipe(
+        map((image) => ({
+          ...profile,
+          ...(type === 'logo' ? { logoUrl: image.imageUrl } : { coverImageUrl: image.imageUrl }),
+        })),
+      );
   }
 
   listBookings(date: string): Observable<Booking[]> {
@@ -637,4 +682,11 @@ interface BusinessConfiguration {
   weeklyBookingCopyEnabled: boolean;
   depositEnabled?: boolean;
   appointmentConfirmationEnabled?: boolean;
+}
+
+interface ImageUploadResponse {
+  imageKey: string;
+  imageUrl: string;
+  contentType: string;
+  size: number;
 }
