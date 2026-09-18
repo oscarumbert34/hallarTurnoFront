@@ -2116,8 +2116,9 @@ export class BusinessDashboardPage implements OnInit {
       this.bookingPage.set(0);
     }
 
+    const requestedDate = this.dateValue(this.bookingForm.controls.date.value);
     const requestKey = this.bookingRequestKey('day', [
-      this.dateValue(this.bookingForm.controls.date.value),
+      requestedDate,
       this.bookingPage(),
       this.bookingPageSize(),
       this.bookingForm.controls.branchId.value,
@@ -2130,9 +2131,12 @@ export class BusinessDashboardPage implements OnInit {
       return;
     }
 
+    // Do not keep showing results from the previous date while this request is loading.
+    this.bookings.set([]);
+
     this.dashboardService
       .listBookingsPage(
-        this.dateValue(this.bookingForm.controls.date.value),
+        requestedDate,
         this.bookingPage(),
         this.bookingPageSize(),
         this.bookingForm.controls.branchId.value,
@@ -2146,7 +2150,13 @@ export class BusinessDashboardPage implements OnInit {
             return;
           }
 
-          this.bookings.set(page.results);
+          // The daily endpoint is expected to filter by date, but keep the UI safe if an
+          // inconsistent or stale response contains bookings from another calendar day.
+          this.bookings.set(
+            page.results.filter(
+              (booking) => this.bookingDateKey(booking.startsAt) === requestedDate,
+            ),
+          );
           this.bookingPage.set(page.page);
           this.bookingPageSize.set(page.size);
           this.bookingTotalElements.set(page.totalElements);
@@ -2169,6 +2179,7 @@ export class BusinessDashboardPage implements OnInit {
     this.bookingForm.controls.date.setValue(value);
     this.bookingPage.set(0);
     this.selectedWeekDate.set(this.dateValue(value));
+    this.bookings.set([]);
   }
 
   protected openBookingDetail(booking: Booking): void {

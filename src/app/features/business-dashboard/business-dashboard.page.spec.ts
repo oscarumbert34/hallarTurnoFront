@@ -850,6 +850,61 @@ describe('BusinessDashboardPage', () => {
     );
   });
 
+  it('should clear bookings from the previously selected day when changing the date', () => {
+    const component = fixture.componentInstance as unknown as {
+      bookings: {
+        set: (value: Array<{ id: string }>) => void;
+        (): Array<{ id: string }>;
+      };
+      setBookingDate: (value: Date) => void;
+    };
+    component.bookings.set([{ id: 'friday-booking' }]);
+
+    component.setBookingDate(new Date(2026, 7, 31));
+
+    expect(component.bookings()).toEqual([]);
+  });
+
+  it('should ignore bookings from a different day in a daily response', () => {
+    dashboardService.listBookingsPage.mockReturnValueOnce(
+      of({
+        page: 0,
+        size: 20,
+        totalElements: 2,
+        totalPages: 1,
+        hasMore: false,
+        results: [
+          {
+            id: 'friday-booking',
+            customerName: 'Viernes',
+            serviceName: 'Corte',
+            startsAt: '2026-08-28T10:00:00',
+            status: 'CONFIRMED',
+          },
+          {
+            id: 'monday-booking',
+            customerName: 'Lunes',
+            serviceName: 'Corte',
+            startsAt: '2026-08-31T10:00:00',
+            status: 'CONFIRMED',
+          },
+        ],
+      }),
+    );
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: { date: { setValue: (value: Date) => void } };
+      };
+      bookings: () => Array<{ id: string }>;
+      loadBookings: (resetPage?: boolean) => void;
+    };
+    component.bookingForm.controls.date.setValue(new Date(2026, 7, 31));
+
+    component.loadBookings(true);
+
+    expect(component.bookings().map((booking) => booking.id)).toEqual(['monday-booking']);
+  });
+
   it('should request bookings once with a date range when using the weekly view', () => {
     dashboardService.listBookingsPage.mockClear();
     dashboardService.listBookingsRange.mockClear();
