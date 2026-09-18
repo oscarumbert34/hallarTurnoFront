@@ -56,6 +56,12 @@
   padding: 32px 24px 88px;
 }
 
+.shell.standalone-shell {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
 .mobile-nav {
   position: fixed;
   right: 0;

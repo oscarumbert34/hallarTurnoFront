@@ -359,6 +359,15 @@ export class PublicSearchPage implements OnInit {
       return;
     }
 
+    if (this.businessScoped && !this.selectedBusinessId()) {
+      this.results.set([]);
+      this.searched.set(false);
+      this.errorMessage.set(
+        'No pudimos identificar el comercio. Volvé a ingresar desde su página pública.',
+      );
+      return;
+    }
+
     const search = this.availabilitySearch();
 
     if (this.isCurrentSearch(search)) {
@@ -565,12 +574,24 @@ export class PublicSearchPage implements OnInit {
   }
 
   private applyAvailabilityPage(page: AvailabilityPage, append: boolean): void {
-    const results = append ? this.mergeAvailability(this.results(), page.results) : page.results;
+    const businessId = this.selectedBusinessId();
+    const containsForeignBusinesses =
+      !!businessId && page.results.some((result) => result.businessId !== businessId);
+    const pageResults = businessId
+      ? page.results.filter((result) => result.businessId === businessId)
+      : page.results;
+    const results = append ? this.mergeAvailability(this.results(), pageResults) : pageResults;
 
     this.results.set(results);
     this.nextOffset.set(page.offset + page.limit);
-    this.hasMore.set(page.hasMore);
+    this.hasMore.set(containsForeignBusinesses ? false : page.hasMore);
     this.syncSlotPagination(results, append);
+
+    if (containsForeignBusinesses) {
+      this.errorMessage.set(
+        'La búsqueda devolvió resultados de otro comercio. No los mostramos para proteger el filtro seleccionado.',
+      );
+    }
   }
 
   private mergeAvailability(

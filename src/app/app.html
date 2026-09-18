@@ -1,47 +1,46 @@
-<mat-toolbar class="app-toolbar">
-  <a class="brand" routerLink="/" aria-label="HallarTurno inicio">
-    <img src="hallarturno-logo.png" alt="HallarTurno — Tu próximo turno, más fácil" />
-  </a>
+@if (showShellNavigation$ | async) {
+  <mat-toolbar class="app-toolbar">
+    <a class="brand" routerLink="/" aria-label="HallarTurno inicio">
+      <img src="hallarturno-logo.png" alt="HallarTurno — Tu próximo turno, más fácil" />
+    </a>
+    @if (session$ | async) {
+      <nav class="desktop-nav" aria-label="Principal">
+        @for (item of navItems; track item.path) {
+          <a
+            mat-button
+            [routerLink]="item.path"
+            [queryParams]="item.path === '/search' ? searchQueryParams() : null"
+            routerLinkActive="active-link"
+            [routerLinkActiveOptions]="{ exact: item.path === '/search' }"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+      <button mat-button type="button" class="logout-button" (click)="logout()">Salir</button>
+    }
+  </mat-toolbar>
+}
 
-  @if (showShellNavigation$ | async) {
-    <nav class="desktop-nav" aria-label="Principal">
+<main class="shell" [class.standalone-shell]="!(showShellNavigation$ | async)">
+  <router-outlet />
+</main>
+
+@if (showShellNavigation$ | async) {
+  @if (session$ | async) {
+    <nav class="mobile-nav" aria-label="Principal movil">
       @for (item of navItems; track item.path) {
         <a
           mat-button
           [routerLink]="item.path"
+          [queryParams]="item.path === '/search' ? searchQueryParams() : null"
           routerLinkActive="active-link"
           [routerLinkActiveOptions]="{ exact: item.path === '/search' }"
         >
           {{ item.label }}
         </a>
       }
-    </nav>
-
-    @if (session$ | async) {
-      <button mat-button type="button" class="logout-button" (click)="logout()">Salir</button>
-    }
-  }
-</mat-toolbar>
-
-<main class="shell">
-  <router-outlet />
-</main>
-
-@if (showShellNavigation$ | async) {
-  <nav class="mobile-nav" aria-label="Principal movil">
-    @for (item of navItems; track item.path) {
-      <a
-        mat-button
-        [routerLink]="item.path"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: item.path === '/search' }"
-      >
-        {{ item.label }}
-      </a>
-    }
-
-    @if (session$ | async) {
       <button mat-button type="button" (click)="logout()">Salir</button>
-    }
-  </nav>
+    </nav>
+  }
 }

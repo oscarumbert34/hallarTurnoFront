@@ -76,6 +76,58 @@ describe('PublicSearchPage', () => {
     expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
   });
 
+  it('does not query all businesses when a scoped search has no business id', () => {
+    authService.businessId = null;
+    route.snapshot.data = { businessScoped: true };
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
+    component.search();
+
+    expect(bookingService.searchAvailability).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('No pudimos identificar el comercio');
+  });
+
+  it('hides availability returned for a different business', () => {
+    bookingService.searchAvailability.mockReturnValue(
+      of({
+        offset: 0,
+        limit: 10,
+        totalAvailableSlots: 1,
+        hasMore: true,
+        results: [
+          {
+            businessId: 'foreign-business',
+            businessName: 'Barbería ajena',
+            branchId: 'foreign-branch',
+            branchName: 'Otra sucursal',
+            address: 'Otra dirección',
+            serviceId: 'foreign-service',
+            serviceName: 'Afeitado',
+            price: 10000,
+            durationMinutes: 20,
+            slots: [],
+          },
+        ],
+      }),
+    );
+    route.snapshot.data = { businessScoped: true };
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
+    component.search();
+    fixture.detectChanges();
+
+    expect(component.results()).toEqual([]);
+    expect(component.hasMore()).toBe(false);
+    expect(component.errorMessage()).toContain('resultados de otro comercio');
+    expect(fixture.nativeElement.textContent).not.toContain('Barbería ajena');
+  });
+
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 1, 8, 0));

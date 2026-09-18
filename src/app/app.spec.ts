@@ -34,6 +34,19 @@ describe('App', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
   });
 
+  it('does not show application navigation before login', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(App);
+
+    await router.navigateByUrl('/auth/login');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.desktop-nav')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-nav')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Reservas');
+    expect(fixture.nativeElement.textContent).not.toContain('Panel');
+  });
+
   it('should redirect the former public search URL to login', async () => {
     const harness = await RouterTestingHarness.create();
     const router = TestBed.inject(Router);
@@ -42,5 +55,16 @@ describe('App', () => {
 
     expect(router.url).toBe('/auth/login');
     expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
+  });
+
+  it('keeps the business id when building the search navigation', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(App);
+
+    await router.navigateByUrl('/search?businessId=business-1');
+
+    expect((fixture.componentInstance as any).searchQueryParams()).toEqual({
+      businessId: 'business-1',
+    });
   });
 });

@@ -3,6 +3,14 @@ import { authGuard } from './features/auth/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'para-negocios',
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/business-landing/business-landing.page').then(
+        (m) => m.BusinessLandingPage,
+      ),
+  },
+  {
     path: 'business/:slug',
     data: { standalone: true },
     loadComponent: () =>

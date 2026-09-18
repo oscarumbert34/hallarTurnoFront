@@ -44,6 +44,12 @@ export class App {
     { label: 'Panel', path: '/business-dashboard' },
   ];
 
+  protected searchQueryParams(): Record<string, string> | null {
+    const businessId = this.router.parseUrl(this.router.url).queryParams['businessId'];
+
+    return businessId ? { businessId } : null;
+  }
+
   protected logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth/login']);
