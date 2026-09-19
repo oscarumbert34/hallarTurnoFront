@@ -56,7 +56,17 @@ export const routes: Routes = [
       import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
   },
   {
+    path: ':slug/search',
+    data: { businessScoped: true },
+    loadComponent: () =>
+      import('./features/public-search/public-search.page').then((m) => m.PublicSearchPage),
+  },
+  {
     path: 'booking',
+    loadComponent: () => import('./features/booking/booking.page').then((m) => m.BookingPage),
+  },
+  {
+    path: ':slug/booking',
     loadComponent: () => import('./features/booking/booking.page').then((m) => m.BookingPage),
   },
   {
@@ -70,6 +80,24 @@ export const routes: Routes = [
   },
   {
     path: 'bookings',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'], section: 'bookings' },
+    loadComponent: () =>
+      import('./features/business-dashboard/business-dashboard.page').then(
+        (m) => m.BusinessDashboardPage,
+      ),
+  },
+  {
+    path: ':slug/business-dashboard',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/business-dashboard/business-dashboard.page').then(
+        (m) => m.BusinessDashboardPage,
+      ),
+  },
+  {
+    path: ':slug/bookings',
     canActivate: [authGuard],
     data: { roles: ['ADMIN', 'BUSINESS'], section: 'bookings' },
     loadComponent: () =>

@@ -121,6 +121,11 @@ describe('BusinessDashboardPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Centro');
   });
 
+  it('should not show the global refresh button', () => {
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    expect(buttons.some((button) => button.textContent?.includes('Actualizar'))).toBe(false);
+  });
+
   it('should request reschedule slots using the existing availability page size', () => {
     const component = fixture.componentInstance as unknown as {
       selectedBooking: { set: (booking: unknown) => void };

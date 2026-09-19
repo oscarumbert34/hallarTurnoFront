@@ -198,6 +198,7 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
       },
       slot,
       this.search(),
+      business.slug,
     );
   }
 }

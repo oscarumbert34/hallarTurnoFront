@@ -11,6 +11,7 @@ export function navigateToBooking(
   business: BusinessAvailability,
   slot: AvailabilitySlot,
   search: AvailabilitySearch,
+  slug?: string,
 ): void {
   const selectedSlot: SelectedSlot = {
     businessId: business.businessId,
@@ -29,7 +30,7 @@ export function navigateToBooking(
   };
   sessionStorage.setItem('turnero.selectedSlot', JSON.stringify(selectedSlot));
   sessionStorage.setItem('turnero.search', JSON.stringify(search));
-  void router.navigate(['/booking'], {
+  void router.navigate(slug ? ['/', slug, 'booking'] : ['/booking'], {
     queryParams: { ...selectedSlot, search: JSON.stringify(search) },
   });
 }

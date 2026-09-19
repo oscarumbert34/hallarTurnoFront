@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { BehaviorSubject, map, Observable, tap, timeout } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, of, tap, timeout } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
 import { AuthResponse, AuthSession, AuthUser, LoginRequest, RegisterRequest } from './auth.models';
 
@@ -37,6 +37,10 @@ export class AuthService {
     return this.sessionSubject.value?.user.businessId ?? null;
   }
 
+  get businessSlug(): string | null {
+    return this.sessionSubject.value?.user.businessSlug ?? null;
+  }
+
   login(request: LoginRequest): Observable<AuthSession> {
     return this.http.post<AuthResponse>(this.apiUrl.build('/auth/login'), request).pipe(
       timeout(10000),
@@ -71,14 +75,53 @@ export class AuthService {
     const roles = this.sessionSubject.value?.user.roles ?? [];
 
     if (roles.includes('ADMIN') || roles.includes('BUSINESS')) {
-      return '/bookings';
+      return this.withBusinessSlug('/bookings');
     }
 
     if (roles.includes('CUSTOMER')) {
-      return '/booking';
+      return this.withBusinessSlug('/booking');
     }
 
     return '/auth/login';
+  }
+
+  withBusinessSlug(url: string): string {
+    const businessSlug = this.businessSlug;
+
+    if (!businessSlug || !/^\/(search|booking|bookings|business-dashboard)([/?#]|$)/.test(url)) {
+      return url;
+    }
+
+    return `/${businessSlug}${url}`;
+  }
+
+  ensureBusinessSlug(): Observable<string | null> {
+    if (this.businessSlug) {
+      return of(this.businessSlug);
+    }
+
+    const session = this.sessionSubject.value;
+    const businessId = session?.user.businessId;
+
+    if (!session || !businessId) {
+      return of(null);
+    }
+
+    return this.http.get<{ slug?: string }>(this.apiUrl.build(`/businesses/${businessId}`)).pipe(
+      map((business) => {
+        const businessSlug = business.slug?.trim() || null;
+
+        if (businessSlug) {
+          this.storeSession({
+            ...session,
+            user: { ...session.user, businessSlug },
+          });
+        }
+
+        return businessSlug;
+      }),
+      catchError(() => of(null)),
+    );
   }
 
   private storeSession(session: AuthSession): void {
@@ -130,6 +173,7 @@ export class AuthService {
       email: response.user?.email ?? response.email ?? fallbackEmail,
       roles,
       businessId: response.user?.businessId ?? response.businessId,
+      businessSlug: response.user?.businessSlug ?? response.businessSlug,
     };
   }
 

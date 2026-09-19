@@ -271,6 +271,7 @@ export class PublicSearchPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly publicBusinessId = this.route.snapshot.queryParamMap?.get('businessId') ?? '';
+  protected readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
   protected readonly businessScoped =
     Boolean(this.route.snapshot.data['businessScoped']) || !!this.publicBusinessId;
   protected readonly minSearchDate = this.startOfToday();
@@ -504,7 +505,13 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected selectSlot(business: BusinessAvailability, slot: AvailabilitySlot): void {
-    navigateToBooking(this.router, business, slot, this.availabilitySearch());
+    navigateToBooking(
+      this.router,
+      business,
+      slot,
+      this.availabilitySearch(),
+      this.businessSlug || undefined,
+    );
   }
 
   protected priceLabel(price: number | undefined): string {
@@ -828,6 +835,20 @@ export class PublicSearchPage implements OnInit {
 
   private loadSessionBusinessOptions(): void {
     const businessId = this.publicBusinessId || this.authService.businessId;
+
+    if (!businessId && this.businessSlug) {
+      this.bookingService.getPublicBusiness(this.businessSlug).subscribe({
+        next: (business) => {
+          this.selectedBusinessId.set(business.id);
+          this.loadBranches(business.id);
+          this.loadServiceOfferings(business.id);
+        },
+        error: () => {
+          this.errorMessage.set('No encontramos el negocio indicado en la dirección.');
+        },
+      });
+      return;
+    }
 
     if (!businessId) {
       this.errorMessage.set('No encontramos el negocio asociado a la sesión.');

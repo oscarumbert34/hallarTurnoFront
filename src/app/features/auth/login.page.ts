@@ -137,6 +137,8 @@ export class LoginPage {
   private returnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
-    return returnUrl?.startsWith('/') ? returnUrl : this.authService.nextUrlForRole();
+    return returnUrl?.startsWith('/')
+      ? this.authService.withBusinessSlug(returnUrl)
+      : this.authService.nextUrlForRole();
   }
 }

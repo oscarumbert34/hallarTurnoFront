@@ -107,7 +107,7 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   protected reserve(): void {
-    void this.router.navigate(['/search'], {
+    void this.router.navigate(['/', this.business()!.slug, 'search'], {
       queryParams: { businessId: this.business()!.id },
     });
   }

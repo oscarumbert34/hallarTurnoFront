@@ -34,6 +34,7 @@ describe('AuthService', () => {
       expect(session.token).toBe('jwt-token');
       expect(session.user.roles).toEqual(['BUSINESS']);
       expect(session.user.businessId).toBe('business-1');
+      expect(session.user.businessSlug).toBe('barberia-1981');
     });
 
     const request = httpTesting.expectOne('/api/auth/login');
@@ -49,13 +50,53 @@ describe('AuthService', () => {
         email: 'user@test.com',
         roles: ['BUSINESS'],
         businessId: 'business-1',
+        businessSlug: 'barberia-1981',
       },
     });
 
     expect(service.token).toBe('jwt-token');
     expect(service.businessId).toBe('business-1');
+    expect(service.businessSlug).toBe('barberia-1981');
     expect(localStorage.getItem('turnero.auth.session')).toContain('jwt-token');
     expect(localStorage.getItem('turnero.auth.session')).not.toContain('supersecret');
+  });
+
+  it('should include the business slug in the destination for business users', () => {
+    service.login({ email: 'user@test.com', password: 'supersecret' }).subscribe();
+    httpTesting.expectOne('/api/auth/login').flush({
+      token: 'jwt-token',
+      user: {
+        email: 'user@test.com',
+        roles: ['BUSINESS'],
+        businessId: 'business-1',
+        businessSlug: 'barberia-1981',
+      },
+    });
+
+    expect(service.nextUrlForRole()).toBe('/barberia-1981/bookings');
+    expect(service.withBusinessSlug('/business-dashboard')).toBe(
+      '/barberia-1981/business-dashboard',
+    );
+    expect(service.withBusinessSlug('/bookings?page=2')).toBe('/barberia-1981/bookings?page=2');
+    expect(service.withBusinessSlug('/auth/login')).toBe('/auth/login');
+  });
+
+  it('should recover and persist the slug for a legacy authenticated session', () => {
+    service.login({ email: 'user@test.com', password: 'supersecret' }).subscribe();
+    httpTesting.expectOne('/api/auth/login').flush({
+      token: 'jwt-token',
+      user: {
+        email: 'user@test.com',
+        roles: ['BUSINESS'],
+        businessId: 'business-1',
+      },
+    });
+
+    service.ensureBusinessSlug().subscribe((slug) => expect(slug).toBe('barberia-1981'));
+    httpTesting.expectOne('/api/businesses/business-1').flush({ slug: 'barberia-1981' });
+
+    expect(service.businessSlug).toBe('barberia-1981');
+    expect(localStorage.getItem('turnero.auth.session')).toContain('barberia-1981');
   });
 
   it('should register without storing credentials', () => {

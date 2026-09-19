@@ -14,6 +14,7 @@ describe('PublicSearchPage', () => {
     listServiceOfferings: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
     listAvailabilitySlots: ReturnType<typeof vi.fn>;
+    getPublicBusiness: ReturnType<typeof vi.fn>;
   };
   let router: {
     navigate: ReturnType<typeof vi.fn>;
@@ -22,6 +23,7 @@ describe('PublicSearchPage', () => {
     snapshot: {
       data: Record<string, unknown>;
       queryParamMap?: ParamMap;
+      paramMap?: ParamMap;
     };
   };
   let authService: {
@@ -88,6 +90,19 @@ describe('PublicSearchPage', () => {
 
     expect(bookingService.searchAvailability).not.toHaveBeenCalled();
     expect(component.errorMessage()).toContain('No pudimos identificar el comercio');
+  });
+
+  it('resolves the business id from the slug on a direct scoped navigation', () => {
+    authService.businessId = null;
+    route.snapshot.data = { businessScoped: true };
+    route.snapshot.paramMap = convertToParamMap({ slug: 'barberia-1981' });
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+
+    expect(bookingService.getPublicBusiness).toHaveBeenCalledWith('barberia-1981');
+    expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
+    expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
   });
 
   it('hides availability returned for a different business', () => {
@@ -205,6 +220,17 @@ describe('PublicSearchPage', () => {
               endsAt: '2026-08-17T11:30:00',
             },
           ],
+        }),
+      ),
+      getPublicBusiness: vi.fn(() =>
+        of({
+          id: 'business-1',
+          name: 'Turnos SA',
+          slug: 'barberia-1981',
+          shortDescription: null,
+          phone: null,
+          email: null,
+          branches: [],
         }),
       ),
     };

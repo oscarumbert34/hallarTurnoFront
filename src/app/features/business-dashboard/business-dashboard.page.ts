@@ -74,9 +74,6 @@ import {
           <h1>{{ pageTitle() }}</h1>
           <p>{{ pageSubtitle() }}</p>
         </div>
-        <button mat-stroked-button type="button" (click)="refreshAll()">
-          <mat-icon aria-hidden="true">refresh</mat-icon>Actualizar
-        </button>
       </header>
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />

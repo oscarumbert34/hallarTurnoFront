@@ -63,7 +63,7 @@ describe('PublicBusinessPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('San Miguel');
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find((button) => button.textContent?.includes('Reservar turno'))!.click();
-    expect(navigate).toHaveBeenCalledWith(['/search'], {
+    expect(navigate).toHaveBeenCalledWith(['/', 'centro', 'search'], {
       queryParams: { businessId: 'business-1' },
     });
     buttons.find((button) => button.textContent?.trim() === 'Reservar')!.click();

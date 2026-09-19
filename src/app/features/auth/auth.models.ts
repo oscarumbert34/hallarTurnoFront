@@ -15,6 +15,7 @@ export interface AuthUser {
   email: string;
   roles: string[];
   businessId?: string;
+  businessSlug?: string;
 }
 
 export interface AuthSession {
@@ -29,6 +30,7 @@ export interface AuthResponse {
   email?: string;
   name?: string;
   businessId?: string;
+  businessSlug?: string;
   role?: string;
   roles?: string[];
 }

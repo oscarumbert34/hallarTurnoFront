@@ -178,7 +178,12 @@ export class BookingPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
-  protected readonly searchRoute = this.authService.isAuthenticated ? '/search' : '/auth/login';
+  private readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
+  protected readonly searchRoute = this.businessSlug
+    ? `/${this.businessSlug}/search`
+    : this.authService.isAuthenticated
+      ? '/search'
+      : '/auth/login';
 
   protected readonly selectedSlot = signal<SelectedSlot | null>(null);
   protected readonly confirmedBooking = signal<CustomerBooking | null>(null);

@@ -30,7 +30,7 @@ describe('ServiceAvailabilityDialogComponent', () => {
         {
           provide: MAT_DIALOG_DATA,
           useValue: {
-            business: { id: 'b', name: 'Negocio' },
+            business: { id: 'b', name: 'Negocio', slug: 'negocio' },
             branch: { id: 'branch', name: 'Centro', city: 'San Miguel' },
             service: { id: 'service', name: 'Consulta', price: 15000, durationMinutes: 30 },
           },
@@ -44,7 +44,7 @@ describe('ServiceAvailabilityDialogComponent', () => {
     fixture.nativeElement.querySelector('.slots button').click();
     expect(close).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(
-      ['/booking'],
+      ['/', 'negocio', 'booking'],
       expect.objectContaining({
         queryParams: expect.objectContaining({
           resourceId: 'resource-1',

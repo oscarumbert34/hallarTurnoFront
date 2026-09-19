@@ -50,6 +50,13 @@ export class App {
     return businessId ? { businessId } : null;
   }
 
+  protected navigationPath(path: string): string {
+    const segments = this.router.parseUrl(this.router.url).root.children['primary']?.segments ?? [];
+    const slug = segments.length > 1 ? segments[0]?.path : this.authService.businessSlug;
+
+    return slug ? `/${slug}${path}` : path;
+  }
+
   protected logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth/login']);
