@@ -15,14 +15,27 @@ describe('BusinessLandingPage', () => {
     const fixture = TestBed.createComponent(BusinessLandingPage);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.demo-card')).toHaveLength(6);
+    expect(fixture.nativeElement.querySelectorAll('.card-link')).toHaveLength(6);
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
     expect(fixture.nativeElement.textContent).toContain('Barbería Malvinas');
     expect(fixture.nativeElement.querySelector('.demo-card img')?.alt).toBe(
-      'Logo de Barbería Malvinas',
+      'Portada de Barbería Malvinas',
     );
     expect(fixture.nativeElement.querySelector('.demo-card img')?.getAttribute('src')).toBe(
-      'barberia-malvinas-logo.png',
+      'barberia-malvinas-portada.png',
     );
+    expect(fixture.nativeElement.querySelectorAll('.demo-card img')).toHaveLength(6);
+    const demoLinks = [...fixture.nativeElement.querySelectorAll('.card-link')].map(
+      (link: HTMLAnchorElement) => link.getAttribute('href'),
+    );
+    expect(demoLinks).toEqual([
+      '/business/barberia-malvinas',
+      '/business/espacio-calma',
+      '/business/consultorio-armonia',
+      '/business/bella-studio',
+      '/business/huellitas-pet',
+      '/business/punto-saber',
+    ]);
   });
 
   it('configures every primary action and SEO metadata', () => {

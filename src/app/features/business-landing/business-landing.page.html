@@ -91,11 +91,12 @@
         @for (demo of demos; track demo.name) {
           <article class="demo-card">
             <div class="demo-visual" [style.--accent]="demo.accent">
-              @if (demo.logoUrl) {
+              @if (demo.coverUrl) {
                 <img
-                  [src]="demo.logoUrl"
-                  [alt]="'Logo de ' + demo.name"
-                  (error)="hideBrokenDemoLogo(demo)"
+                  [src]="demo.coverUrl"
+                  [alt]="'Portada de ' + demo.name"
+                  loading="lazy"
+                  (error)="hideBrokenDemoCover(demo)"
                 />
               } @else {
                 <span>{{ demo.initials }}</span>

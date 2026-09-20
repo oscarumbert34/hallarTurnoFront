@@ -10,7 +10,7 @@ export interface DemoBusiness {
   initials: string;
   accent: string;
   publicPageUrl: string | null;
-  logoUrl?: string | null;
+  coverUrl?: string | null;
 }
 
 @Component({
@@ -36,42 +36,47 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       initials: 'BM',
       accent: '#2367d1',
       publicPageUrl: '/business/barberia-malvinas',
-      logoUrl: 'barberia-malvinas-logo.png',
+      coverUrl: 'barberia-malvinas-portada.png',
     },
     {
       name: 'Espacio Calma',
       category: 'Bienestar',
       initials: 'EC',
       accent: '#369277',
-      publicPageUrl: null,
+      publicPageUrl: '/business/espacio-calma',
+      coverUrl: 'espacio-calma-portada.png',
     },
     {
       name: 'Consultorio Armonía',
       category: 'Salud',
       initials: 'CA',
       accent: '#7559ad',
-      publicPageUrl: null,
+      publicPageUrl: '/business/consultorio-armonia',
+      coverUrl: 'consultorio-armonia-portada.png',
     },
     {
       name: 'Bella Studio',
       category: 'Estética',
       initials: 'BS',
       accent: '#d45882',
-      publicPageUrl: null,
+      publicPageUrl: '/business/bella-studio',
+      coverUrl: 'bella-studio-portada.png',
     },
     {
-      name: 'Centro Podal',
-      category: 'Podología',
-      initials: 'CP',
+      name: 'Huellitas Pet',
+      category: 'Mascotas',
+      initials: 'HP',
       accent: '#2586a8',
-      publicPageUrl: null,
+      publicPageUrl: '/business/huellitas-pet',
+      coverUrl: 'huellitas-pet-portada.jpg',
     },
     {
-      name: 'Kine Activa',
-      category: 'Kinesiología',
-      initials: 'KA',
+      name: 'Punto Saber',
+      category: 'Educación',
+      initials: 'PS',
       accent: '#e17b36',
-      publicPageUrl: null,
+      publicPageUrl: '/business/punto-saber',
+      coverUrl: 'punto-saber-portada.jpg',
     },
   ];
 
@@ -103,8 +108,8 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
     if (!this.canonical.parentNode) this.document.head.appendChild(this.canonical);
   }
 
-  protected hideBrokenDemoLogo(demo: DemoBusiness): void {
-    demo.logoUrl = null;
+  protected hideBrokenDemoCover(demo: DemoBusiness): void {
+    demo.coverUrl = null;
   }
 
   ngOnDestroy(): void {
