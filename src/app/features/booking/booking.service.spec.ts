@@ -58,6 +58,7 @@ describe('BookingService', () => {
         expect(page.hasMore).toBe(false);
         expect(page.results.length).toBe(1);
         expect(page.results[0].businessName).toBe('Barberia pepito');
+        expect(page.results[0].category).toBe('BARBERSHOP');
         expect(page.results[0].serviceName).toBe('Corte de pelo');
         expect(page.results[0].slots[0].id).toBe('service-1-resource-1-09:00:00');
       });
@@ -76,6 +77,7 @@ describe('BookingService', () => {
         {
           id: 'business-1',
           name: 'Barberia pepito',
+          category: 'BARBERSHOP',
           branches: [
             {
               id: 'branch-1',
@@ -185,6 +187,7 @@ describe('BookingService', () => {
           shortDescription: 'Cortes y barba',
           status: 'ACTIVE',
           depositEnabled: false,
+          category: 'BARBERSHOP',
         },
       ]);
     });
@@ -198,6 +201,7 @@ describe('BookingService', () => {
         name: 'Barberia pepito',
         shortDescription: 'Cortes y barba',
         status: 'ACTIVE',
+        category: 'BARBERSHOP',
       },
     ]);
   });

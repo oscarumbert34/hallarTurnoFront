@@ -359,8 +359,7 @@ article button {
   position: relative;
   padding-right: min(28%, 300px);
 }
-.about-us::after {
-  content: '✂';
+.about-category-icon {
   position: absolute;
   top: 50%;
   right: 8%;
@@ -373,6 +372,11 @@ article button {
   background: #edf7ff;
   font-size: 44px;
   transform: translateY(-50%);
+}
+.about-category-icon mat-icon {
+  width: auto;
+  height: auto;
+  font-size: inherit;
 }
 .about-us .section-heading {
   margin-bottom: 10px;
@@ -526,7 +530,7 @@ article button {
   .about-us {
     padding-right: 16px;
   }
-  .about-us::after {
+  .about-category-icon {
     display: none;
   }
 }

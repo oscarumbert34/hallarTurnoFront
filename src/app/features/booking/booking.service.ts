@@ -3,7 +3,11 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
 import { SKIP_AUTH } from '../auth/auth.interceptor';
-import { PublicBusiness, PublicService } from '../public-business/public-business.models';
+import {
+  BusinessCategory,
+  PublicBusiness,
+  PublicService,
+} from '../public-business/public-business.models';
 import {
   AvailabilityPage,
   AvailabilityPagination,
@@ -196,6 +200,7 @@ export class BookingService {
             businessId: business.id,
             businessName: business.name,
             depositEnabled: business.depositEnabled ?? false,
+            category: business.category,
             branchId: branch.id,
             branchName: branch.name,
             address: branch.address,
@@ -233,6 +238,7 @@ export class BookingService {
       shortDescription: business.shortDescription,
       status: business.status,
       depositEnabled: business.depositEnabled ?? false,
+      category: business.category,
     }));
   }
 
@@ -273,6 +279,7 @@ interface BusinessResponse {
   shortDescription?: string;
   status?: string;
   depositEnabled?: boolean;
+  category?: BusinessCategory | null;
 }
 
 interface BranchResponse {
@@ -320,6 +327,7 @@ interface AvailabilityBusinessResponse {
   name: string;
   shortDescription?: string;
   depositEnabled?: boolean;
+  category?: BusinessCategory | null;
   branches: AvailabilityBranchResponse[];
 }
 

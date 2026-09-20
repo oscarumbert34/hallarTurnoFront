@@ -6,7 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { BookingService } from '../booking/booking.service';
-import { PublicBranch, PublicBusiness, PublicService } from './public-business.models';
+import {
+  BusinessCategory,
+  PublicBranch,
+  PublicBusiness,
+  PublicService,
+} from './public-business.models';
 import { ServiceAvailabilityDialogComponent } from './service-availability-dialog.component';
 
 @Component({
@@ -101,9 +106,10 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   protected price(service: PublicService): string {
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: service.currency }).format(
-      service.price,
-    );
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: service.currency,
+    }).format(service.price);
   }
 
   protected reserve(): void {
@@ -125,6 +131,23 @@ export class PublicBusinessPageComponent implements OnInit {
   protected instagramUrl(value: string): string {
     const handle = value.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '');
     return `https://instagram.com/${handle.replace(/\/$/, '')}`;
+  }
+
+  protected categoryIcon(category: BusinessCategory | string | null | undefined): string {
+    const icons: Record<BusinessCategory, string> = {
+      BARBERSHOP: 'content_cut',
+      HAIRDRESSER: 'content_cut',
+      BEAUTY: 'auto_awesome',
+      HEALTH: 'monitor_heart',
+      FITNESS: 'fitness_center',
+      WELLNESS: 'self_improvement',
+      PET_SERVICES: 'pets',
+      EDUCATION: 'school',
+      PROFESSIONAL_SERVICES: 'business_center',
+      OTHERS: 'storefront',
+    };
+
+    return icons[category as BusinessCategory] ?? icons.OTHERS;
   }
 
   protected googleMapsUrl(branch: PublicBranch): string {
@@ -170,7 +193,11 @@ export class PublicBusinessPageComponent implements OnInit {
 
   protected openAvailability(service: PublicService): void {
     this.dialog.open(ServiceAvailabilityDialogComponent, {
-      data: { business: this.business()!, branch: this.selectedBranch()!, service },
+      data: {
+        business: this.business()!,
+        branch: this.selectedBranch()!,
+        service,
+      },
       width: '600px',
       maxWidth: '96vw',
       maxHeight: '94dvh',

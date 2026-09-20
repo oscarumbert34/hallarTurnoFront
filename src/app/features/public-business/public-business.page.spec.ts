@@ -19,6 +19,7 @@ describe('PublicBusinessPageComponent', () => {
     slug: 'centro',
     name: 'Centro',
     shortDescription: null,
+    aboutUs: 'Sobre el negocio',
     phone: null,
     email: null,
     branches: [branch, { ...branch, id: 'branch-2' }],
@@ -89,5 +90,27 @@ describe('PublicBusinessPageComponent', () => {
     const fixture = TestBed.createComponent(PublicBusinessPageComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
+  });
+  it.each([
+    ['BARBERSHOP', 'content_cut'],
+    ['HAIRDRESSER', 'content_cut'],
+    ['BEAUTY', 'auto_awesome'],
+    ['HEALTH', 'monitor_heart'],
+    ['FITNESS', 'fitness_center'],
+    ['WELLNESS', 'self_improvement'],
+    ['PET_SERVICES', 'pets'],
+    ['EDUCATION', 'school'],
+    ['PROFESSIONAL_SERVICES', 'business_center'],
+    ['OTHERS', 'storefront'],
+    ['UNKNOWN', 'storefront'],
+    [undefined, 'storefront'],
+  ])('uses the category icon for %s', (category, expectedIcon) => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, category }));
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+    const icons = [...fixture.nativeElement.querySelectorAll('.avatar mat-icon')];
+    expect(icons[0]?.textContent?.trim()).toBe(expectedIcon);
+    const aboutIcon = fixture.nativeElement.querySelector('.about-category-icon mat-icon');
+    expect(aboutIcon?.textContent?.trim()).toBe(expectedIcon);
   });
 });

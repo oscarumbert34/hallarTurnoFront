@@ -1,3 +1,5 @@
+import { BusinessCategory } from '../public-business/public-business.models';
+
 export interface AvailabilitySearch {
   business?: string;
   businessId?: string;
@@ -38,6 +40,7 @@ export interface BusinessSummary {
   shortDescription?: string;
   status?: string;
   depositEnabled?: boolean;
+  category?: BusinessCategory | null;
 }
 
 export interface BranchSummary {
@@ -69,6 +72,7 @@ export interface BusinessAvailability {
   businessId: string;
   businessName: string;
   depositEnabled?: boolean;
+  category?: BusinessCategory | null;
   branchId: string;
   branchName: string;
   address: string;

@@ -1,3 +1,15 @@
+export type BusinessCategory =
+  | 'BARBERSHOP'
+  | 'HAIRDRESSER'
+  | 'BEAUTY'
+  | 'HEALTH'
+  | 'FITNESS'
+  | 'WELLNESS'
+  | 'PET_SERVICES'
+  | 'EDUCATION'
+  | 'PROFESSIONAL_SERVICES'
+  | 'OTHERS';
+
 export interface PublicBusiness {
   id: string;
   name: string;
@@ -11,6 +23,7 @@ export interface PublicBusiness {
   coverImageUrl?: string | null;
   phone: string | null;
   email: string | null;
+  category?: BusinessCategory | null;
   depositEnabled?: boolean;
   branches: PublicBranch[];
   services?: PublicService[];
