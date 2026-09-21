@@ -59,4 +59,12 @@ describe('BusinessLandingPage', () => {
       '/para-negocios',
     );
   });
+
+  it('offers a direct mobile link to the benefits section', () => {
+    const fixture = TestBed.createComponent(BusinessLandingPage);
+    fixture.detectChanges();
+    const link = fixture.nativeElement.querySelector('.mobile-how-button') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Cómo funciona');
+    expect(link.getAttribute('href')).toBe('#beneficios');
+  });
 });
