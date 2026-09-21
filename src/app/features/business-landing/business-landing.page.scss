@@ -101,6 +101,10 @@ h1 em {
   gap: 12px;
   margin-top: 25px;
 }
+.launch-note {
+  margin-top: 8px !important;
+  font-size: 0.82rem !important;
+}
 .product-showcase {
   position: relative;
   z-index: 2;
@@ -172,9 +176,17 @@ h1 em {
   border-bottom: 1px solid #edf2f8;
   background: #fff;
 }
+.benefits > h2 {
+  margin: 0 0 14px;
+  color: #0b2454;
+  text-align: center;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+}
 .benefit-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  gap: 12px 16px;
 }
 .benefit-grid article {
   position: relative;
@@ -183,6 +195,8 @@ h1 em {
   align-items: center;
   min-height: 72px;
   padding: 8px 28px;
+  border: 1px solid #d9e5f2;
+  border-radius: 9px;
 }
 .benefit-grid article + article {
   border-left: 1px solid #d9e5f2;

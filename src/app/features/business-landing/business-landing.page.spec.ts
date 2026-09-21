@@ -17,6 +17,11 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelectorAll('.demo-card')).toHaveLength(6);
     expect(fixture.nativeElement.querySelectorAll('.card-link')).toHaveLength(6);
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll('.benefit-grid article')).toHaveLength(6);
+    expect(fixture.nativeElement.textContent).toContain(
+      'Todo lo que necesitás para organizar tus turnos',
+    );
+    expect(fixture.nativeElement.textContent).toContain('Gratis durante el lanzamiento');
     expect(fixture.nativeElement.textContent).toContain('Barbería Malvinas');
     expect(fixture.nativeElement.querySelector('.demo-card img')?.alt).toBe(
       'Portada de Barbería Malvinas',
