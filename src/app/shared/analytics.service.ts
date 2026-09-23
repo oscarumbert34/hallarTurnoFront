@@ -45,8 +45,8 @@ export class AnalyticsService {
       window.dataLayer = window.dataLayer ?? [];
       window.gtag =
         window.gtag ??
-        function (...args: unknown[]) {
-          window.dataLayer?.push(args);
+        function (..._args: unknown[]) {
+          window.dataLayer?.push(arguments);
         };
       window.gtag('js', new Date());
       window.gtag('config', measurementId);
