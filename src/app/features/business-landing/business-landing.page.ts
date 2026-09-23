@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AnalyticsService } from '../../shared/analytics.service';
 
 export interface DemoBusiness {
   name: string;
@@ -11,6 +12,7 @@ export interface DemoBusiness {
   accent: string;
   publicPageUrl: string | null;
   coverUrl?: string | null;
+  slug: string;
 }
 
 @Component({
@@ -23,6 +25,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   private readonly meta = inject(Meta);
   private readonly title = inject(Title);
+  private readonly analytics = inject(AnalyticsService);
   private canonical?: HTMLLinkElement;
 
   protected readonly whatsappUrl = `https://wa.me/${environment.marketingWhatsappNumber}?text=${encodeURIComponent(
@@ -37,6 +40,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#2367d1',
       publicPageUrl: '/business/barberia-malvinas',
       coverUrl: 'barberia-malvinas-portada.png',
+      slug: 'barberia-malvinas',
     },
     {
       name: 'Espacio Calma',
@@ -45,6 +49,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#369277',
       publicPageUrl: '/business/espacio-calma',
       coverUrl: 'espacio-calma-portada.png',
+      slug: 'espacio-calma',
     },
     {
       name: 'Consultorio Armonía',
@@ -53,6 +58,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#7559ad',
       publicPageUrl: '/business/consultorio-armonia',
       coverUrl: 'consultorio-armonia-portada.png',
+      slug: 'consultorio-armonia',
     },
     {
       name: 'Bella Studio',
@@ -61,6 +67,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#d45882',
       publicPageUrl: '/business/bella-studio',
       coverUrl: 'bella-studio-portada.png',
+      slug: 'bella-studio',
     },
     {
       name: 'Huellitas Pet',
@@ -69,6 +76,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#2586a8',
       publicPageUrl: '/business/huellitas-pet',
       coverUrl: 'huellitas-pet-portada.jpg',
+      slug: 'huellitas-pet',
     },
     {
       name: 'Punto Saber',
@@ -77,6 +85,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
       accent: '#e17b36',
       publicPageUrl: '/business/punto-saber',
       coverUrl: 'punto-saber-portada.jpg',
+      slug: 'punto-saber',
     },
   ];
 
@@ -85,7 +94,23 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
     this.document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  protected trackCta(button: 'START_FREE' | 'TRY_HALLARTURNO' | 'SEE_DEMOS'): void {
+    this.analytics.event('landing_cta_click', { button });
+  }
+
+  protected trackDemo(demo: DemoBusiness): void {
+    this.analytics.event('demo_business_click', {
+      business_id: demo.slug,
+      business_slug: demo.slug,
+    });
+  }
+
+  protected trackContact(): void {
+    this.analytics.event('contact_click');
+  }
+
   ngOnInit(): void {
+    this.analytics.event('landing_view');
     const pageTitle = 'HallarTurno | Sistema de turnos online para negocios';
     const description =
       'Organizá tu agenda y permití que tus clientes reserven turnos online las 24 horas con HallarTurno.';

@@ -23,6 +23,8 @@ import { AuthService } from '../auth/auth.service';
 import { bookingErrorMessage } from './booking-error';
 import { AvailabilitySearch, CustomerBooking, SelectedSlot } from './booking.models';
 import { BookingService } from './booking.service';
+import { AnalyticsService } from '../../shared/analytics.service';
+import { BusinessCategory } from '../public-business/public-business.models';
 
 @Component({
   selector: 'app-booking-page',
@@ -178,6 +180,7 @@ export class BookingPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly analytics = inject(AnalyticsService);
   private readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
   protected readonly searchRoute = this.businessSlug
     ? `/${this.businessSlug}/search`
@@ -249,6 +252,7 @@ export class BookingPage implements OnInit {
     this.watchSkipCustomerContact();
 
     if (selectedSlot) {
+      this.analytics.event('booking_checkout_view', this.bookingAnalyticsParams(selectedSlot));
       this.watchCustomerPhone(selectedSlot.businessId);
     }
   }
@@ -290,6 +294,10 @@ export class BookingPage implements OnInit {
       .subscribe({
         next: (booking) => {
           this.confirmedBooking.set(booking);
+          this.analytics.event('booking_completed', {
+            ...this.bookingAnalyticsParams(selectedSlot),
+            source: selectedSlot.source ?? (this.businessSlug ? 'PUBLIC' : 'DIRECT_LINK'),
+          });
         },
         error: (error) => {
           this.errorMessage.set(bookingErrorMessage(error));
@@ -446,6 +454,8 @@ export class BookingPage implements OnInit {
       resourceName: params.get('resourceName') ?? undefined,
       price: price ? Number(price) : undefined,
       depositEnabled: params.get('depositEnabled') === 'true',
+      businessCategory: params.get('businessCategory') as BusinessCategory | null,
+      source: (params.get('source') as SelectedSlot['source']) ?? undefined,
     };
   }
 
@@ -466,6 +476,15 @@ export class BookingPage implements OnInit {
       sessionStorage.removeItem('turnero.selectedSlot');
       return null;
     }
+  }
+
+  private bookingAnalyticsParams(slot: SelectedSlot): Record<string, unknown> {
+    return {
+      business_id: slot.businessId,
+      business_category: slot.businessCategory ?? 'OTHERS',
+      branch_id: slot.branchId,
+      service_id: slot.serviceId,
+    };
   }
 }
 

@@ -25,6 +25,8 @@ import {
 } from '../booking/booking.models';
 import { navigateToBooking } from '../booking/booking-navigation';
 import { BookingService } from '../booking/booking.service';
+import { AnalyticsService } from '../../shared/analytics.service';
+import { BusinessCategory } from '../public-business/public-business.models';
 
 @Component({
   selector: 'app-public-search-page',
@@ -270,7 +272,10 @@ export class PublicSearchPage implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly analytics = inject(AnalyticsService);
   protected readonly publicBusinessId = this.route.snapshot.queryParamMap?.get('businessId') ?? '';
+  private readonly publicBusinessCategory =
+    (this.route.snapshot.queryParamMap?.get('businessCategory') as BusinessCategory | null) ?? null;
   protected readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
   protected readonly businessScoped =
     Boolean(this.route.snapshot.data['businessScoped']) || !!this.publicBusinessId;
@@ -280,6 +285,9 @@ export class PublicSearchPage implements OnInit {
   protected readonly branches = signal<BranchSummary[]>([]);
   protected readonly serviceOfferings = signal<ServiceOfferingSummary[]>([]);
   protected readonly selectedBusinessId = signal('');
+  private readonly selectedBusinessCategory = signal<BusinessCategory | null>(
+    this.publicBusinessCategory ?? this.storedBusinessCategory(),
+  );
   protected readonly loading = signal(false);
   protected readonly loadingMoreServices = signal(false);
   protected readonly searched = signal(false);
@@ -396,6 +404,12 @@ export class PublicSearchPage implements OnInit {
         next: (page) => this.applyAvailabilityPage(page, false),
         error: (error) => this.errorMessage.set(bookingErrorMessage(error)),
       });
+    this.analytics.event('availability_search', {
+      business_id: search.businessId,
+      business_category: this.selectedBusinessCategory() ?? 'OTHERS',
+      branch_id: search.branchId || 'ALL',
+      service_id: this.selectedServiceId(),
+    });
   }
 
   protected loadMoreServices(): void {
@@ -840,6 +854,7 @@ export class PublicSearchPage implements OnInit {
       this.bookingService.getPublicBusiness(this.businessSlug).subscribe({
         next: (business) => {
           this.selectedBusinessId.set(business.id);
+          this.selectedBusinessCategory.set(business.category ?? 'OTHERS');
           this.loadBranches(business.id);
           this.loadServiceOfferings(business.id);
         },
@@ -921,6 +936,29 @@ export class PublicSearchPage implements OnInit {
     );
 
     this.selectedBusinessId.set(selected?.id ?? '');
+    this.selectedBusinessCategory.set(selected?.category ?? null);
+  }
+
+  private selectedServiceId(): string {
+    const serviceName = this.form.controls.service.value.trim().toLowerCase();
+    if (!serviceName) return 'ALL';
+
+    return (
+      this.serviceOfferings().find((service) => service.name.trim().toLowerCase() === serviceName)
+        ?.id ?? 'ALL'
+    );
+  }
+
+  private storedBusinessCategory(): BusinessCategory | null {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem('turnero.businessAnalytics') ?? 'null') as {
+        businessId?: string;
+        category?: BusinessCategory;
+      } | null;
+      return stored?.businessId === this.publicBusinessId ? (stored.category ?? null) : null;
+    } catch {
+      return null;
+    }
   }
 }
 

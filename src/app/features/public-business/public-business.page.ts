@@ -13,6 +13,7 @@ import {
   PublicService,
 } from './public-business.models';
 import { ServiceAvailabilityDialogComponent } from './service-availability-dialog.component';
+import { AnalyticsService } from '../../shared/analytics.service';
 
 @Component({
   selector: 'app-public-business-page',
@@ -26,6 +27,7 @@ export class PublicBusinessPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly analytics = inject(AnalyticsService);
   private businessRequest?: Subscription;
   private servicesRequest?: Subscription;
   protected readonly business = signal<PublicBusiness | null>(null);
@@ -51,6 +53,7 @@ export class PublicBusinessPageComponent implements OnInit {
         .subscribe({
           next: (business) => {
             this.business.set(business);
+            this.analytics.event('business_page_view', this.businessAnalyticsParams(business));
             this.loading.set(false);
             if (business.branches[0]) this.selectBranch(business.branches[0]);
           },
@@ -113,6 +116,17 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   protected reserve(): void {
+    this.analytics.event('business_booking_click', {
+      ...this.businessAnalyticsParams(this.business()!),
+      source: 'GENERAL_BUTTON',
+    });
+    sessionStorage.setItem(
+      'turnero.businessAnalytics',
+      JSON.stringify({
+        businessId: this.business()!.id,
+        category: this.business()!.category ?? 'OTHERS',
+      }),
+    );
     void this.router.navigate(['/', this.business()!.slug, 'search'], {
       queryParams: { businessId: this.business()!.id },
     });
@@ -192,6 +206,11 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   protected openAvailability(service: PublicService): void {
+    this.analytics.event('business_booking_click', {
+      ...this.businessAnalyticsParams(this.business()!),
+      source: 'SERVICE_BUTTON',
+      service_id: service.id,
+    });
     this.dialog.open(ServiceAvailabilityDialogComponent, {
       data: {
         business: this.business()!,
@@ -203,5 +222,13 @@ export class PublicBusinessPageComponent implements OnInit {
       maxHeight: '94dvh',
       autoFocus: 'first-heading',
     });
+  }
+
+  private businessAnalyticsParams(business: PublicBusiness): Record<string, unknown> {
+    return {
+      business_id: business.id,
+      business_slug: business.slug,
+      business_category: business.category ?? 'OTHERS',
+    };
   }
 }

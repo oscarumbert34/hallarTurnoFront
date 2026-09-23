@@ -130,4 +130,6 @@ export interface SelectedSlot {
   resourceName?: string;
   price?: number;
   depositEnabled?: boolean;
+  businessCategory?: BusinessCategory | null;
+  source?: 'PUBLIC' | 'QR' | 'DIRECT_LINK';
 }

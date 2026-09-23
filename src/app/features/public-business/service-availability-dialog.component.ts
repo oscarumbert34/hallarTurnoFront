@@ -12,6 +12,7 @@ import { BookingService } from '../booking/booking.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import { navigateToBooking } from '../booking/booking-navigation';
 import { PublicBranch, PublicBusiness, PublicService } from './public-business.models';
+import { AnalyticsService } from '../../shared/analytics.service';
 
 export interface ServiceAvailabilityDialogData {
   business: PublicBusiness;
@@ -102,6 +103,7 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly dialogRef = inject(MatDialogRef<ServiceAvailabilityDialogComponent>);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly analytics = inject(AnalyticsService);
   private request?: Subscription;
   private offset = 0;
   protected readonly today = new Date(new Date().setHours(0, 0, 0, 0));
@@ -175,6 +177,14 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
           this.loading.set(false);
         },
       });
+    if (!append) {
+      this.analytics.event('availability_search', {
+        business_id: this.data.business.id,
+        business_category: this.data.business.category ?? 'OTHERS',
+        branch_id: this.data.branch.id,
+        service_id: this.data.service.id,
+      });
+    }
   }
 
   protected selectSlot(slot: AvailabilitySlot): void {
@@ -194,6 +204,7 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
         serviceName: service.name,
         price: service.price,
         durationMinutes: service.durationMinutes,
+        category: business.category ?? 'OTHERS',
         slots: [],
       },
       slot,
