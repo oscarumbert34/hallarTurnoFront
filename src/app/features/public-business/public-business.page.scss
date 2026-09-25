@@ -275,6 +275,107 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+.today-availability {
+  padding: 0;
+  background: linear-gradient(120deg, #087cf0, #11c7bc);
+}
+.today-heading {
+  display: flex;
+  gap: 14px;
+  padding: 24px 28px 12px;
+  color: #fff;
+}
+.today-heading mat-icon {
+  font-size: 30px;
+  width: 30px;
+  height: 30px;
+}
+.today-heading h2,
+.today-heading p {
+  margin: 0;
+  color: inherit;
+}
+.today-heading p {
+  margin-top: 2px;
+}
+.today-card {
+  margin: 0 8px 8px;
+  padding: 18px;
+  border-radius: 13px;
+  background: #fff;
+}
+.today-card h3 {
+  margin: 0 0 10px;
+}
+.today-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+.slot-chip {
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  color: #0875e7;
+  background: #e8f4ff;
+  font-size: 16px;
+  cursor: pointer;
+}
+.slot-chip.selected {
+  color: #fff;
+  background: #087cf0;
+}
+.today-filters {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.today-filters label {
+  display: grid;
+  gap: 5px;
+  font-weight: 700;
+}
+.today-filters select {
+  padding: 10px 12px;
+  border: 1px solid #d7e3ef;
+  border-radius: 10px;
+  background: #fff;
+}
+.today-summary {
+  display: flex;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 13px 18px;
+  border-radius: 11px;
+  background: #edf7ff;
+}
+.today-summary div {
+  display: grid;
+}
+.today-summary b {
+  color: #0875e7;
+  font-size: 16px;
+}
+.today-summary span,
+.today-card small {
+  color: #60738b;
+}
+.whatsapp-action {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 2px solid #08ae7d;
+  border-radius: 11px;
+  color: #078b67;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.today-card small {
+  display: block;
+  margin-top: 9px;
+  text-align: center;
+}
 article {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);

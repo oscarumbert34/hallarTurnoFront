@@ -35,6 +35,7 @@ describe('PublicBusinessPageComponent', () => {
   let api: {
     getPublicBusiness: ReturnType<typeof vi.fn>;
     listPublicServices: ReturnType<typeof vi.fn>;
+    listAvailabilitySlots: ReturnType<typeof vi.fn>;
   };
   const navigate = vi.fn();
   const open = vi.fn();
@@ -42,6 +43,9 @@ describe('PublicBusinessPageComponent', () => {
     api = {
       getPublicBusiness: vi.fn(() => of(business)),
       listPublicServices: vi.fn(() => of([service])),
+      listAvailabilitySlots: vi.fn(() =>
+        of({ offset: 0, limit: 10, totalAvailableSlots: 0, hasMore: false, slots: [] }),
+      ),
     };
     TestBed.configureTestingModule({
       imports: [PublicBusinessPageComponent],
@@ -90,6 +94,47 @@ describe('PublicBusinessPageComponent', () => {
     const fixture = TestBed.createComponent(PublicBusinessPageComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
+  });
+  it('loads today slots for the default service', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 25, 10, 0));
+    api.listAvailabilitySlots.mockReturnValue(
+      of({
+        offset: 0,
+        limit: 10,
+        totalAvailableSlots: 1,
+        hasMore: false,
+        slots: [
+          {
+            id: 'slot-1',
+            startsAt: '2026-09-25T11:00:00',
+            endsAt: '2026-09-25T11:30:00',
+            resourceId: 'professional-1',
+            resourceName: 'Ana',
+          },
+        ],
+      }),
+    );
+
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+
+    expect(api.listAvailabilitySlots).toHaveBeenCalledWith(
+      { branchId: branch.id, serviceId: service.id },
+      expect.objectContaining({
+        businessId: business.id,
+        branchId: branch.id,
+        service: service.name,
+        date: '2026-09-25',
+        timeFrom: '10:00',
+        timeTo: '23:59',
+      }),
+      { offset: 0, limit: 10 },
+    );
+    expect(fixture.nativeElement.textContent).toContain('11:00');
+    expect(fixture.nativeElement.textContent).toContain('Ana');
+    fixture.destroy();
+    vi.useRealTimers();
   });
   it.each([
     ['BARBERSHOP', 'content_cut'],
