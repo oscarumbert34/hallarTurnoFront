@@ -20,6 +20,8 @@ describe('ServiceAvailabilityDialogComponent', () => {
   const close = vi.fn();
   beforeEach(() => {
     sessionStorage.clear();
+    navigate.mockReset();
+    close.mockReset();
     listAvailabilitySlots.mockReset().mockReturnValue(of(page));
     TestBed.configureTestingModule({
       imports: [ServiceAvailabilityDialogComponent],
@@ -57,6 +59,33 @@ describe('ServiceAvailabilityDialogComponent', () => {
     expect(JSON.parse(sessionStorage.getItem('turnero.selectedSlot')!).resourceId).toBe(
       'resource-1',
     );
+  });
+  it('opens WhatsApp instead of booking when public creation is internal', () => {
+    TestBed.overrideProvider(MAT_DIALOG_DATA, {
+      useValue: {
+        business: {
+          id: 'b',
+          name: 'Negocio',
+          slug: 'negocio',
+          internalBookingCreation: true,
+          whatsapp: '5491112345678',
+        },
+        branch: { id: 'branch', name: 'Centro', city: 'San Miguel' },
+        service: { id: 'service', name: 'Consulta', price: 15000, durationMinutes: 30 },
+      },
+    });
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const fixture = TestBed.createComponent(ServiceAvailabilityDialogComponent);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.slots button').click();
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491112345678?text='),
+      '_blank',
+      'noopener',
+    );
+    expect(navigate).not.toHaveBeenCalled();
   });
   it('cancels outdated requests when advancing the date and shows empty availability', () => {
     const pending = new Subject<any>();

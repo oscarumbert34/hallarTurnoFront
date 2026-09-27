@@ -62,6 +62,8 @@ API_BASE_URL=https://backend.example.com/api/v1
 
 Los comandos `npm start` y `npm run build` generan `public/env.js` automáticamente. Si
 `API_BASE_URL` no está definida, se utilizan las URLs de respaldo de desarrollo o producción.
+Después del build se restaura la configuración local de `public/env.js`; el archivo productivo ya
+queda copiado dentro de `dist`.
 
 No hay URL productiva hardcodeada. El valor de produccion queda vacio por defecto para permitir despliegues con proxy o misma origin.
 

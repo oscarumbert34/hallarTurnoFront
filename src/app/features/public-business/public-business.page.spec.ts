@@ -69,7 +69,7 @@ describe('PublicBusinessPageComponent', () => {
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find((button) => button.textContent?.includes('Reservar turno'))!.click();
     expect(navigate).toHaveBeenCalledWith(['/', 'centro', 'search'], {
-      queryParams: { businessId: 'business-1' },
+      queryParams: { businessId: 'business-1', source: 'public' },
     });
     buttons.find((button) => button.textContent?.trim() === 'Reservar')!.click();
     expect(open).toHaveBeenCalledWith(

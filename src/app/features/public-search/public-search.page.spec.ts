@@ -28,6 +28,7 @@ describe('PublicSearchPage', () => {
   };
   let authService: {
     businessId: string | null;
+    isAuthenticated: boolean;
   };
 
   it('limits public search to the linked business and clears previously stored branch filters', () => {
@@ -103,6 +104,106 @@ describe('PublicSearchPage', () => {
     expect(bookingService.getPublicBusiness).toHaveBeenCalledWith('barberia-1981');
     expect(bookingService.listBranches).toHaveBeenCalledWith('business-1');
     expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
+  });
+
+  it('opens WhatsApp for internal booking creation only from the public business page', () => {
+    authService.isAuthenticated = true;
+    route.snapshot.data = { businessScoped: true };
+    route.snapshot.paramMap = convertToParamMap({ slug: 'barberia-1981' });
+    route.snapshot.queryParamMap = convertToParamMap({
+      businessId: 'business-1',
+      source: 'public',
+    });
+    bookingService.getPublicBusiness.mockReturnValue(
+      of({
+        id: 'business-1',
+        name: 'Turnos SA',
+        slug: 'barberia-1981',
+        shortDescription: null,
+        phone: null,
+        whatsapp: '5491112345678',
+        email: null,
+        internalBookingCreation: true,
+        branches: [],
+      }),
+    );
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+    const slot = {
+      id: 'slot-1',
+      startsAt: '2026-08-17T10:00:00',
+      endsAt: '2026-08-17T10:30:00',
+    };
+    const business = {
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      address: 'Calle 1',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      durationMinutes: 30,
+      slots: [slot],
+    };
+
+    component.selectSlot(business, slot);
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491112345678?text='),
+      '_blank',
+      'noopener',
+    );
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('keeps booking navigation when entering with credentials', () => {
+    authService.isAuthenticated = true;
+    route.snapshot.data = { businessScoped: true };
+    route.snapshot.paramMap = convertToParamMap({ slug: 'barberia-1981' });
+    bookingService.getPublicBusiness.mockReturnValue(
+      of({
+        id: 'business-1',
+        name: 'Turnos SA',
+        slug: 'barberia-1981',
+        shortDescription: null,
+        phone: null,
+        whatsapp: '5491112345678',
+        email: null,
+        internalBookingCreation: true,
+        branches: [],
+      }),
+    );
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+    const business = {
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      address: 'Calle 1',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      durationMinutes: 30,
+      internalBookingCreation: true,
+      whatsapp: '5491112345678',
+      slots: [
+        {
+          id: 'slot-1',
+          startsAt: '2026-08-17T10:00:00',
+          endsAt: '2026-08-17T10:30:00',
+        },
+      ],
+    };
+
+    component.selectSlot(business, business.slots[0]);
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/booking'],
+      expect.objectContaining({ queryParams: expect.objectContaining({ slotId: 'slot-1' }) }),
+    );
   });
 
   it('hides availability returned for a different business', () => {
@@ -236,7 +337,7 @@ describe('PublicSearchPage', () => {
     };
     router = { navigate: vi.fn() };
     route = { snapshot: { data: {} } };
-    authService = { businessId: 'business-1' };
+    authService = { businessId: 'business-1', isAuthenticated: true };
 
     await TestBed.configureTestingModule({
       imports: [PublicSearchPage],

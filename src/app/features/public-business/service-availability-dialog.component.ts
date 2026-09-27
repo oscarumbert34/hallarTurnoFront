@@ -13,6 +13,7 @@ import { AvailabilitySlot } from '../booking/booking.models';
 import { navigateToBooking } from '../booking/booking-navigation';
 import { PublicBranch, PublicBusiness, PublicService } from './public-business.models';
 import { AnalyticsService } from '../../shared/analytics.service';
+import { whatsappBookingUrl } from '../booking/whatsapp-booking';
 
 export interface ServiceAvailabilityDialogData {
   business: PublicBusiness;
@@ -189,6 +190,24 @@ export class ServiceAvailabilityDialogComponent implements OnInit {
 
   protected selectSlot(slot: AvailabilitySlot): void {
     const { business, branch, service } = this.data;
+    if (business.internalBookingCreation) {
+      const phone = business.whatsapp || business.phone;
+      if (!phone) {
+        this.error.set('Este negocio no tiene un número de WhatsApp disponible.');
+        return;
+      }
+      window.open(
+        whatsappBookingUrl(phone, {
+          businessName: business.name,
+          branchName: branch.name,
+          serviceName: service.name,
+          slot,
+        }),
+        '_blank',
+        'noopener',
+      );
+      return;
+    }
     this.dialogRef.close();
     navigateToBooking(
       this.router,

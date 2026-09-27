@@ -23,6 +23,7 @@ import {
 import { ServiceAvailabilityDialogComponent } from './service-availability-dialog.component';
 import { AnalyticsService } from '../../shared/analytics.service';
 import { AvailabilitySlot } from '../booking/booking.models';
+import { whatsappBookingUrl } from '../booking/whatsapp-booking';
 
 @Component({
   selector: 'app-public-business-page',
@@ -231,7 +232,7 @@ export class PublicBusinessPageComponent implements OnInit {
       }),
     );
     void this.router.navigate(['/', this.business()!.slug, 'search'], {
-      queryParams: { businessId: this.business()!.id },
+      queryParams: { businessId: this.business()!.id, source: 'public' },
     });
   }
 
@@ -400,10 +401,13 @@ export class PublicBusinessPageComponent implements OnInit {
       this.todaySlotsError.set('Este negocio no tiene un número de WhatsApp disponible.');
       return;
     }
-    const professional = slot.resourceName ? `\nProfesional: ${slot.resourceName}` : '';
-    const message = `Hola ${business.name}, quiero consultar por este turno:\nServicio: ${service.name}\nFecha: ${this.todaySearch(service).date}\nHora: ${this.slotTime(slot)}\nSucursal: ${branch.name}${professional}`;
     window.open(
-      `${this.whatsappUrl(phone)}?text=${encodeURIComponent(message)}`,
+      whatsappBookingUrl(phone, {
+        businessName: business.name,
+        branchName: branch.name,
+        serviceName: service.name,
+        slot,
+      }),
       '_blank',
       'noopener',
     );

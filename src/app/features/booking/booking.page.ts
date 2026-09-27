@@ -25,6 +25,8 @@ import { AvailabilitySearch, CustomerBooking, SelectedSlot } from './booking.mod
 import { BookingService } from './booking.service';
 import { AnalyticsService } from '../../shared/analytics.service';
 import { BusinessCategory } from '../public-business/public-business.models';
+import { PublicBusiness } from '../public-business/public-business.models';
+import { whatsappBookingUrl } from './whatsapp-booking';
 
 @Component({
   selector: 'app-booking-page',
@@ -73,67 +75,75 @@ import { BusinessCategory } from '../public-business/public-business.models';
               </div>
             </dl>
 
-            <form class="customer-form" [formGroup]="customerForm">
-              <mat-form-field appearance="outline">
-                <mat-label>Nombre y apellido</mat-label>
-                <input matInput formControlName="customerName" maxlength="120" />
-                <mat-error>Indica tu nombre.</mat-error>
-              </mat-form-field>
+            @if (internalBookingOnly()) {
+              <p role="status">
+                Este comercio confirma los turnos por WhatsApp. Consultá el horario seleccionado
+                para continuar.
+              </p>
+            } @else {
+              <form class="customer-form" [formGroup]="customerForm">
+                <mat-form-field appearance="outline">
+                  <mat-label>Nombre y apellido</mat-label>
+                  <input matInput formControlName="customerName" maxlength="120" />
+                  <mat-error>Indica tu nombre.</mat-error>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline" class="field-with-hint">
-                <mat-label>Teléfono</mat-label>
-                <input
-                  matInput
-                  formControlName="customerPhone"
-                  maxlength="10"
-                  inputmode="tel"
-                  autocomplete="tel"
-                  (paste)="normalizePastedPhone($event)"
-                  (blur)="normalizeCustomerPhone()"
-                />
-                <mat-hint
-                  >Ingresa 10 dígitos sin 0, 15, espacios ni guiones. Ejemplo: 1124546622.</mat-hint
-                >
-                @if (customerForm.controls.customerPhone.hasError('required')) {
-                  <mat-error>Ingresa tu teléfono.</mat-error>
-                } @else {
-                  <mat-error>Usa el formato 1124546622.</mat-error>
+                <mat-form-field appearance="outline" class="field-with-hint">
+                  <mat-label>Teléfono</mat-label>
+                  <input
+                    matInput
+                    formControlName="customerPhone"
+                    maxlength="10"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    (paste)="normalizePastedPhone($event)"
+                    (blur)="normalizeCustomerPhone()"
+                  />
+                  <mat-hint
+                    >Ingresa 10 dígitos sin 0, 15, espacios ni guiones. Ejemplo:
+                    1124546622.</mat-hint
+                  >
+                  @if (customerForm.controls.customerPhone.hasError('required')) {
+                    <mat-error>Ingresa tu teléfono.</mat-error>
+                  } @else {
+                    <mat-error>Usa el formato 1124546622.</mat-error>
+                  }
+                </mat-form-field>
+
+                @if (selectedSlot.depositEnabled) {
+                  <mat-checkbox formControlName="depositPaid">Seña pagada</mat-checkbox>
                 }
-              </mat-form-field>
 
-              @if (selectedSlot.depositEnabled) {
-                <mat-checkbox formControlName="depositPaid">Seña pagada</mat-checkbox>
-              }
-
-              @if (customerContactLookupLoading()) {
-                <p class="customer-lookup" role="status">Buscando datos del cliente...</p>
-              }
-
-              @if (emailRequired()) {
-                <mat-checkbox class="customer-skip-contact" formControlName="skipCustomerContact">
-                  No tengo el email del cliente
-                </mat-checkbox>
-
-                @if (!skipCustomerContact()) {
-                  <mat-form-field appearance="outline" class="field-with-hint">
-                    <mat-label>Email</mat-label>
-                    <input
-                      matInput
-                      type="email"
-                      autocomplete="email"
-                      formControlName="customerEmail"
-                      maxlength="160"
-                    />
-                    <mat-hint>Lo necesitamos para registrar este cliente nuevo.</mat-hint>
-                    @if (customerForm.controls.customerEmail.hasError('required')) {
-                      <mat-error>Ingresa un email.</mat-error>
-                    } @else {
-                      <mat-error>Ingresa un email válido.</mat-error>
-                    }
-                  </mat-form-field>
+                @if (customerContactLookupLoading()) {
+                  <p class="customer-lookup" role="status">Buscando datos del cliente...</p>
                 }
-              }
-            </form>
+
+                @if (emailRequired()) {
+                  <mat-checkbox class="customer-skip-contact" formControlName="skipCustomerContact">
+                    No tengo el email del cliente
+                  </mat-checkbox>
+
+                  @if (!skipCustomerContact()) {
+                    <mat-form-field appearance="outline" class="field-with-hint">
+                      <mat-label>Email</mat-label>
+                      <input
+                        matInput
+                        type="email"
+                        autocomplete="email"
+                        formControlName="customerEmail"
+                        maxlength="160"
+                      />
+                      <mat-hint>Lo necesitamos para registrar este cliente nuevo.</mat-hint>
+                      @if (customerForm.controls.customerEmail.hasError('required')) {
+                        <mat-error>Ingresa un email.</mat-error>
+                      } @else {
+                        <mat-error>Ingresa un email válido.</mat-error>
+                      }
+                    </mat-form-field>
+                  }
+                }
+              </form>
+            }
 
             @if (confirmedBooking(); as confirmedBooking) {
               <p class="success" role="status">
@@ -147,15 +157,23 @@ import { BusinessCategory } from '../public-business/public-business.models';
           </mat-card-content>
           <mat-card-actions>
             @if (!confirmedBooking()) {
-              <button
-                mat-flat-button
-                class="confirm-booking"
-                type="button"
-                [disabled]="customerForm.invalid || saving() || !canConfirmCustomer()"
-                (click)="confirmBooking()"
-              >
-                Confirmar turno
-              </button>
+              @if (internalBookingOnly()) {
+                <button mat-flat-button type="button" (click)="consultByWhatsapp()">
+                  Consultar por WhatsApp
+                </button>
+              } @else {
+                <button
+                  mat-flat-button
+                  class="confirm-booking"
+                  type="button"
+                  [disabled]="
+                    loading() || customerForm.invalid || saving() || !canConfirmCustomer()
+                  "
+                  (click)="confirmBooking()"
+                >
+                  Confirmar turno
+                </button>
+              }
             }
             <a mat-button [routerLink]="searchRoute">Buscar otro</a>
           </mat-card-actions>
@@ -208,6 +226,8 @@ export class BookingPage implements OnInit {
   protected readonly emailRequired = signal(false);
   protected readonly skipCustomerContact = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly publicBusiness = signal<PublicBusiness | null>(null);
+  protected readonly internalBookingOnly = signal(false);
   protected readonly customerForm = this.formBuilder.nonNullable.group({
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
     customerPhone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
@@ -255,12 +275,35 @@ export class BookingPage implements OnInit {
       this.analytics.event('booking_checkout_view', this.bookingAnalyticsParams(selectedSlot));
       this.watchCustomerPhone(selectedSlot.businessId);
     }
+    if (this.isPublicCustomerFlow()) {
+      this.loading.set(true);
+      this.bookingService
+        .getPublicBusiness(this.businessSlug)
+        .pipe(
+          finalize(() => this.loading.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: (business) => {
+            this.publicBusiness.set(business);
+            this.internalBookingOnly.set(business.internalBookingCreation === true);
+          },
+          error: () => {
+            this.errorMessage.set('No pudimos validar la configuración del negocio.');
+          },
+        });
+    }
   }
 
   protected confirmBooking(): void {
     const selectedSlot = this.selectedSlot();
 
     if (!selectedSlot || this.confirmedBooking()) {
+      return;
+    }
+
+    if (this.isPublicCustomerFlow() && this.internalBookingOnly()) {
+      this.consultByWhatsapp();
       return;
     }
 
@@ -307,6 +350,30 @@ export class BookingPage implements OnInit {
           }
         },
       });
+  }
+
+  protected consultByWhatsapp(): void {
+    const selectedSlot = this.selectedSlot();
+    const business = this.publicBusiness();
+    const phone = business?.whatsapp || business?.phone;
+    if (!selectedSlot || !business || !phone) {
+      this.errorMessage.set('Este negocio no tiene un número de WhatsApp disponible.');
+      return;
+    }
+    window.open(
+      whatsappBookingUrl(phone, {
+        businessName: selectedSlot.businessName,
+        branchName: selectedSlot.branchName,
+        serviceName: selectedSlot.serviceName,
+        slot: selectedSlot,
+      }),
+      '_blank',
+      'noopener',
+    );
+  }
+
+  private isPublicCustomerFlow(): boolean {
+    return !!this.businessSlug && this.selectedSlot()?.source === 'PUBLIC';
   }
 
   protected priceLabel(price: number | undefined): string {

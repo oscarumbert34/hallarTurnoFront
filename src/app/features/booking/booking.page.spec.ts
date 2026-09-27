@@ -14,6 +14,7 @@ describe('BookingPage', () => {
     searchCustomerContact: ReturnType<typeof vi.fn>;
     createBooking: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
+    getPublicBusiness: ReturnType<typeof vi.fn>;
   };
   let authService: {
     isAuthenticated: boolean;
@@ -21,6 +22,7 @@ describe('BookingPage', () => {
   let route: {
     snapshot: {
       queryParamMap: ReturnType<typeof convertToParamMap>;
+      paramMap?: ReturnType<typeof convertToParamMap>;
     };
   };
 
@@ -33,6 +35,18 @@ describe('BookingPage', () => {
       ),
       createBooking: vi.fn(),
       searchAvailability: vi.fn(() => of([])),
+      getPublicBusiness: vi.fn(() =>
+        of({
+          id: 'business-1',
+          name: 'Turnos SA',
+          slug: 'turnos-sa',
+          shortDescription: null,
+          phone: null,
+          email: null,
+          internalBookingCreation: false,
+          branches: [],
+        }),
+      ),
     };
     authService = {
       isAuthenticated: false,
@@ -116,6 +130,76 @@ describe('BookingPage', () => {
       customerPhone: '1124546622',
       skipCustomerContact: null,
     });
+  });
+
+  it('blocks public booking creation and offers WhatsApp when creation is internal', () => {
+    route.snapshot.paramMap = convertToParamMap({ slug: 'turnos-sa' });
+    route.snapshot.queryParamMap = convertToParamMap({
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      slotId: 'slot-1',
+      startsAt: '2026-08-17T10:00:00',
+      source: 'PUBLIC',
+    });
+    bookingService.getPublicBusiness.mockReturnValue(
+      of({
+        id: 'business-1',
+        name: 'Turnos SA',
+        slug: 'turnos-sa',
+        shortDescription: null,
+        whatsapp: '5491112345678',
+        phone: null,
+        email: null,
+        internalBookingCreation: true,
+        branches: [],
+      }),
+    );
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      confirmBooking: () => void;
+    };
+
+    component.confirmBooking();
+    fixture.detectChanges();
+
+    expect(bookingService.createBooking).not.toHaveBeenCalled();
+    expect(windowOpen).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491112345678?text='),
+      '_blank',
+      'noopener',
+    );
+    expect(fixture.nativeElement.textContent).toContain('confirma los turnos por WhatsApp');
+  });
+
+  it('keeps the booking form for an authenticated user on a slug route', () => {
+    authService.isAuthenticated = true;
+    route.snapshot.paramMap = convertToParamMap({ slug: 'turnos-sa' });
+    bookingService.getPublicBusiness.mockReturnValue(
+      of({
+        id: 'business-1',
+        name: 'Turnos SA',
+        slug: 'turnos-sa',
+        shortDescription: null,
+        whatsapp: '5491112345678',
+        phone: null,
+        email: null,
+        internalBookingCreation: true,
+        branches: [],
+      }),
+    );
+
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+
+    expect(bookingService.getPublicBusiness).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Confirmar turno');
+    expect(fixture.nativeElement.textContent).not.toContain('confirma los turnos por WhatsApp');
   });
 
   it('should normalize a phone copied from WhatsApp when it is pasted', () => {
