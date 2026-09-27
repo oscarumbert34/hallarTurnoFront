@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/public/env.js
 /tmp
 /out-tsc
 /bazel-out
