@@ -98,8 +98,12 @@ h1 em {
 }
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 25px;
+}
+.demo-action {
+  white-space: nowrap;
 }
 .mobile-how-button {
   display: none;
@@ -236,6 +240,141 @@ h1 em {
   color: #55729a;
   font-size: 0.88rem;
   line-height: 1.35;
+}
+.pricing {
+  padding: 28px max(20px, calc((100vw - 1050px) / 2)) 34px;
+  background: linear-gradient(180deg, #eef8ff 0%, #f7fbff 100%);
+}
+.plan-grid {
+  display: grid;
+  gap: 12px;
+}
+.plan-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.72fr) 1.5fr;
+  gap: 28px;
+  padding: 22px 28px;
+  border: 1px solid #cfe0f1;
+  border-radius: 14px;
+  background: #fff;
+}
+.featured-plan {
+  border: 2px solid #0876ed;
+}
+.plan-badge {
+  position: absolute;
+  top: -14px;
+  left: 24px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #0876ed;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.plan-summary h3,
+.email-card h3 {
+  margin: 0 0 7px;
+  color: #0b2454;
+  font-size: 1.05rem;
+}
+.plan-price,
+.addon-price {
+  margin: 0;
+  color: #0876ed;
+  font-size: 2rem;
+  font-weight: 900;
+}
+.plan-price span,
+.addon-price span {
+  font-size: 1rem;
+}
+.plan-card ul,
+.email-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  color: #345783;
+  list-style: none;
+}
+.plan-card li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+}
+.plan-card li > span {
+  color: #0876ed;
+}
+.plan-summary ul {
+  margin-top: 12px;
+}
+.section-heading.email-heading {
+  margin-top: 60px;
+}
+.email-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.email-card,
+.email-card > div {
+  min-width: 0;
+}
+.email-card {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  padding: 20px;
+  border: 1px solid #cfe0f1;
+  border-radius: 14px;
+  background: #fff;
+}
+.email-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f3ff;
+  color: #0876ed;
+}
+.addon-price {
+  font-size: 1.4rem;
+}
+.email-card ul {
+  grid-column: 1 / -1;
+  margin-top: 14px;
+}
+.email-card li {
+  position: relative;
+  padding-left: 22px;
+  overflow-wrap: anywhere;
+}
+.email-card li::before {
+  position: absolute;
+  left: 0;
+  color: #0876ed;
+  font-weight: 900;
+  content: '✓';
+}
+.trial-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+  padding: 20px 24px;
+  border: 1px solid #bde8d7;
+  border-radius: 14px;
+  background: #e9fbf3;
+}
+.trial-card h2 {
+  margin: 0 0 4px;
+  color: #0b2454;
+  font-size: 1.2rem;
+}
+.trial-card p {
+  margin: 0;
 }
 .demos {
   padding: 24px max(20px, calc((100vw - 1300px) / 2));
@@ -414,6 +553,16 @@ footer nav {
   .hero-actions {
     justify-content: center;
   }
+  .plan-card {
+    grid-template-columns: minmax(170px, 0.7fr) 1.5fr;
+  }
+  .trial-card {
+    grid-template-columns: auto 1fr;
+  }
+  .trial-card .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
   .product-showcase {
     width: min(650px, 94%);
     margin: 8px auto 0;
@@ -439,6 +588,10 @@ footer nav {
   }
 }
 @media (max-width: 600px) {
+  .benefits > h2,
+  .section-heading h2 {
+    line-height: 1.2;
+  }
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
@@ -479,6 +632,51 @@ footer nav {
   }
   .hero-actions .button {
     width: 100%;
+  }
+  .demo-action {
+    width: 100%;
+  }
+  .pricing {
+    padding: 24px 12px 28px;
+  }
+  .plan-card {
+    grid-template-columns: 0.78fr 1.22fr;
+    gap: 12px;
+    padding: 20px 16px;
+  }
+  .plan-price {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+  }
+  .plan-card ul {
+    gap: 7px;
+    font-size: 0.82rem;
+  }
+  .email-grid {
+    gap: 8px;
+  }
+  .email-card {
+    grid-template-columns: 38px 1fr;
+    padding: 14px 11px;
+  }
+  .email-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .email-card h3 {
+    font-size: 0.9rem;
+  }
+  .addon-price {
+    font-size: 1.12rem;
+  }
+  .email-card ul {
+    font-size: 0.76rem;
+    line-height: 1.25;
+  }
+  .trial-card {
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+    padding: 17px 14px;
   }
   .phone {
     right: -1%;

@@ -18,6 +18,8 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelectorAll('.card-link')).toHaveLength(6);
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
     expect(fixture.nativeElement.querySelectorAll('.benefit-grid article')).toHaveLength(6);
+    expect(fixture.nativeElement.querySelectorAll('.plan-card')).toHaveLength(3);
+    expect(fixture.nativeElement.querySelectorAll('.email-card')).toHaveLength(2);
     expect(fixture.nativeElement.textContent).toContain(
       'Todo lo que necesitás para organizar tus turnos',
     );
@@ -49,7 +51,7 @@ describe('BusinessLandingPage', () => {
     const document = TestBed.inject(DOCUMENT);
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
     const whatsappLinks = links.filter((link) => link.href.includes('wa.me'));
-    expect(whatsappLinks).toHaveLength(3);
+    expect(whatsappLinks).toHaveLength(4);
     expect(whatsappLinks[0].href).toContain(encodeURIComponent('Hola, quiero conocer HallarTurno'));
     expect(document.title).toBe('HallarTurno | Sistema de turnos online para negocios');
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain(
@@ -57,6 +59,19 @@ describe('BusinessLandingPage', () => {
     );
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toContain(
       '/para-negocios',
+    );
+  });
+
+  it('links the hero to the pricing section and renders the trial offer', () => {
+    const fixture = TestBed.createComponent(BusinessLandingPage);
+    fixture.detectChanges();
+    const pricingLink = fixture.nativeElement.querySelector(
+      '.hero-actions a[href="#planes"]',
+    ) as HTMLAnchorElement;
+    expect(pricingLink.textContent).toContain('Ver planes');
+    expect(fixture.nativeElement.querySelector('#planes')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.trial-card')?.textContent).toContain(
+      '30 días gratis',
     );
   });
 

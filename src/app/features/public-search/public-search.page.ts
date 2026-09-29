@@ -26,7 +26,8 @@ import {
 import { navigateToBooking } from '../booking/booking-navigation';
 import { BookingService } from '../booking/booking.service';
 import { AnalyticsService } from '../../shared/analytics.service';
-import { BusinessCategory } from '../public-business/public-business.models';
+import { BusinessCategory, PublicBusiness } from '../public-business/public-business.models';
+import { whatsappBookingUrl } from '../booking/whatsapp-booking';
 
 @Component({
   selector: 'app-public-search-page',
@@ -218,6 +219,9 @@ import { BusinessCategory } from '../public-business/public-business.models';
                 @for (slot of business.slots; track slot.id) {
                   <button mat-stroked-button type="button" (click)="selectSlot(business, slot)">
                     {{ slotLabel(slot) }}
+                    @if (usesWhatsapp()) {
+                      · Consultar por WhatsApp
+                    }
                   </button>
                 } @empty {
                   <p>No hay horarios disponibles para este negocio.</p>
@@ -274,6 +278,7 @@ export class PublicSearchPage implements OnInit {
   private readonly router = inject(Router);
   private readonly analytics = inject(AnalyticsService);
   protected readonly publicBusinessId = this.route.snapshot.queryParamMap?.get('businessId') ?? '';
+  private readonly publicSource = this.route.snapshot.queryParamMap?.get('source') === 'public';
   private readonly publicBusinessCategory =
     (this.route.snapshot.queryParamMap?.get('businessCategory') as BusinessCategory | null) ?? null;
   protected readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
@@ -288,6 +293,7 @@ export class PublicSearchPage implements OnInit {
   private readonly selectedBusinessCategory = signal<BusinessCategory | null>(
     this.publicBusinessCategory ?? this.storedBusinessCategory(),
   );
+  private readonly publicBusiness = signal<PublicBusiness | null>(null);
   protected readonly loading = signal(false);
   protected readonly loadingMoreServices = signal(false);
   protected readonly searched = signal(false);
@@ -519,13 +525,40 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected selectSlot(business: BusinessAvailability, slot: AvailabilitySlot): void {
+    const publicBusiness = this.publicBusiness();
+    if (this.isPublicCustomerFlow() && publicBusiness?.internalBookingCreation) {
+      const phone = publicBusiness.whatsapp || publicBusiness.phone;
+      if (!phone) {
+        this.errorMessage.set('Este negocio no tiene un número de WhatsApp disponible.');
+        return;
+      }
+      window.open(
+        whatsappBookingUrl(phone, {
+          businessName: business.businessName,
+          branchName: business.branchName,
+          serviceName: business.serviceName,
+          slot,
+        }),
+        '_blank',
+        'noopener',
+      );
+      return;
+    }
     navigateToBooking(
       this.router,
       business,
       slot,
       this.availabilitySearch(),
-      this.businessSlug || undefined,
+      this.isPublicCustomerFlow() ? this.businessSlug : undefined,
     );
+  }
+
+  protected usesWhatsapp(): boolean {
+    return this.isPublicCustomerFlow() && this.publicBusiness()?.internalBookingCreation === true;
+  }
+
+  private isPublicCustomerFlow(): boolean {
+    return !!this.businessSlug && (this.publicSource || !this.authService.isAuthenticated);
   }
 
   protected priceLabel(price: number | undefined): string {
@@ -850,9 +883,10 @@ export class PublicSearchPage implements OnInit {
   private loadSessionBusinessOptions(): void {
     const businessId = this.publicBusinessId || this.authService.businessId;
 
-    if (!businessId && this.businessSlug) {
+    if (this.businessSlug) {
       this.bookingService.getPublicBusiness(this.businessSlug).subscribe({
         next: (business) => {
+          this.publicBusiness.set(business);
           this.selectedBusinessId.set(business.id);
           this.selectedBusinessCategory.set(business.category ?? 'OTHERS');
           this.loadBranches(business.id);

@@ -9,6 +9,12 @@ import { authInterceptor } from './features/auth/auth.interceptor';
 import { API_BASE_URL } from './shared/api-base-url.token';
 import { recoverFromChunkLoadError } from './shared/chunk-load-recovery';
 
+const runtimeEnvironment = globalThis as typeof globalThis & {
+  __HALLARTURNO_ENV__?: { API_BASE_URL?: string };
+};
+const apiBaseUrl =
+  runtimeEnvironment.__HALLARTURNO_ENV__?.API_BASE_URL?.trim() || environment.apiBaseUrl;
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -21,7 +27,7 @@ export const appConfig: ApplicationConfig = {
     ),
     {
       provide: API_BASE_URL,
-      useValue: environment.apiBaseUrl,
+      useValue: apiBaseUrl,
     },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

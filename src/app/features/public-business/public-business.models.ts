@@ -25,6 +25,7 @@ export interface PublicBusiness {
   email: string | null;
   category?: BusinessCategory | null;
   depositEnabled?: boolean;
+  internalBookingCreation?: boolean;
   branches: PublicBranch[];
   services?: PublicService[];
 }

@@ -8,4 +8,5 @@ export interface AppointmentAction {
   time: string;
   status: AppointmentActionStatus;
   tokenValid: boolean;
+
 }
