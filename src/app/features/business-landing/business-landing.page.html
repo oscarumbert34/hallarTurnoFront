@@ -45,6 +45,12 @@
           >
           <a
             class="button button-secondary"
+            href="#planes"
+            (click)="trackCta('SEE_PLANS'); scrollToSection($event, 'planes')"
+            >Ver planes <span aria-hidden="true">↓</span></a
+          >
+          <a
+            class="button button-secondary demo-action"
             href="#comercios"
             (click)="trackCta('SEE_DEMOS'); scrollToSection($event, 'comercios')"
             >Ver comercios de prueba</a
@@ -109,6 +115,119 @@
           <p>Mostrá tus servicios y hacé visible tu negocio.</p>
         </article>
       </div>
+    </section>
+    <section id="planes" class="section pricing" aria-labelledby="pricing-title">
+      <div class="section-heading pricing-heading">
+        <h2 id="pricing-title">Elegí el plan y sumá tus correos</h2>
+        <p>Configurá HallarTurno según las necesidades de tu negocio.</p>
+        <p>Podés cambiar en cualquier momento.</p>
+      </div>
+
+      <div class="plan-grid">
+        <article class="plan-card">
+          <div class="plan-summary">
+            <h3>Básico</h3>
+            <p class="plan-price">$0<span>/mes</span></p>
+            <ul>
+              <li><span aria-hidden="true">▣</span>150 turnos/mes</li>
+              <li><span aria-hidden="true">⌂</span>1 sucursal</li>
+            </ul>
+          </div>
+          <ul>
+            <li><span aria-hidden="true">⌂</span>Página pública</li>
+            <li><span aria-hidden="true">◎</span>Reservas online</li>
+            <li><span aria-hidden="true">↔</span>Gestión y cambios de turnos</li>
+            <li><span aria-hidden="true">▤</span>Excepciones de sucursal</li>
+            <li><span aria-hidden="true">◷</span>Registro de señas</li>
+            <li><span aria-hidden="true">◉</span>Mensaje listo para enviar por WhatsApp</li>
+          </ul>
+        </article>
+
+        <article class="plan-card">
+          <div class="plan-summary">
+            <h3>Crecimiento</h3>
+            <p class="plan-price">$5.000<span>/mes</span></p>
+            <ul>
+              <li><span aria-hidden="true">▣</span>350 turnos/mes</li>
+              <li><span aria-hidden="true">⌂</span>2 sucursales</li>
+            </ul>
+          </div>
+          <ul>
+            <li><span aria-hidden="true">✓</span>Todo lo del Básico</li>
+            <li><span aria-hidden="true">▥</span>Turnos disponibles hoy en la página pública</li>
+            <li>
+              <span aria-hidden="true">✉</span>Resumen diario por correo al comercio (hasta 30 por
+              mes incluidos)
+            </li>
+          </ul>
+        </article>
+
+        <article class="plan-card featured-plan">
+          <span class="plan-badge">Más elegido</span>
+          <div class="plan-summary">
+            <h3>Pro</h3>
+            <p class="plan-price">$8.000<span>/mes</span></p>
+            <ul>
+              <li><span aria-hidden="true">▣</span>600 turnos/mes</li>
+              <li><span aria-hidden="true">⌂</span>3 sucursales</li>
+            </ul>
+          </div>
+          <ul>
+            <li><span aria-hidden="true">✓</span>Todo lo de Crecimiento</li>
+            <li><span aria-hidden="true">♙</span>Ausencias de profesionales</li>
+            <li><span aria-hidden="true">▤</span>Copiar semana de turnos</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="section-heading email-heading">
+        <h2>Sumá correos opcionales</h2>
+        <p>Mejorá la comunicación con tus clientes.</p>
+      </div>
+      <div class="email-grid">
+        <article class="email-card">
+          <span class="email-icon" aria-hidden="true">✉</span>
+          <div>
+            <h3>Esenciales</h3>
+            <p class="addon-price">+$1.500<span>/mes</span></p>
+          </div>
+          <ul>
+            <li>Hasta 400 correos mensuales</li>
+            <li>Correo de confirmación al cliente al reservar</li>
+            <li>Resumen diario por correo al comercio</li>
+          </ul>
+        </article>
+        <article class="email-card">
+          <span class="email-icon" aria-hidden="true">✉</span>
+          <div>
+            <h3>Completos</h3>
+            <p class="addon-price">+$3.000<span>/mes</span></p>
+          </div>
+          <ul>
+            <li>Hasta 1.300 correos mensuales</li>
+            <li>Incluye Esenciales</li>
+            <li>Recordatorio o solicitud de confirmación/cancelación por correo</li>
+            <li>Aviso de cancelación por correo al comercio</li>
+          </ul>
+        </article>
+      </div>
+
+      <aside class="trial-card" aria-label="Prueba gratis del plan Pro con Correos Completos">
+        <span class="trial-icon" aria-hidden="true">🎁</span>
+        <div>
+          <h2>Pro + Correos Completos: 30 días gratis</h2>
+          <p>Después $11.000/mes si lo elegís.</p>
+          <p>Podés seguir en Básico gratis. Sin cobro automático.</p>
+        </div>
+        <a
+          class="button"
+          [href]="whatsappUrl"
+          target="_blank"
+          rel="noopener"
+          (click)="trackCta('START_FREE')"
+          >Empezar prueba gratis</a
+        >
+      </aside>
     </section>
     <section id="comercios" class="section demos" aria-labelledby="demos-title">
       <div class="section-heading">
