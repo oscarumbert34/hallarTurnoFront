@@ -3,19 +3,23 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '../../shared/api-base-url.token';
 import { SKIP_AUTH } from '../auth/auth.interceptor';
+import { AuthService } from '../auth/auth.service';
 import { BookingService } from './booking.service';
 
 describe('BookingService', () => {
   let service: BookingService;
   let httpTesting: HttpTestingController;
+  let authService: { isAuthenticated: boolean };
 
   beforeEach(() => {
+    authService = { isAuthenticated: false };
     TestBed.configureTestingModule({
       providers: [
         BookingService,
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: API_BASE_URL, useValue: '/api' },
+        { provide: AuthService, useValue: authService },
       ],
     });
 
@@ -337,6 +341,34 @@ describe('BookingService', () => {
     const request = httpTesting.expectOne('/api/public/bookings');
 
     expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+    request.flush({
+      id: 'booking-1',
+      businessName: 'Turnos SA',
+      serviceName: 'Corte',
+      startsAt: '2026-08-17T10:00:00',
+      status: 'CONFIRMED',
+    });
+  });
+
+  it('should use the authenticated endpoint for internal booking creation', () => {
+    authService.isAuthenticated = true;
+    const payload = {
+      businessId: 'business-1',
+      branchId: 'branch-1',
+      serviceOfferingId: 'service-1',
+      resourceId: 'resource-1',
+      date: '2026-08-17',
+      startsAt: '10:00',
+      customerName: 'Cliente interno',
+      customerPhone: '1155555555',
+    };
+
+    service.createBooking(payload).subscribe();
+
+    const request = httpTesting.expectOne('/api/bookings');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.context.get(SKIP_AUTH)).toBe(false);
     expect(request.request.body).toEqual(payload);
     request.flush({
       id: 'booking-1',
