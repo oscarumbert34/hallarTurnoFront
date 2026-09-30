@@ -2,6 +2,7 @@ import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
+import { AuthService } from '../auth/auth.service';
 import { SKIP_AUTH } from '../auth/auth.interceptor';
 import {
   BusinessCategory,
@@ -27,6 +28,7 @@ import {
 export class BookingService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
+  private readonly authService = inject(AuthService);
 
   getPublicBusiness(slug: string): Observable<PublicBusiness> {
     return this.http.get<PublicBusiness>(
@@ -137,6 +139,10 @@ export class BookingService {
   }
 
   createBooking(request: CreateBookingRequest): Observable<CustomerBooking> {
+    if (this.authService.isAuthenticated) {
+      return this.http.post<CustomerBooking>(this.apiUrl.build('/bookings'), request);
+    }
+
     return this.http.post<CustomerBooking>(this.apiUrl.build('/public/bookings'), request, {
       context: this.publicHttpContext(),
     });
