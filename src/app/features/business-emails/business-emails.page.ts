@@ -85,7 +85,7 @@ interface AddonOption { value: EmailAddon; title: string; price: string; quota: 
               <article>
                 <div class="automation-icon"><mat-icon aria-hidden="true">{{ automationIcon(type) }}</mat-icon></div>
                 <div class="automation-copy"><strong>{{ automationName(type) }}</strong><p>{{ automationDescription(type) }}</p>@if (!canEnable(type)) { <small>{{ requiredAddonText(type) }}</small> }</div>
-                <mat-slide-toggle [checked]="preferenceValue(type)" [disabled]="!canEnable(type) || savingPreferences()" (change)="setPreference(type, $event.checked)" [attr.aria-label]="automationName(type)" />
+                <mat-slide-toggle [checked]="preferenceValue(type)" [disabled]="!canEnable(type) || savingPreferences()" (change)="setPreference(type, $event.checked)"><span class="visually-hidden">{{ automationName(type) }}</span></mat-slide-toggle>
               </article>
             }
           </div>
