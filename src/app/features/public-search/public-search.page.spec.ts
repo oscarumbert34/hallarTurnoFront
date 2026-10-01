@@ -379,6 +379,51 @@ describe('PublicSearchPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Turnos SA');
   });
 
+  it('keeps Buscar disabled until branches and services for the business are loaded', () => {
+    const branches = new Subject<
+      Array<{ id: string; name: string; address: string; locality: string }>
+    >();
+    const services = new Subject<
+      Array<{
+        id: string;
+        name: string;
+        branchId: string;
+        durationMinutes: number;
+        price: number;
+      }>
+    >();
+    bookingService.listBranches.mockReturnValueOnce(branches.asObservable());
+    bookingService.listServiceOfferings.mockReturnValueOnce(services.asObservable());
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const searchButton = () =>
+      fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    expect(searchButton().disabled).toBe(true);
+
+    branches.next([
+      { id: 'branch-1', name: 'Centro', address: 'Calle 1', locality: 'Palermo' },
+    ]);
+    branches.complete();
+    fixture.detectChanges();
+    expect(searchButton().disabled).toBe(true);
+
+    services.next([
+      {
+        id: 'service-1',
+        name: 'Corte',
+        branchId: 'branch-1',
+        durationMinutes: 30,
+        price: 1200,
+      },
+    ]);
+    services.complete();
+    fixture.detectChanges();
+
+    expect(searchButton().disabled).toBe(false);
+  });
+
   it('should not search availability for dates before today', () => {
     vi.setSystemTime(new Date(2026, 7, 17, 10, 0));
     fixture = TestBed.createComponent(PublicSearchPage);

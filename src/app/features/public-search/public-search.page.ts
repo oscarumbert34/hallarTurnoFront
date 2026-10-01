@@ -2,7 +2,7 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -187,7 +187,7 @@ import { whatsappBookingUrl } from '../booking/whatsapp-booking';
               </button>
             </mat-form-field>
 
-            <button mat-flat-button type="submit" [disabled]="form.invalid || loading()">
+            <button mat-flat-button type="submit" [disabled]="!canSearch()">
               <mat-icon aria-hidden="true">search</mat-icon>Buscar
             </button>
           </form>
@@ -295,6 +295,7 @@ export class PublicSearchPage implements OnInit {
   );
   private readonly publicBusiness = signal<PublicBusiness | null>(null);
   protected readonly loading = signal(false);
+  protected readonly businessDataReady = signal(false);
   protected readonly loadingMoreServices = signal(false);
   protected readonly searched = signal(false);
   protected readonly errorMessage = signal('');
@@ -316,7 +317,6 @@ export class PublicSearchPage implements OnInit {
     timeFrom: ['09:00', [this.notPastStartTimeValidator.bind(this)]],
     timeTo: ['18:00'],
   });
-
   ngOnInit(): void {
     const stored = sessionStorage.getItem('turnero.search');
 
@@ -369,6 +369,10 @@ export class PublicSearchPage implements OnInit {
   }
 
   protected search(): void {
+    if (this.loading()) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -380,6 +384,10 @@ export class PublicSearchPage implements OnInit {
       this.errorMessage.set(
         'No pudimos identificar el comercio. Volvé a ingresar desde su página pública.',
       );
+      return;
+    }
+
+    if (!this.businessDataReady() || !this.selectedBusinessId()) {
       return;
     }
 
@@ -481,6 +489,15 @@ export class PublicSearchPage implements OnInit {
     }
 
     return this.businesses().filter((business) => business.name.toLowerCase().includes(query));
+  }
+
+  protected canSearch(): boolean {
+    return (
+      this.businessDataReady() &&
+      !!this.selectedBusinessId() &&
+      this.form.valid &&
+      !this.loading()
+    );
   }
 
   protected filteredServiceOfferings(): ServiceOfferingSummary[] {
@@ -889,8 +906,7 @@ export class PublicSearchPage implements OnInit {
           this.publicBusiness.set(business);
           this.selectedBusinessId.set(business.id);
           this.selectedBusinessCategory.set(business.category ?? 'OTHERS');
-          this.loadBranches(business.id);
-          this.loadServiceOfferings(business.id);
+          this.loadBusinessOptions(business.id);
         },
         error: () => {
           this.errorMessage.set('No encontramos el negocio indicado en la dirección.');
@@ -905,14 +921,14 @@ export class PublicSearchPage implements OnInit {
     }
 
     this.selectedBusinessId.set(businessId);
-    this.loadBranches(businessId);
-    this.loadServiceOfferings(businessId);
+    this.loadBusinessOptions(businessId);
   }
 
   private syncBusinessOptions(resetBranch = true): void {
     const businessId = this.selectedBusinessId();
 
     if (!businessId) {
+      this.businessDataReady.set(false);
       this.branches.set([]);
       this.serviceOfferings.set([]);
       this.form.controls.branchId.setValue('', { emitEvent: false });
@@ -925,30 +941,34 @@ export class PublicSearchPage implements OnInit {
       this.form.controls.service.setValue('', { emitEvent: false });
     }
 
-    this.loadBranches(businessId);
-    this.loadServiceOfferings(businessId);
+    this.loadBusinessOptions(businessId);
   }
 
-  private loadBranches(businessId: string): void {
-    this.bookingService.listBranches(businessId).subscribe({
-      next: (branches) => {
+  private loadBusinessOptions(businessId: string): void {
+    this.businessDataReady.set(false);
+    forkJoin({
+      branches: this.bookingService.listBranches(businessId),
+      serviceOfferings: this.bookingService.listServiceOfferings(businessId),
+    }).subscribe({
+      next: ({ branches, serviceOfferings }) => {
+        if (businessId !== this.selectedBusinessId()) {
+          return;
+        }
         this.branches.set(branches);
         const selectedBranchId = this.form.controls.branchId.value;
         if (!branches.some((branch) => branch.id === selectedBranchId)) {
           this.form.controls.branchId.setValue(branches[0]?.id ?? '');
         }
-      },
-      error: () => this.branches.set([]),
-    });
-  }
-
-  private loadServiceOfferings(businessId: string): void {
-    this.bookingService.listServiceOfferings(businessId).subscribe({
-      next: (serviceOfferings) => {
         this.serviceOfferings.set(serviceOfferings);
         this.pruneServiceForBranch();
+        this.businessDataReady.set(true);
       },
-      error: () => this.serviceOfferings.set([]),
+      error: () => {
+        this.branches.set([]);
+        this.serviceOfferings.set([]);
+        this.businessDataReady.set(false);
+        this.errorMessage.set('No pudimos cargar los datos del comercio. Intentá nuevamente.');
+      },
     });
   }
 
