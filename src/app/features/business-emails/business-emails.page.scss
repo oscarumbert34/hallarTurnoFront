@@ -1,0 +1,47 @@
+:host { display: block; }
+.emails-page { display: grid; gap: 24px; max-width: 1180px; margin: 0 auto; padding: 28px 22px 56px; }
+.page-header, .section-block > header, .notice, .trial-banner, .usage-numbers, .no-charge { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+h1 { margin: 3px 0 7px; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.04em; }
+h2 { margin: 3px 0 5px; font-size: 1.55rem; }
+p, h3 { margin-block: 0; }
+.page-header p, .section-block header p, mat-card-content > p, .automation-copy p { color: var(--mat-sys-on-surface-variant); line-height: 1.5; }
+.eyebrow { color: var(--mat-sys-primary); font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
+.trial-banner, .notice { border: 1px solid #bbdefb; border-radius: 16px; background: #eff7ff; padding: 18px 20px; }
+.trial-banner > mat-icon, .notice > mat-icon { flex: 0 0 auto; color: #075faf; }
+.trial-banner p, .notice p { margin-top: 4px; color: #334155; line-height: 1.45; }
+.trial-banner.last-day, .notice.danger { border-color: #fecaca; background: #fff1f2; }
+.notice.danger > mat-icon { color: #b91c1c; }
+.summary-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 18px; }
+mat-card { border-radius: 18px; }
+mat-card-content { padding-top: 18px; }
+.current-plan mat-icon[mat-card-avatar] { display: grid; place-items: center; border-radius: 12px; background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); }
+.scheduled-change { margin-bottom: 8px; color: var(--mat-sys-primary) !important; font-weight: 600; }
+.usage-card mat-progress-bar { margin: 4px 0 12px; }
+.usage-numbers { font-size: .9rem; }
+.usage-numbers span { color: var(--mat-sys-on-surface-variant); }
+.included-quota { display: flex; gap: 9px; margin-top: 18px; border-radius: 10px; background: var(--mat-sys-surface-container); padding: 12px; }
+.section-block { border: 1px solid var(--mat-sys-outline-variant); border-radius: 20px; background: var(--mat-sys-surface-container-lowest); padding: 24px; }
+.feedback { margin-top: 18px; border-radius: 10px; background: #dcfce7; color: #166534; padding: 11px 14px; }
+.feedback.error { background: #fee2e2; color: #991b1b; }
+.automation-list { display: grid; margin-top: 18px; }
+.automation-list article { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 14px; border-top: 1px solid var(--mat-sys-outline-variant); padding: 17px 2px; }
+.automation-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); }
+.automation-copy { display: grid; gap: 3px; }
+.automation-copy small { color: #9a3412; }
+.plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+.plan-grid mat-card { display: flex; flex-direction: column; }
+.plan-grid mat-card.selected { border: 2px solid var(--mat-sys-primary); background: var(--mat-sys-primary-container); }
+.plan-grid mat-card-content { flex: 1; }
+.quota { display: block; margin-bottom: 14px; font-size: 1.05rem; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+li { display: flex; align-items: flex-start; gap: 7px; line-height: 1.35; }
+li mat-icon { width: 19px; height: 19px; color: #168144; font-size: 19px; }
+.growth-note { margin-top: 16px; font-size: .85rem; }
+mat-card-actions { padding: 8px 16px 16px; }
+mat-card-actions button { width: 100%; }
+.no-charge { justify-content: center; margin-top: 18px; color: var(--mat-sys-on-surface-variant); font-size: .9rem; }
+.empty-state { display: grid; place-items: center; gap: 8px; min-height: 320px; text-align: center; }
+.empty-state > mat-icon { width: 54px; height: 54px; font-size: 54px; color: var(--mat-sys-outline); }
+@media (max-width: 800px) { .summary-grid, .plan-grid { grid-template-columns: 1fr; } .page-header, .section-block > header { align-items: stretch; flex-direction: column; } .page-header button, .section-block > header button { align-self: flex-start; } }
+@media (max-width: 560px) { .emails-page { padding-inline: 14px; } .trial-banner, .notice { align-items: flex-start; flex-wrap: wrap; } .trial-banner button, .notice button { width: 100%; } .section-block { padding: 18px 14px; } .automation-list article { grid-template-columns: 40px 1fr; } .automation-list mat-slide-toggle { grid-column: 2; justify-self: start; } }

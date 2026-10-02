@@ -88,6 +88,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'emails',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/business-emails/business-emails.page').then(
+        (m) => m.BusinessEmailsPage,
+      ),
+  },
+  {
     path: ':slug/business-dashboard',
     canActivate: [authGuard],
     data: { roles: ['ADMIN', 'BUSINESS'] },
@@ -103,6 +112,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/business-dashboard/business-dashboard.page').then(
         (m) => m.BusinessDashboardPage,
+      ),
+  },
+  {
+    path: ':slug/emails',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/business-emails/business-emails.page').then(
+        (m) => m.BusinessEmailsPage,
       ),
   },
   {

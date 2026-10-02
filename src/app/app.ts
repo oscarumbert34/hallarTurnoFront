@@ -41,6 +41,7 @@ export class App {
   protected readonly navItems = [
     { label: 'Busqueda', path: '/search' },
     { label: 'Reservas', path: '/bookings' },
+    { label: 'Mis correos', path: '/emails' },
     { label: 'Panel', path: '/business-dashboard' },
   ];
 
