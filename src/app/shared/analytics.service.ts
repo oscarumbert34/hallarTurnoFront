@@ -13,6 +13,7 @@ export type AnalyticsEventName =
   | 'booking_checkout_view'
   | 'booking_completed';
 
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
