@@ -94,7 +94,9 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
     this.document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  protected trackCta(button: 'START_FREE' | 'TRY_HALLARTURNO' | 'SEE_PLANS' | 'SEE_DEMOS'): void {
+  protected trackCta(
+    button: 'START_FREE' | 'TRY_HALLARTURNO' | 'SEE_PLANS' | 'SEE_DEMOS' | 'SEE_VIDEO',
+  ): void {
     this.analytics.event('landing_cta_click', { button });
   }
 

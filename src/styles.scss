@@ -38,6 +38,130 @@ body {
   margin: 0;
   height: 100%;
 }
+
+/* Video de presentación de la landing comercial. Se mantiene aquí para no cargar
+   el presupuesto de estilos aislados del componente. */
+.landing {
+  .video-action {
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .play-icon {
+    font-size: 0.72em;
+  }
+
+  .video-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 350px);
+    align-items: center;
+    gap: clamp(42px, 7vw, 100px);
+    padding: 64px max(20px, calc((100vw - 1120px) / 2));
+    background: #fff;
+  }
+
+  .video-copy h2 {
+    max-width: 650px;
+    margin: 12px 0 16px;
+    color: #0b2454;
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+  }
+
+  .video-copy > p {
+    max-width: 610px;
+    margin: 0;
+    color: #456487;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .video-copy ul {
+    display: grid;
+    gap: 12px;
+    margin: 24px 0 28px;
+    padding: 0;
+    color: #153665;
+    list-style: none;
+  }
+
+  .video-copy li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .video-copy li span {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: #e8f3ff;
+    color: #0876ed;
+  }
+
+  .video-frame {
+    overflow: hidden;
+    width: min(100%, 350px);
+    justify-self: center;
+    aspect-ratio: 9 / 16;
+    padding: 7px;
+    border-radius: 30px;
+    background: #17273b;
+    box-shadow: 0 24px 55px rgb(24 69 112 / 23%);
+  }
+
+  .video-frame video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 23px;
+    background: #eef6ff;
+    object-fit: cover;
+  }
+}
+
+@media (max-width: 900px) {
+  .landing {
+    .video-demo {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    .video-copy > p {
+      margin-inline: auto;
+    }
+
+    .video-copy li {
+      justify-content: center;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .landing {
+    .video-demo {
+      gap: 34px;
+      padding: 46px 18px;
+    }
+
+    .video-copy h2 {
+      font-size: 2rem;
+    }
+
+    .video-copy > p {
+      font-size: 0.96rem;
+    }
+
+    .video-frame {
+      width: min(100%, 320px);
+    }
+  }
+}
 /* You can add global styles to this file, and also import other style files */
 
 .placeholder {
