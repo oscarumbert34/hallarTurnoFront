@@ -82,11 +82,12 @@ describe('BusinessLandingPage', () => {
       '.hero-actions a[href="#video-demo"]',
     ) as HTMLAnchorElement;
     const video = fixture.nativeElement.querySelector('#video-demo video') as HTMLVideoElement;
-    const source = video.querySelector('source');
+    const webmSource = video.querySelector('source[type="video/webm"]');
+    const mp4Source = video.querySelector('source[type="video/mp4"]');
     expect(videoLink.textContent).toContain('Ver cómo funciona');
     expect(video).toBeTruthy();
-    expect(source?.getAttribute('src')).toBe('hallarturno-demo-mobile.mp4?v=20261003');
-    expect(source?.getAttribute('type')).toBe('video/mp4');
+    expect(webmSource?.getAttribute('src')).toBe('hallarturno-demo-mobile.webm?v=20261003-1');
+    expect(mp4Source?.getAttribute('src')).toBe('hallarturno-demo-mobile.mp4?v=20261003-3');
   });
 
   it('offers a direct mobile link to the benefits section', () => {
