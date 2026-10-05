@@ -105,6 +105,9 @@ h1 em {
 .demo-action {
   white-space: nowrap;
 }
+.mobile-header-actions {
+  display: none;
+}
 .mobile-how-button {
   display: none;
   align-items: center;
@@ -531,13 +534,53 @@ footer nav {
   gap: 30px;
   font-size: 0.83rem;
 }
+.instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.brand-icon {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #833ab4, #e1306c 58%, #fcaf45);
+  box-shadow: 0 3px 8px rgb(225 48 108 / 24%);
+  color: #fff;
+  font-size: 17px;
+  line-height: 24px;
+}
 @media (max-width: 900px) {
   .topbar {
     grid-template-columns: 1fr auto auto;
     gap: 12px;
   }
+  .mobile-header-actions {
+    display: grid;
+    justify-items: end;
+    gap: 5px;
+  }
   .mobile-how-button {
     display: inline-flex;
+  }
+  .mobile-instagram-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    color: #855170;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .mobile-instagram-link .brand-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 20px;
   }
   .topbar nav {
     display: none;

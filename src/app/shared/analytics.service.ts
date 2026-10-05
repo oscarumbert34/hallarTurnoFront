@@ -7,6 +7,7 @@ export type AnalyticsEventName =
   | 'landing_cta_click'
   | 'demo_business_click'
   | 'contact_click'
+  | 'instagram_click'
   | 'business_page_view'
   | 'business_booking_click'
   | 'availability_search'

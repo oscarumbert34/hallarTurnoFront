@@ -51,8 +51,21 @@ describe('BusinessLandingPage', () => {
     const document = TestBed.inject(DOCUMENT);
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
     const whatsappLinks = links.filter((link) => link.href.includes('wa.me'));
+    const instagramLink = fixture.nativeElement.querySelector(
+      '.instagram-link',
+    ) as HTMLAnchorElement;
     expect(whatsappLinks).toHaveLength(4);
     expect(whatsappLinks[0].href).toContain(encodeURIComponent('Hola, quiero conocer HallarTurno'));
+    expect(instagramLink.href).toBe('https://www.instagram.com/hallarturno/');
+    expect(instagramLink.target).toBe('_blank');
+    expect(instagramLink.rel).toBe('noopener');
+    expect(instagramLink.getAttribute('aria-label')).toContain('@hallarturno');
+    expect(fixture.nativeElement.querySelector('.mobile-instagram-link')?.href).toBe(
+      'https://www.instagram.com/hallarturno/',
+    );
+    expect(fixture.nativeElement.querySelector('.mobile-instagram-link mat-icon')?.textContent).toBe(
+      'alternate_email',
+    );
     expect(document.title).toBe('HallarTurno | Sistema de turnos online para negocios');
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain(
       'Organizá tu agenda',
