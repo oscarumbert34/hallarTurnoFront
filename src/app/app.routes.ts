@@ -3,12 +3,9 @@ import { Router, Routes } from '@angular/router';
 import { map } from 'rxjs';
 import { authGuard } from './features/auth/auth.guard';
 import { AuthService } from './features/auth/auth.service';
-import { VIRTUAL_QUEUE_ENABLED } from './shared/virtual-queue-enabled.token';
 import { VirtualQueueAvailabilityService } from './shared/virtual-queue-availability.service';
 
-const virtualQueueEnabledGuard = () => inject(VIRTUAL_QUEUE_ENABLED);
 const businessVirtualQueueEnabledGuard = () => {
-  if (!inject(VIRTUAL_QUEUE_ENABLED)) return false;
   const router = inject(Router);
   const auth = inject(AuthService);
   return inject(VirtualQueueAvailabilityService).refresh().pipe(
@@ -43,7 +40,6 @@ export const routes: Routes = [
   },
   {
     path: 'fila/:business/:branch/espera/:entry',
-    canMatch: [virtualQueueEnabledGuard],
     data: { standalone: true },
     loadComponent: () =>
       import('./features/virtual-queue/public-virtual-queue.page').then(
@@ -52,7 +48,6 @@ export const routes: Routes = [
   },
   {
     path: 'fila/:business/:branch',
-    canMatch: [virtualQueueEnabledGuard],
     data: { standalone: true },
     loadComponent: () =>
       import('./features/virtual-queue/public-virtual-queue.page').then(

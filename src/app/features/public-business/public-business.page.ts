@@ -24,7 +24,6 @@ import { ServiceAvailabilityDialogComponent } from './service-availability-dialo
 import { AnalyticsService } from '../../shared/analytics.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import { whatsappBookingUrl } from '../booking/whatsapp-booking';
-import { VIRTUAL_QUEUE_ENABLED } from '../../shared/virtual-queue-enabled.token';
 import { VirtualQueue } from '../virtual-queue/virtual-queue.models';
 import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 
@@ -41,8 +40,7 @@ export class PublicBusinessPageComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly analytics = inject(AnalyticsService);
-  private readonly virtualQueueEnabled = inject(VIRTUAL_QUEUE_ENABLED);
-  private readonly virtualQueueApi = this.virtualQueueEnabled ? inject(VirtualQueueService) : null;
+  private readonly virtualQueueApi = inject(VirtualQueueService);
   private businessRequest?: Subscription;
   private servicesRequest?: Subscription;
   private todayAvailabilityRequest?: Subscription;
@@ -357,14 +355,14 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   private loadOpenQueues(business: PublicBusiness): void {
-    if (!this.virtualQueueApi || !business.virtualQueueEnabled || !business.branches.length) {
+    if (!business.virtualQueueEnabled || !business.branches.length) {
       this.checkingOpenQueue.set(false);
       return;
     }
     this.checkingOpenQueue.set(true);
     this.queueRequest = forkJoin(
       business.branches.map((branch) =>
-        this.virtualQueueApi!.getByBranch(branch.id).pipe(catchError(() => of(null))),
+        this.virtualQueueApi.getByBranch(branch.id).pipe(catchError(() => of(null))),
       ),
     ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((queues) => {
       const open = queues.filter((queue): queue is VirtualQueue => queue?.status === 'OPEN');
