@@ -95,6 +95,17 @@ describe('PublicBusinessPageComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
   });
+  it('shows services without booking actions when the business uses virtual queue', () => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, virtualQueueEnabled: true }));
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Consulta');
+    expect(fixture.nativeElement.textContent).not.toContain('Reservar turno');
+    expect(fixture.nativeElement.textContent).not.toContain('¿Cómo reservar un turno?');
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    expect(buttons.some((button) => button.textContent?.trim() === 'Reservar')).toBe(false);
+  });
   it('loads today slots for the default service', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 25, 10, 0));

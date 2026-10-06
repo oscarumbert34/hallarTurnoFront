@@ -88,7 +88,7 @@ export class AuthService {
   withBusinessSlug(url: string): string {
     const businessSlug = this.businessSlug;
 
-    if (!businessSlug || !/^\/(search|booking|bookings|emails|business-dashboard)([/?#]|$)/.test(url)) {
+    if (!businessSlug || !/^\/(search|booking|bookings|emails|business-dashboard|admin\/fila)([/?#]|$)/.test(url)) {
       return url;
     }
 

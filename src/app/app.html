@@ -5,7 +5,7 @@
     </a>
     @if (session$ | async) {
       <nav class="desktop-nav" aria-label="Principal">
-        @for (item of navItems; track item.path) {
+        @for (item of navItems(); track item.path) {
           <a
             mat-button
             [routerLink]="navigationPath(item.path)"
@@ -29,7 +29,7 @@
 @if (showShellNavigation$ | async) {
   @if (session$ | async) {
     <nav class="mobile-nav" aria-label="Principal movil">
-      @for (item of navItems; track item.path) {
+      @for (item of navItems(); track item.path) {
         <a
           mat-button
           [routerLink]="navigationPath(item.path)"

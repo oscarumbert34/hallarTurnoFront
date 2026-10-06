@@ -682,6 +682,7 @@ interface BusinessConfiguration {
   weeklyBookingCopyEnabled: boolean;
   depositEnabled?: boolean;
   appointmentConfirmationEnabled?: boolean;
+  virtualQueueEnabled?: boolean;
 }
 
 interface ImageUploadResponse {

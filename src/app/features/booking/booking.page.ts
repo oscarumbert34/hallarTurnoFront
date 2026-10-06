@@ -27,6 +27,7 @@ import { AnalyticsService } from '../../shared/analytics.service';
 import { BusinessCategory } from '../public-business/public-business.models';
 import { PublicBusiness } from '../public-business/public-business.models';
 import { whatsappBookingUrl } from './whatsapp-booking';
+import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
 
 @Component({
   selector: 'app-booking-page',
@@ -230,7 +231,7 @@ export class BookingPage implements OnInit {
   protected readonly internalBookingOnly = signal(false);
   protected readonly customerForm = this.formBuilder.nonNullable.group({
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
-    customerPhone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+    customerPhone: ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
     customerEmail: ['', [Validators.maxLength(160), Validators.email]],
     skipCustomerContact: [false],
     depositPaid: [false],
@@ -258,12 +259,7 @@ export class BookingPage implements OnInit {
   }
 
   private normalizedPhone(value: string): string {
-    if (/^\d{10}$/.test(value)) {
-      return value;
-    }
-
-    const digits = value.replace(/\D/g, '');
-    return digits.length > 10 ? digits.slice(-10) : digits;
+    return normalizePhone(value);
   }
 
   ngOnInit(): void {

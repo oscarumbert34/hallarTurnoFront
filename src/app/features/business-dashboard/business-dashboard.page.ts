@@ -27,6 +27,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { UiStateComponent } from '../../shared/ui-state.component';
+import { VirtualQueueAvailabilityService } from '../../shared/virtual-queue-availability.service';
 import { BookingService } from '../booking/booking.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import { BusinessDashboardService } from './business-dashboard.service';
@@ -773,6 +774,18 @@ import {
                   <p class="configuration-help">
                     Al habilitarlo, las reservas podrán registrarse con la seña pagada o pendiente.
                   </p>
+                  <section class="configuration-section" aria-labelledby="virtual-queue-title">
+                    <h3 id="virtual-queue-title">Fila virtual</h3>
+                    <mat-checkbox
+                      [checked]="virtualQueueEnabled()"
+                      (change)="virtualQueueEnabled.set($event.checked)"
+                    >
+                      Habilitar fila virtual
+                    </mat-checkbox>
+                    <p class="configuration-help">
+                      Permite abrir una fila por sucursal y compartir el seguimiento con los clientes.
+                    </p>
+                  </section>
                   <section class="configuration-section" aria-labelledby="notifications-title">
                     <h3 id="notifications-title">Notificaciones</h3>
                     <mat-checkbox
@@ -1425,6 +1438,9 @@ export class BusinessDashboardPage implements OnInit {
   @ViewChild('rescheduleDialog') private rescheduleDialog?: TemplateRef<unknown>;
 
   private readonly dashboardService = inject(BusinessDashboardService);
+  private readonly virtualQueueAvailability = inject(VirtualQueueAvailabilityService, {
+    optional: true,
+  });
   private readonly bookingService = inject(BookingService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
@@ -1465,6 +1481,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly depositEnabled = signal(false);
   protected readonly appointmentConfirmationEnabled = signal(false);
+  protected readonly virtualQueueEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
   protected readonly savingPublicProfile = signal(false);
@@ -1603,6 +1620,7 @@ export class BusinessDashboardPage implements OnInit {
             weeklyBookingCopyEnabled: false,
             depositEnabled: false,
             appointmentConfirmationEnabled: false,
+            virtualQueueEnabled: false,
           }),
         ),
       ),
@@ -1617,6 +1635,10 @@ export class BusinessDashboardPage implements OnInit {
           this.depositEnabled.set(result.configuration.depositEnabled ?? false);
           this.appointmentConfirmationEnabled.set(
             result.configuration.appointmentConfirmationEnabled ?? false,
+          );
+          this.virtualQueueEnabled.set(result.configuration.virtualQueueEnabled ?? false);
+          this.virtualQueueAvailability?.setEnabled(
+            result.configuration.virtualQueueEnabled ?? false,
           );
           this.pruneResourceServicesForBranch();
           if (!this.bookingDefaultsInitialized) {
@@ -2487,6 +2509,7 @@ export class BusinessDashboardPage implements OnInit {
         weeklyBookingCopyEnabled: this.weeklyBookingCopyEnabled(),
         depositEnabled: this.depositEnabled(),
         appointmentConfirmationEnabled: this.appointmentConfirmationEnabled(),
+        virtualQueueEnabled: this.virtualQueueEnabled(),
       })
       .pipe(finalize(() => this.savingConfiguration.set(false)))
       .subscribe({
@@ -2496,6 +2519,8 @@ export class BusinessDashboardPage implements OnInit {
           this.appointmentConfirmationEnabled.set(
             configuration.appointmentConfirmationEnabled ?? false,
           );
+          this.virtualQueueEnabled.set(configuration.virtualQueueEnabled ?? false);
+          this.virtualQueueAvailability?.setEnabled(configuration.virtualQueueEnabled ?? false);
         },
         error: (error) => this.configurationError.set(dashboardErrorMessage(error)),
       });

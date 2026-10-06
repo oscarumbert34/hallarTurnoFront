@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { BusinessDashboardPage } from './business-dashboard.page';
 import { BusinessDashboardService } from './business-dashboard.service';
 import { BookingService } from '../booking/booking.service';
+import { VirtualQueueAvailabilityService } from '../../shared/virtual-queue-availability.service';
 
 describe('BusinessDashboardPage', () => {
   let fixture: ComponentFixture<BusinessDashboardPage>;
@@ -105,6 +106,7 @@ describe('BusinessDashboardPage', () => {
       providers: [
         { provide: BusinessDashboardService, useValue: dashboardService },
         { provide: BookingService, useValue: bookingService },
+        { provide: VirtualQueueAvailabilityService, useValue: { setEnabled: vi.fn() } },
         { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
       ],
     }).compileComponents();
@@ -1145,6 +1147,7 @@ describe('BusinessDashboardPage', () => {
       weeklyBookingCopyEnabled: true,
       depositEnabled: false,
       appointmentConfirmationEnabled: true,
+      virtualQueueEnabled: false,
     });
     expect(component.appointmentConfirmationEnabled()).toBe(true);
   });
