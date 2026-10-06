@@ -8,15 +8,12 @@ import { environment } from '../environments/environment';
 import { authInterceptor } from './features/auth/auth.interceptor';
 import { API_BASE_URL } from './shared/api-base-url.token';
 import { recoverFromChunkLoadError } from './shared/chunk-load-recovery';
-import { VIRTUAL_QUEUE_ENABLED } from './shared/virtual-queue-enabled.token';
 
 const runtimeEnvironment = globalThis as typeof globalThis & {
-  __HALLARTURNO_ENV__?: { API_BASE_URL?: string; VIRTUAL_QUEUE_ENABLED?: boolean };
+  __HALLARTURNO_ENV__?: { API_BASE_URL?: string };
 };
 const apiBaseUrl =
   runtimeEnvironment.__HALLARTURNO_ENV__?.API_BASE_URL?.trim() || environment.apiBaseUrl;
-const virtualQueueEnabled =
-  runtimeEnvironment.__HALLARTURNO_ENV__?.VIRTUAL_QUEUE_ENABLED ?? environment.virtualQueueEnabled;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -31,10 +28,6 @@ export const appConfig: ApplicationConfig = {
     {
       provide: API_BASE_URL,
       useValue: apiBaseUrl,
-    },
-    {
-      provide: VIRTUAL_QUEUE_ENABLED,
-      useValue: virtualQueueEnabled,
     },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

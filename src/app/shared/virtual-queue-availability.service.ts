@@ -3,21 +3,19 @@ import { inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { AuthService } from '../features/auth/auth.service';
 import { ApiUrlService } from './api-url.service';
-import { VIRTUAL_QUEUE_ENABLED } from './virtual-queue-enabled.token';
 
 @Injectable({ providedIn: 'root' })
 export class VirtualQueueAvailabilityService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
   private readonly auth = inject(AuthService);
-  private readonly globallyEnabled = inject(VIRTUAL_QUEUE_ENABLED);
   private readonly enabledState = signal(false);
 
   readonly enabled = this.enabledState.asReadonly();
 
   refresh(): Observable<boolean> {
     const businessId = this.auth.businessId;
-    if (!this.globallyEnabled || !businessId) {
+    if (!businessId) {
       this.enabledState.set(false);
       return of(false);
     }
@@ -37,6 +35,6 @@ export class VirtualQueueAvailabilityService {
   }
 
   setEnabled(enabled: boolean): void {
-    this.enabledState.set(this.globallyEnabled && enabled);
+    this.enabledState.set(enabled);
   }
 }

@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { BookingService } from '../booking/booking.service';
+import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 import { PublicBusinessPageComponent } from './public-business.page';
 
 describe('PublicBusinessPageComponent', () => {
@@ -51,6 +52,10 @@ describe('PublicBusinessPageComponent', () => {
       imports: [PublicBusinessPageComponent],
       providers: [
         { provide: BookingService, useValue: api },
+        {
+          provide: VirtualQueueService,
+          useValue: { getByBranch: vi.fn(() => throwError(() => ({ status: 404 }))) },
+        },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ slug: 'centro' })) },
