@@ -3,9 +3,25 @@
     <a class="brand" href="#inicio" aria-label="HallarTurno, ir al inicio"
       ><img src="hallarturno-logo.png" alt="HallarTurno" width="190" height="64"
     /></a>
-    <a class="mobile-how-button" href="#beneficios" (click)="scrollToSection($event, 'beneficios')"
-      >Cómo funciona <span aria-hidden="true">↓</span></a
-    >
+    <div class="mobile-header-actions">
+      <a
+        class="mobile-how-button"
+        href="#beneficios"
+        (click)="scrollToSection($event, 'beneficios')"
+        >Cómo funciona <span aria-hidden="true">↓</span></a
+      >
+      <a
+        class="mobile-instagram-link"
+        [href]="instagramUrl"
+        target="_blank"
+        rel="noopener"
+        aria-label="Seguinos en Instagram, @hallarturno"
+        (click)="trackInstagram()"
+      >
+        <mat-icon class="brand-icon" aria-hidden="true">alternate_email</mat-icon>
+        <span>@hallarturno</span>
+      </a>
+    </div>
     <nav id="landing-navigation" aria-label="Navegación de la landing">
       <a href="#beneficios" (click)="scrollToSection($event, 'beneficios')">Cómo funciona</a
       ><a href="#comercios" (click)="scrollToSection($event, 'comercios')">Comercios de prueba</a
@@ -55,6 +71,12 @@
             (click)="trackCta('SEE_DEMOS'); scrollToSection($event, 'comercios')"
             >Ver comercios de prueba</a
           >
+          <a
+            class="button button-secondary video-action"
+            href="#video-demo"
+            (click)="trackCta('SEE_VIDEO'); scrollToSection($event, 'video-demo')"
+            ><span class="play-icon" aria-hidden="true">▶</span> Ver cómo funciona</a
+          >
         </div>
         <p class="launch-note">Gratis durante el lanzamiento · Sin tarjeta · Sin compromiso</p>
       </div>
@@ -79,6 +101,33 @@
             height="647"
           />
         </div>
+      </div>
+    </section>
+    <section id="video-demo" class="section video-demo" aria-labelledby="video-demo-title">
+      <div class="video-copy">
+        <span class="eyebrow">HallarTurno en acción</span>
+        <h2 id="video-demo-title">Mirá cómo funciona en menos de dos minutos</h2>
+        <p>
+          Conocé la experiencia de tus clientes y cómo administrás la agenda desde el negocio.
+        </p>
+        <ul>
+          <li><span aria-hidden="true">✓</span> Reservas desde la página pública</li>
+          <li><span aria-hidden="true">✓</span> Agenda diaria y semanal</li>
+          <li><span aria-hidden="true">✓</span> Gestión de turnos, panel y correos</li>
+        </ul>
+      </div>
+      <div class="video-frame">
+        <video
+          controls
+          playsinline
+          preload="metadata"
+          poster="landing-mobile.png"
+          aria-label="Demostración de HallarTurno en un teléfono"
+        >
+          <source src="hallarturno-demo-mobile.webm?v=20261003-2" type="video/webm" />
+          <source src="hallarturno-demo-mobile.mp4?v=20261003-4" type="video/mp4" />
+          Tu navegador no puede reproducir este video.
+        </video>
       </div>
     </section>
     <section id="beneficios" class="section benefits" aria-labelledby="benefits-title">
@@ -291,6 +340,15 @@
       ><a href="#comercios" (click)="scrollToSection($event, 'comercios')">Comercios de prueba</a
       ><a href="#contacto" (click)="trackContact(); scrollToSection($event, 'contacto')"
         >Contacto</a
+      ><a
+        class="instagram-link"
+        [href]="instagramUrl"
+        target="_blank"
+        rel="noopener"
+        aria-label="Seguinos en Instagram, @hallarturno"
+        (click)="trackInstagram()"
+        ><mat-icon class="brand-icon" aria-hidden="true">alternate_email</mat-icon
+        ><span>Instagram</span></a
       >
     </nav>
   </footer>

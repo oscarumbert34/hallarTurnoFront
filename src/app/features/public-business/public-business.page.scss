@@ -275,6 +275,65 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+.virtual-queue-callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border-color: #bfe8d5;
+  background: linear-gradient(120deg, #effcf6, #eef7ff);
+}
+.queue-callout-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 18px;
+  color: #078b5b;
+  background: #d8f7e9;
+}
+.queue-callout-icon mat-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 32px;
+}
+.queue-callout-copy span {
+  color: #078b5b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.queue-callout-copy p {
+  margin: 4px 0 0;
+  color: #587267;
+  font-size: 12px;
+}
+.queue-links {
+  display: grid;
+  gap: 8px;
+}
+.queue-links a {
+  width: 100%;
+  min-height: 48px;
+  height: auto;
+  padding-block: 9px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  text-decoration: none;
+}
+.queue-availability {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #08734e;
+  background: #dcf8e9;
+  font-weight: 700;
+}
 .today-availability {
   padding: 0;
   background: linear-gradient(120deg, #087cf0, #11c7bc);
@@ -591,6 +650,12 @@ article button {
   .branches,
   .services {
     grid-template-columns: 1fr;
+  }
+  .virtual-queue-callout {
+    grid-template-columns: auto 1fr;
+  }
+  .queue-links {
+    grid-column: 1 / -1;
   }
   article {
     grid-template-columns: 38px minmax(0, 1fr) auto;

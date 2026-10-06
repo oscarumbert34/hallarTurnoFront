@@ -1,5 +1,20 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
+import { map } from 'rxjs';
 import { authGuard } from './features/auth/auth.guard';
+import { AuthService } from './features/auth/auth.service';
+import { VIRTUAL_QUEUE_ENABLED } from './shared/virtual-queue-enabled.token';
+import { VirtualQueueAvailabilityService } from './shared/virtual-queue-availability.service';
+
+const virtualQueueEnabledGuard = () => inject(VIRTUAL_QUEUE_ENABLED);
+const businessVirtualQueueEnabledGuard = () => {
+  if (!inject(VIRTUAL_QUEUE_ENABLED)) return false;
+  const router = inject(Router);
+  const auth = inject(AuthService);
+  return inject(VirtualQueueAvailabilityService).refresh().pipe(
+    map((enabled) => enabled || router.createUrlTree([auth.withBusinessSlug('/business-dashboard')])),
+  );
+};
 
 export const routes: Routes = [
   {
@@ -24,6 +39,34 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/appointment-action/appointment-action.page').then(
         (m) => m.AppointmentActionPage,
+      ),
+  },
+  {
+    path: 'fila/:business/:branch/espera/:entry',
+    canMatch: [virtualQueueEnabledGuard],
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/virtual-queue/public-virtual-queue.page').then(
+        (m) => m.PublicVirtualQueuePage,
+      ),
+  },
+  {
+    path: 'fila/:business/:branch',
+    canMatch: [virtualQueueEnabledGuard],
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/virtual-queue/public-virtual-queue.page').then(
+        (m) => m.PublicVirtualQueuePage,
+      ),
+  },
+  {
+    path: 'admin/fila',
+    canMatch: [businessVirtualQueueEnabledGuard],
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/virtual-queue/admin-virtual-queue.page').then(
+        (m) => m.AdminVirtualQueuePage,
       ),
   },
   {
@@ -121,6 +164,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/business-emails/business-emails.page').then(
         (m) => m.BusinessEmailsPage,
+      ),
+  },
+  {
+    path: ':slug/admin/fila',
+    canMatch: [businessVirtualQueueEnabledGuard],
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/virtual-queue/admin-virtual-queue.page').then(
+        (m) => m.AdminVirtualQueuePage,
       ),
   },
   {

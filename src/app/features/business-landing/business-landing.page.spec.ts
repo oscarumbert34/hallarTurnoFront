@@ -51,8 +51,21 @@ describe('BusinessLandingPage', () => {
     const document = TestBed.inject(DOCUMENT);
     const links = [...fixture.nativeElement.querySelectorAll('a')] as HTMLAnchorElement[];
     const whatsappLinks = links.filter((link) => link.href.includes('wa.me'));
+    const instagramLink = fixture.nativeElement.querySelector(
+      '.instagram-link',
+    ) as HTMLAnchorElement;
     expect(whatsappLinks).toHaveLength(4);
     expect(whatsappLinks[0].href).toContain(encodeURIComponent('Hola, quiero conocer HallarTurno'));
+    expect(instagramLink.href).toBe('https://www.instagram.com/hallarturno/');
+    expect(instagramLink.target).toBe('_blank');
+    expect(instagramLink.rel).toBe('noopener');
+    expect(instagramLink.getAttribute('aria-label')).toContain('@hallarturno');
+    expect(fixture.nativeElement.querySelector('.mobile-instagram-link')?.href).toBe(
+      'https://www.instagram.com/hallarturno/',
+    );
+    expect(fixture.nativeElement.querySelector('.mobile-instagram-link mat-icon')?.textContent).toBe(
+      'alternate_email',
+    );
     expect(document.title).toBe('HallarTurno | Sistema de turnos online para negocios');
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain(
       'Organizá tu agenda',
@@ -73,6 +86,21 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelector('.trial-card')?.textContent).toContain(
       '30 días gratis',
     );
+  });
+
+  it('links the hero to the product video and renders the demo', () => {
+    const fixture = TestBed.createComponent(BusinessLandingPage);
+    fixture.detectChanges();
+    const videoLink = fixture.nativeElement.querySelector(
+      '.hero-actions a[href="#video-demo"]',
+    ) as HTMLAnchorElement;
+    const video = fixture.nativeElement.querySelector('#video-demo video') as HTMLVideoElement;
+    const webmSource = video.querySelector('source[type="video/webm"]');
+    const mp4Source = video.querySelector('source[type="video/mp4"]');
+    expect(videoLink.textContent).toContain('Ver cómo funciona');
+    expect(video).toBeTruthy();
+    expect(webmSource?.getAttribute('src')).toBe('hallarturno-demo-mobile.webm?v=20261003-2');
+    expect(mp4Source?.getAttribute('src')).toBe('hallarturno-demo-mobile.mp4?v=20261003-4');
   });
 
   it('offers a direct mobile link to the benefits section', () => {

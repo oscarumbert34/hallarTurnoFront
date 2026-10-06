@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
 import { AnalyticsService } from '../../shared/analytics.service';
 
@@ -17,7 +18,7 @@ export interface DemoBusiness {
 
 @Component({
   selector: 'app-business-landing',
-  imports: [RouterLink],
+  imports: [RouterLink, MatIconModule],
   templateUrl: './business-landing.page.html',
   styleUrl: './business-landing.page.scss',
 })
@@ -31,6 +32,7 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
   protected readonly whatsappUrl = `https://wa.me/${environment.marketingWhatsappNumber}?text=${encodeURIComponent(
     'Hola, quiero conocer HallarTurno para administrar los turnos de mi negocio.',
   )}`;
+  protected readonly instagramUrl = 'https://www.instagram.com/hallarturno/';
 
   protected readonly demos: DemoBusiness[] = [
     {
@@ -94,7 +96,9 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
     this.document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  protected trackCta(button: 'START_FREE' | 'TRY_HALLARTURNO' | 'SEE_PLANS' | 'SEE_DEMOS'): void {
+  protected trackCta(
+    button: 'START_FREE' | 'TRY_HALLARTURNO' | 'SEE_PLANS' | 'SEE_DEMOS' | 'SEE_VIDEO',
+  ): void {
     this.analytics.event('landing_cta_click', { button });
   }
 
@@ -107,6 +111,10 @@ export class BusinessLandingPage implements OnInit, OnDestroy {
 
   protected trackContact(): void {
     this.analytics.event('contact_click');
+  }
+
+  protected trackInstagram(): void {
+    this.analytics.event('instagram_click', { account: 'hallarturno' });
   }
 
   ngOnInit(): void {

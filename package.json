@@ -8,6 +8,7 @@
     "start:proxy": "ng serve --proxy-config proxy.conf.json",
     "prebuild": "node scripts/generate-runtime-config.mjs production",
     "build": "ng build",
+    "postbuild": "node scripts/generate-runtime-config.mjs development",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "format": "prettier --write .",
