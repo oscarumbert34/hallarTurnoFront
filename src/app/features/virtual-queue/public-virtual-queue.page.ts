@@ -106,6 +106,13 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
                 <mat-icon aria-hidden="true">schedule</mat-icon>
                 <div><strong>Tu lugar se actualiza automáticamente</strong><span>Mantené abierto o guardá este enlace para consultar tu turno.</span></div>
               </div>
+              <div class="absence-notice" role="note">
+                <mat-icon aria-hidden="true">info</mat-icon>
+                <div>
+                  <strong>Tu posición puede avanzar</strong>
+                  <span>Si una persona que está delante tuyo ya no se encuentra en el local, el comercio puede marcarla como ausente y quitarla de la espera.</span>
+                </div>
+              </div>
             }
             }
           } @else {
@@ -188,6 +195,11 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
     .keep-link-open div { display: grid; gap: 2px; }
     .keep-link-open strong { color: #244338; font-size: .92rem; }
     .keep-link-open span { color: #627d72; font-size: .82rem; }
+    .absence-notice { display: flex; align-items: flex-start; gap: 13px; margin-top: 12px; padding: 17px 19px; border: 1px solid #f0dfad; border-radius: 20px; background: #fff9e9; }
+    .absence-notice mat-icon { flex: 0 0 auto; color: #b87800; }
+    .absence-notice div { display: grid; gap: 3px; }
+    .absence-notice strong { color: #5d450d; font-size: .92rem; }
+    .absence-notice span { color: #786636; font-size: .82rem; line-height: 1.4; }
     .people-flow { display: flex; align-items: end; justify-content: center; gap: 13px; margin: 18px 0 22px; overflow-x: auto; padding: 36px 3px 5px; }
     .people-group { position: relative; display: grid; flex: 0 0 auto; justify-items: center; gap: 5px; }
     .people-group::after { width: 100%; height: 2px; border-radius: 2px; background: currentColor; content: ''; opacity: .35; }
