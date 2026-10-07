@@ -12,7 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { catchError, forkJoin, of, Subscription } from 'rxjs';
 import { BookingService } from '../booking/booking.service';
 import {
   BusinessCategory,
@@ -24,6 +24,8 @@ import { ServiceAvailabilityDialogComponent } from './service-availability-dialo
 import { AnalyticsService } from '../../shared/analytics.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import { whatsappBookingUrl } from '../booking/whatsapp-booking';
+import { VirtualQueue } from '../virtual-queue/virtual-queue.models';
+import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 
 @Component({
   selector: 'app-public-business-page',
@@ -38,9 +40,11 @@ export class PublicBusinessPageComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly analytics = inject(AnalyticsService);
+  private readonly virtualQueueApi = inject(VirtualQueueService);
   private businessRequest?: Subscription;
   private servicesRequest?: Subscription;
   private todayAvailabilityRequest?: Subscription;
+  private queueRequest?: Subscription;
   protected readonly business = signal<PublicBusiness | null>(null);
   protected readonly selectedBranch = signal<PublicBranch | null>(null);
   protected readonly services = signal<PublicService[]>([]);
@@ -55,6 +59,12 @@ export class PublicBusinessPageComponent implements OnInit {
   protected readonly todaySlotsError = signal('');
   protected readonly validatingSlotId = signal('');
   protected readonly selectedTodaySlot = signal<AvailabilitySlot | null>(null);
+  protected readonly openQueues = signal<VirtualQueue[]>([]);
+  protected readonly checkingOpenQueue = signal(false);
+  protected readonly hasOpenQueue = computed(() => this.openQueues().length > 0);
+  protected readonly hasQueueWithWait = computed(() =>
+    this.openQueues().some((queue) => queue.waitingCount >= 2),
+  );
   protected readonly selectedTodayService = computed(
     () => this.services().find((service) => service.id === this.selectedTodayServiceId()) ?? null,
   );
@@ -77,9 +87,12 @@ export class PublicBusinessPageComponent implements OnInit {
       this.businessRequest?.unsubscribe();
       this.servicesRequest?.unsubscribe();
       this.todayAvailabilityRequest?.unsubscribe();
+      this.queueRequest?.unsubscribe();
       this.business.set(null);
       this.selectedBranch.set(null);
       this.services.set([]);
+      this.openQueues.set([]);
+      this.checkingOpenQueue.set(false);
       this.loading.set(true);
       this.error.set('');
       this.businessRequest = this.api
@@ -90,6 +103,7 @@ export class PublicBusinessPageComponent implements OnInit {
             this.business.set(business);
             this.analytics.event('business_page_view', this.businessAnalyticsParams(business));
             this.loading.set(false);
+            this.loadOpenQueues(business);
             if (business.branches[0]) this.selectBranch(business.branches[0]);
           },
           error: (error) => {
@@ -251,6 +265,10 @@ export class PublicBusinessPageComponent implements OnInit {
     return `https://instagram.com/${handle.replace(/\/$/, '')}`;
   }
 
+  protected queueUrl(queue: VirtualQueue): string {
+    return `/fila/${queue.businessSlug}/${queue.branchId}`;
+  }
+
   protected categoryIcon(category: BusinessCategory | string | null | undefined): string {
     const icons: Record<BusinessCategory, string> = {
       BARBERSHOP: 'content_cut',
@@ -329,8 +347,34 @@ export class PublicBusinessPageComponent implements OnInit {
   }
 
   private selectInitialTodayService(): void {
+    if (this.business()?.virtualQueueEnabled || this.checkingOpenQueue() || this.hasOpenQueue()) {
+      return;
+    }
     const first = this.services()[0];
     if (first) this.selectTodayService(first.id);
+  }
+
+  private loadOpenQueues(business: PublicBusiness): void {
+    if (!business.virtualQueueEnabled || !business.branches.length) {
+      this.checkingOpenQueue.set(false);
+      return;
+    }
+    this.checkingOpenQueue.set(true);
+    this.queueRequest = forkJoin(
+      business.branches.map((branch) =>
+        this.virtualQueueApi.getByBranch(branch.id).pipe(catchError(() => of(null))),
+      ),
+    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((queues) => {
+      const open = queues.filter((queue): queue is VirtualQueue => queue?.status === 'OPEN');
+      this.openQueues.set(open);
+      this.checkingOpenQueue.set(false);
+      if (open.length) {
+        this.todayAvailabilityRequest?.unsubscribe();
+        this.resetTodayAvailability();
+      } else {
+        this.selectInitialTodayService();
+      }
+    });
   }
 
   private resetTodayAvailability(): void {

@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { BookingService } from '../booking/booking.service';
+import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 import { PublicBusinessPageComponent } from './public-business.page';
 
 describe('PublicBusinessPageComponent', () => {
@@ -52,6 +53,10 @@ describe('PublicBusinessPageComponent', () => {
       providers: [
         { provide: BookingService, useValue: api },
         {
+          provide: VirtualQueueService,
+          useValue: { getByBranch: vi.fn(() => throwError(() => ({ status: 404 }))) },
+        },
+        {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ slug: 'centro' })) },
         },
@@ -94,6 +99,17 @@ describe('PublicBusinessPageComponent', () => {
     const fixture = TestBed.createComponent(PublicBusinessPageComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
+  });
+  it('shows services without booking actions when the business uses virtual queue', () => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, virtualQueueEnabled: true }));
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Consulta');
+    expect(fixture.nativeElement.textContent).not.toContain('Reservar turno');
+    expect(fixture.nativeElement.textContent).not.toContain('¿Cómo reservar un turno?');
+    const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+    expect(buttons.some((button) => button.textContent?.trim() === 'Reservar')).toBe(false);
   });
   it('loads today slots for the default service', () => {
     vi.useFakeTimers();

@@ -25,9 +25,11 @@
             }
           </div>
           <div class="header-actions">
-            <button mat-flat-button class="reserve" (click)="reserve()">
-              <mat-icon aria-hidden="true">calendar_today</mat-icon>Reservar turno
-            </button>
+            @if (!business.virtualQueueEnabled) {
+              <button mat-flat-button class="reserve" (click)="reserve()">
+                <mat-icon aria-hidden="true">calendar_today</mat-icon>Reservar turno
+              </button>
+            }
             @if (business.branches.length) {
               <button mat-stroked-button (click)="scrollToServices()">Ver servicios</button>
             }
@@ -158,8 +160,40 @@
         </div>
       </section>
     }
+    @if (openQueues().length) {
+      <section class="panel virtual-queue-callout" aria-labelledby="virtual-queue-title">
+        <div class="queue-callout-icon"><mat-icon aria-hidden="true">groups</mat-icon></div>
+        <div class="queue-callout-copy">
+          <span>Atención sin turno</span>
+          <h2 id="virtual-queue-title">
+            {{ hasQueueWithWait() ? 'La fila virtual está abierta' : 'Hay disponibilidad' }}
+          </h2>
+          <p>
+            {{ hasQueueWithWait()
+              ? 'Sumate ahora y seguí tu lugar desde el celular.'
+              : 'Podés acercarte: en este momento hay poca o ninguna espera.' }}
+          </p>
+        </div>
+        <div class="queue-links">
+          @for (queue of openQueues(); track queue.id) {
+            @if (queue.waitingCount >= 2) {
+              <a mat-flat-button [href]="queueUrl(queue)">
+                <mat-icon aria-hidden="true">confirmation_number</mat-icon>
+                Ingresar a {{ queue.branchName }} · {{ queue.waitingCount }} personas en espera
+              </a>
+            } @else {
+              <p class="queue-availability">
+                <mat-icon aria-hidden="true">check_circle</mat-icon>
+                {{ queue.branchName }}: atención con poca o ninguna espera
+              </p>
+            }
+          }
+        </div>
+      </section>
+    }
     @if (selectedBranch()) {
-      <section class="panel today-availability" aria-labelledby="today-availability-title">
+      @if (!business.virtualQueueEnabled && !checkingOpenQueue() && !hasOpenQueue()) {
+        <section class="panel today-availability" aria-labelledby="today-availability-title">
         <div class="today-heading">
           <mat-icon aria-hidden="true">calendar_today</mat-icon>
           <div>
@@ -254,13 +288,18 @@
             <small>El comercio te confirmará el turno.</small>
           }
         </div>
-      </section>
+        </section>
+      }
       <section class="panel" aria-labelledby="services-title">
         <div class="section-heading">
           <mat-icon aria-hidden="true">settings_suggest</mat-icon>
           <div>
             <h2 id="services-title">Nuestros servicios</h2>
-            <p>Elegí el servicio que necesitás y consultá los turnos disponibles.</p>
+            <p>
+              {{ business.virtualQueueEnabled
+                ? 'Conocé los servicios disponibles.'
+                : 'Elegí el servicio que necesitás y consultá los turnos disponibles.' }}
+            </p>
           </div>
         </div>
         @if (servicesLoading()) {
@@ -292,7 +331,9 @@
                   <strong><mat-icon aria-hidden="true">sell</mat-icon>{{ price(service) }}</strong>
                 }
               </div>
-              <button mat-stroked-button (click)="openAvailability(service)">Reservar</button>
+              @if (!business.virtualQueueEnabled) {
+                <button mat-stroked-button (click)="openAvailability(service)">Reservar</button>
+              }
             </article>
           } @empty {
             @if (!servicesLoading() && !servicesError()) {
@@ -300,7 +341,7 @@
             }
           }
         </div>
-        @if (services().length) {
+        @if (services().length && !business.virtualQueueEnabled) {
           <aside class="booking-help" aria-label="Cómo reservar un turno">
             <h3>
               <mat-icon aria-hidden="true">format_list_numbered</mat-icon>¿Cómo reservar un turno?
