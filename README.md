@@ -58,10 +58,11 @@ En Railway se puede sobrescribir durante el build con la variable:
 
 ```text
 API_BASE_URL=https://backend.example.com/api/v1
+GOOGLE_CLIENT_ID=103683209352-roj3f9mio1mpshe8d0to27a44pmknkvl.apps.googleusercontent.com
 ```
 
 Los comandos `npm start` y `npm run build` generan `public/env.js` automáticamente. Si
-`API_BASE_URL` no está definida, se utilizan las URLs de respaldo de desarrollo o producción.
+Si `API_BASE_URL` o `GOOGLE_CLIENT_ID` no están definidas, se utilizan los valores de respaldo de desarrollo o producción. El Client ID de Google es público; el secreto OAuth no se usa ni debe configurarse en el frontend.
 Después del build se restaura la configuración local de `public/env.js`; el archivo productivo ya
 queda copiado dentro de `dist`.
 
