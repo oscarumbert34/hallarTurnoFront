@@ -97,12 +97,15 @@
 
   .mobile-nav {
     display: flex;
+    gap: 4px;
   }
 
-  .mobile-nav a {
+  .mobile-nav a,
+  .mobile-nav button {
     min-width: 0;
     flex: 1;
-    padding-inline: 4px;
-    font-size: 0.78rem;
+    padding-inline: 2px;
+    font-size: clamp(0.66rem, 2.55vw, 0.75rem);
+    white-space: nowrap;
   }
 }
