@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
@@ -29,7 +29,7 @@ import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 
 @Component({
   selector: 'app-public-business-page',
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, RouterLink],
   templateUrl: './public-business.page.html',
   styleUrl: './public-business.page.scss',
 })
@@ -364,17 +364,19 @@ export class PublicBusinessPageComponent implements OnInit {
       business.branches.map((branch) =>
         this.virtualQueueApi.getByBranch(branch.id).pipe(catchError(() => of(null))),
       ),
-    ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((queues) => {
-      const open = queues.filter((queue): queue is VirtualQueue => queue?.status === 'OPEN');
-      this.openQueues.set(open);
-      this.checkingOpenQueue.set(false);
-      if (open.length) {
-        this.todayAvailabilityRequest?.unsubscribe();
-        this.resetTodayAvailability();
-      } else {
-        this.selectInitialTodayService();
-      }
-    });
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((queues) => {
+        const open = queues.filter((queue): queue is VirtualQueue => queue?.status === 'OPEN');
+        this.openQueues.set(open);
+        this.checkingOpenQueue.set(false);
+        if (open.length) {
+          this.todayAvailabilityRequest?.unsubscribe();
+          this.resetTodayAvailability();
+        } else {
+          this.selectInitialTodayService();
+        }
+      });
   }
 
   private resetTodayAvailability(): void {
@@ -451,6 +453,7 @@ export class PublicBusinessPageComponent implements OnInit {
         branchName: branch.name,
         serviceName: service.name,
         slot,
+        isToday: true,
       }),
       '_blank',
       'noopener',

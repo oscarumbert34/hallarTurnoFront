@@ -81,6 +81,26 @@ describe('AuthService', () => {
     expect(service.withBusinessSlug('/auth/login')).toBe('/auth/login');
   });
 
+  it('should exchange a Google credential for the regular application session', () => {
+    service.loginWithGoogle('google-id-token').subscribe((session) => {
+      expect(session.token).toBe('application-jwt');
+      expect(session.user.email).toBe('owner@example.com');
+      expect(session.user.businessSlug).toBe('barberia-1981');
+    });
+
+    const request = httpTesting.expectOne('/api/auth/google');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ credential: 'google-id-token' });
+    request.flush({
+      accessToken: 'application-jwt',
+      user: { email: 'owner@example.com', roles: ['BUSINESS'] },
+      businessId: 'business-1',
+      businessSlug: 'barberia-1981',
+    });
+
+    expect(service.token).toBe('application-jwt');
+  });
+
   it('should recover and persist the slug for a legacy authenticated session', () => {
     service.login({ email: 'user@test.com', password: 'supersecret' }).subscribe();
     httpTesting.expectOne('/api/auth/login').flush({

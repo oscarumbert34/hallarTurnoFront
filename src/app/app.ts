@@ -45,9 +45,7 @@ export class App {
     { label: 'Busqueda', path: '/search' },
     { label: 'Reservas', path: '/bookings' },
     { label: 'Mis correos', path: '/emails' },
-    ...(this.virtualQueueAvailability.enabled()
-      ? [{ label: 'Fila', path: '/admin/fila' }]
-      : []),
+    ...(this.virtualQueueAvailability.enabled() ? [{ label: 'Fila', path: '/admin/fila' }] : []),
     { label: 'Panel', path: '/business-dashboard' },
   ]);
 
@@ -69,11 +67,17 @@ export class App {
   protected navigationPath(path: string): string {
     const segments = this.router.parseUrl(this.router.url).root.children['primary']?.segments ?? [];
     const firstSegment = segments[0]?.path;
-    const slug = segments.length > 1 && firstSegment !== 'admin'
-      ? firstSegment
-      : this.authService.businessSlug;
+    const slug =
+      segments.length > 1 && firstSegment !== 'admin'
+        ? firstSegment
+        : this.authService.businessSlug;
 
     return slug ? `/${slug}${path}` : path;
+  }
+
+  protected publicBusinessPath(): string | null {
+    const slug = this.authService.businessSlug;
+    return slug ? `/business/${slug}` : null;
   }
 
   protected logout(): void {

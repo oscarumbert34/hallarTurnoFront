@@ -49,6 +49,16 @@ export class AuthService {
     );
   }
 
+  loginWithGoogle(credential: string): Observable<AuthSession> {
+    return this.http
+      .post<AuthResponse>(this.apiUrl.build('/auth/google'), { credential })
+      .pipe(
+        timeout(10000),
+        map((response) => this.toSession(response, '')),
+        tap((session) => this.storeSession(session)),
+      );
+  }
+
   register(request: RegisterRequest): Observable<void> {
     return this.http.post<void>(this.apiUrl.build('/auth/register'), request).pipe(timeout(10000));
   }

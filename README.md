@@ -27,7 +27,7 @@ npm run build
 npm run format:check
 ```
 
-La app queda disponible en `http://localhost:4200/` durante desarrollo. En modo dev, las llamadas HTTP apuntan directo a `http://localhost:8080/api/v1`.
+La app queda disponible en `http://localhost:4200/` durante desarrollo. En modo dev, las llamadas HTTP apuntan directo a `http://localhost:8081/api/v1`.
 
 ## Estructura
 
@@ -58,10 +58,11 @@ En Railway se puede sobrescribir durante el build con la variable:
 
 ```text
 API_BASE_URL=https://backend.example.com/api/v1
+GOOGLE_CLIENT_ID=103683209352-roj3f9mio1mpshe8d0to27a44pmknkvl.apps.googleusercontent.com
 ```
 
 Los comandos `npm start` y `npm run build` generan `public/env.js` automáticamente. Si
-`API_BASE_URL` no está definida, se utilizan las URLs de respaldo de desarrollo o producción.
+Si `API_BASE_URL` o `GOOGLE_CLIENT_ID` no están definidas, se utilizan los valores de respaldo de desarrollo o producción. El Client ID de Google es público; el secreto OAuth no se usa ni debe configurarse en el frontend.
 Después del build se restaura la configuración local de `public/env.js`; el archivo productivo ya
 queda copiado dentro de `dist`.
 
@@ -83,7 +84,7 @@ Endpoints esperados por defecto:
 - `POST /auth/login`
 - `POST /auth/register`
 
-En desarrollo, el frontend llama directo a `http://localhost:8080/api/v1/auth/login` y `http://localhost:8080/api/v1/auth/register`. El backend local debe permitir CORS desde `http://localhost:4200`.
+En desarrollo, el frontend llama directo a `http://localhost:8081/api/v1/auth/login` y `http://localhost:8081/api/v1/auth/register`. El backend local debe permitir CORS desde `http://localhost:4200`.
 
 Endpoints principales usados por el MVP:
 
@@ -104,7 +105,7 @@ El service worker se registra solo en builds de produccion. La configuracion est
 
 ## Flujo Manual E2E Del Panel
 
-Con backend local en `http://localhost:8080`:
+Con backend local en `http://localhost:8081`:
 
 1. Ejecutar `npm start`.
 2. Ingresar en `/auth/login` con un usuario propietario o administrador.

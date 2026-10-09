@@ -67,4 +67,28 @@ describe('App', () => {
       businessId: 'business-1',
     });
   });
+
+  it('shows the public business page button for an authenticated business', () => {
+    localStorage.setItem(
+      'turnero.auth.session',
+      JSON.stringify({
+        token: 'header.payload.signature',
+        user: {
+          email: 'owner@example.com',
+          roles: ['BUSINESS'],
+          businessId: 'business-1',
+          businessSlug: 'barberia-central',
+        },
+      }),
+    );
+
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('.public-page-button') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Ver página pública');
+    expect(link.textContent).toContain('Página pública');
+    expect(link.getAttribute('href')).toBe('/business/barberia-central');
+    localStorage.clear();
+  });
 });

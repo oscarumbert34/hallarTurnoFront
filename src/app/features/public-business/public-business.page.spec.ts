@@ -71,6 +71,8 @@ describe('PublicBusinessPageComponent', () => {
     expect(api.getPublicBusiness).toHaveBeenCalledWith('centro');
     expect(api.listPublicServices).toHaveBeenCalledWith('centro', 'branch-1');
     expect(fixture.nativeElement.textContent).toContain('San Miguel');
+    const loginLink = fixture.nativeElement.querySelector('a.login-link') as HTMLAnchorElement;
+    expect(loginLink.textContent).toContain('Acceso comercios');
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     buttons.find((button) => button.textContent?.includes('Reservar turno'))!.click();
     expect(navigate).toHaveBeenCalledWith(['/', 'centro', 'search'], {
