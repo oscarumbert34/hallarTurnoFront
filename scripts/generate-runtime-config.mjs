@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 const mode = process.argv[2] ?? 'production';
 const fallback =
   mode === 'development'
-    ? 'http://localhost:8080/api/v1'
+    ? 'http://localhost:8081/api/v1'
     : 'https://hallarturno-production.up.railway.app/api/v1';
 const apiBaseUrl = (process.env.API_BASE_URL || fallback).replace(/\/$/, '');
 const googleClientId =

@@ -27,7 +27,7 @@ npm run build
 npm run format:check
 ```
 
-La app queda disponible en `http://localhost:4200/` durante desarrollo. En modo dev, las llamadas HTTP apuntan directo a `http://localhost:8080/api/v1`.
+La app queda disponible en `http://localhost:4200/` durante desarrollo. En modo dev, las llamadas HTTP apuntan directo a `http://localhost:8081/api/v1`.
 
 ## Estructura
 
@@ -84,7 +84,7 @@ Endpoints esperados por defecto:
 - `POST /auth/login`
 - `POST /auth/register`
 
-En desarrollo, el frontend llama directo a `http://localhost:8080/api/v1/auth/login` y `http://localhost:8080/api/v1/auth/register`. El backend local debe permitir CORS desde `http://localhost:4200`.
+En desarrollo, el frontend llama directo a `http://localhost:8081/api/v1/auth/login` y `http://localhost:8081/api/v1/auth/register`. El backend local debe permitir CORS desde `http://localhost:4200`.
 
 Endpoints principales usados por el MVP:
 
@@ -105,7 +105,7 @@ El service worker se registra solo en builds de produccion. La configuracion est
 
 ## Flujo Manual E2E Del Panel
 
-Con backend local en `http://localhost:8080`:
+Con backend local en `http://localhost:8081`:
 
 1. Ejecutar `npm start`.
 2. Ingresar en `/auth/login` con un usuario propietario o administrador.

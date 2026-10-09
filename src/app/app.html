@@ -17,6 +17,12 @@
           </a>
         }
       </nav>
+      @if (publicBusinessPath(); as publicPage) {
+        <a mat-stroked-button class="public-page-button" [routerLink]="publicPage">
+          <span class="public-page-label-desktop">Ver página pública</span>
+          <span class="public-page-label-mobile">Página pública</span>
+        </a>
+      }
       <button mat-button type="button" class="logout-button" (click)="logout()">Salir</button>
     }
   </mat-toolbar>
@@ -40,7 +46,6 @@
           {{ item.label }}
         </a>
       }
-      <button mat-button type="button" (click)="logout()">Salir</button>
     </nav>
   }
 }
