@@ -39,7 +39,15 @@
 }
 
 .logout-button {
+  margin-left: 0;
+}
+
+.public-page-button {
   margin-left: auto;
+}
+
+.public-page-label-mobile {
+  display: none;
 }
 
 .active-link {
@@ -78,8 +86,12 @@
 @media (max-width: 720px) {
   .app-toolbar {
     justify-content: center;
-    min-height: 112px;
+    min-height: 145px;
     padding-inline: 12px;
+  }
+
+  .brand {
+    top: 12px;
   }
 
   .brand img {
@@ -89,6 +101,31 @@
 
   .desktop-nav {
     display: none;
+  }
+
+  .public-page-button {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    margin-left: 0;
+    min-width: 0;
+    height: 30px;
+    padding-inline: 8px;
+    font-size: 0.68rem;
+  }
+
+  .public-page-label-desktop {
+    display: none;
+  }
+
+  .public-page-label-mobile {
+    display: inline;
+  }
+
+  .logout-button {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
   }
 
   .shell {

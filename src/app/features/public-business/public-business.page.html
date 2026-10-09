@@ -1,4 +1,12 @@
 <main class="business-page">
+  <div
+    class="header-actions public-top-actions"
+    style="justify-content: flex-end; margin-bottom: 12px"
+  >
+    <a mat-stroked-button class="login-link" routerLink="/auth/login">
+      <mat-icon aria-hidden="true">storefront</mat-icon>Acceso comercios
+    </a>
+  </div>
   @if (loading()) {
     <p role="status">Cargando negocio...</p>
   }
@@ -169,9 +177,11 @@
             {{ hasQueueWithWait() ? 'La fila virtual está abierta' : 'Hay disponibilidad' }}
           </h2>
           <p>
-            {{ hasQueueWithWait()
-              ? 'Sumate ahora y seguí tu lugar desde el celular.'
-              : 'Podés acercarte: en este momento hay poca o ninguna espera.' }}
+            {{
+              hasQueueWithWait()
+                ? 'Sumate ahora y seguí tu lugar desde el celular.'
+                : 'Podés acercarte: en este momento hay poca o ninguna espera.'
+            }}
           </p>
         </div>
         <div class="queue-links">
@@ -194,100 +204,100 @@
     @if (selectedBranch()) {
       @if (!business.virtualQueueEnabled && !checkingOpenQueue() && !hasOpenQueue()) {
         <section class="panel today-availability" aria-labelledby="today-availability-title">
-        <div class="today-heading">
-          <mat-icon aria-hidden="true">calendar_today</mat-icon>
-          <div>
-            <h2 id="today-availability-title">¿Querés venir hoy?</h2>
-            <p>Turnos disponibles para {{ business.name }}</p>
+          <div class="today-heading">
+            <mat-icon aria-hidden="true">calendar_today</mat-icon>
+            <div>
+              <h2 id="today-availability-title">¿Querés venir hoy?</h2>
+              <p>Turnos disponibles para {{ business.name }}</p>
+            </div>
           </div>
-        </div>
-        <div class="today-card">
-          <h3>Horarios disponibles hoy</h3>
-          <div class="today-slots">
-            @for (slot of visibleTodaySlots(); track slot.id) {
-              <button
-                type="button"
-                class="slot-chip"
-                [class.selected]="selectedTodaySlot()?.id === slot.id"
-                [attr.aria-pressed]="selectedTodaySlot()?.id === slot.id"
-                (click)="selectTodaySlot(slot)"
-              >
-                {{ slotTime(slot) }}
-              </button>
-            }
-          </div>
-          @if (services().length) {
-            <div class="today-filters">
-              <label>
-                <span>Servicio</span>
-                <select
-                  #todayService
-                  [value]="selectedTodayServiceId()"
-                  (change)="selectTodayService(todayService.value)"
+          <div class="today-card">
+            <h3>Horarios disponibles hoy</h3>
+            <div class="today-slots">
+              @for (slot of visibleTodaySlots(); track slot.id) {
+                <button
+                  type="button"
+                  class="slot-chip"
+                  [class.selected]="selectedTodaySlot()?.id === slot.id"
+                  [attr.aria-pressed]="selectedTodaySlot()?.id === slot.id"
+                  (click)="selectTodaySlot(slot)"
                 >
-                  @for (service of services(); track service.id) {
-                    <option [value]="service.id">{{ service.name }}</option>
-                  }
-                </select>
-              </label>
-              @if (professionals().length > 1) {
+                  {{ slotTime(slot) }}
+                </button>
+              }
+            </div>
+            @if (services().length) {
+              <div class="today-filters">
                 <label>
-                  <span>Profesional</span>
+                  <span>Servicio</span>
                   <select
-                    #professional
-                    [value]="selectedProfessionalId()"
-                    (change)="selectProfessional(professional.value)"
+                    #todayService
+                    [value]="selectedTodayServiceId()"
+                    (change)="selectTodayService(todayService.value)"
                   >
-                    <option value="">Cualquiera</option>
-                    @for (item of professionals(); track item.id) {
-                      <option [value]="item.id">{{ item.name }}</option>
+                    @for (service of services(); track service.id) {
+                      <option [value]="service.id">{{ service.name }}</option>
                     }
                   </select>
                 </label>
-              }
-            </div>
-          }
-          @if (todaySlotsLoading()) {
-            <p role="status">Cargando turnos de hoy...</p>
-          }
-          @if (todaySlotsError()) {
-            <p role="alert">{{ todaySlotsError() }}</p>
-            <button mat-button (click)="selectTodayService(selectedTodayServiceId())">
-              Reintentar
-            </button>
-          }
-          @if (!todaySlotsLoading() && !todaySlotsError() && !visibleTodaySlots().length) {
-            <p class="today-empty" role="status">No hay más turnos disponibles hoy.</p>
-          }
-          @if (selectedTodaySlot(); as slot) {
-            <div class="today-summary">
-              <mat-icon aria-hidden="true">event</mat-icon>
-              <div>
-                <strong>Tu turno</strong><b>Hoy, {{ slotTime(slot) }}</b>
-                <span>{{ selectedTodayService()?.name }}</span>
-                <span>
-                  {{ selectedTodayService()?.durationMinutes }} minutos
-                  @if (selectedTodayService(); as service) {
-                    @if (service.price != null && service.currency) {
-                      · {{ price(service) }}
-                    }
-                  }
-                  @if (slot.resourceName) {
-                    · {{ slot.resourceName }}
-                  }
-                </span>
+                @if (professionals().length > 1) {
+                  <label>
+                    <span>Profesional</span>
+                    <select
+                      #professional
+                      [value]="selectedProfessionalId()"
+                      (change)="selectProfessional(professional.value)"
+                    >
+                      <option value="">Cualquiera</option>
+                      @for (item of professionals(); track item.id) {
+                        <option [value]="item.id">{{ item.name }}</option>
+                      }
+                    </select>
+                  </label>
+                }
               </div>
-            </div>
-            <button
-              class="whatsapp-action"
-              [disabled]="!!validatingSlotId()"
-              (click)="actOnTodaySlot(slot)"
-            >
-              {{ validatingSlotId() === slot.id ? 'Validando...' : 'Consultar por WhatsApp' }}
-            </button>
-            <small>El comercio te confirmará el turno.</small>
-          }
-        </div>
+            }
+            @if (todaySlotsLoading()) {
+              <p role="status">Cargando turnos de hoy...</p>
+            }
+            @if (todaySlotsError()) {
+              <p role="alert">{{ todaySlotsError() }}</p>
+              <button mat-button (click)="selectTodayService(selectedTodayServiceId())">
+                Reintentar
+              </button>
+            }
+            @if (!todaySlotsLoading() && !todaySlotsError() && !visibleTodaySlots().length) {
+              <p class="today-empty" role="status">No hay más turnos disponibles hoy.</p>
+            }
+            @if (selectedTodaySlot(); as slot) {
+              <div class="today-summary">
+                <mat-icon aria-hidden="true">event</mat-icon>
+                <div>
+                  <strong>Tu turno</strong><b>Hoy, {{ slotTime(slot) }}</b>
+                  <span>{{ selectedTodayService()?.name }}</span>
+                  <span>
+                    {{ selectedTodayService()?.durationMinutes }} minutos
+                    @if (selectedTodayService(); as service) {
+                      @if (service.price != null && service.currency) {
+                        · {{ price(service) }}
+                      }
+                    }
+                    @if (slot.resourceName) {
+                      · {{ slot.resourceName }}
+                    }
+                  </span>
+                </div>
+              </div>
+              <button
+                class="whatsapp-action"
+                [disabled]="!!validatingSlotId()"
+                (click)="actOnTodaySlot(slot)"
+              >
+                {{ validatingSlotId() === slot.id ? 'Validando...' : 'Consultar por WhatsApp' }}
+              </button>
+              <small>El comercio te confirmará el turno.</small>
+            }
+          </div>
         </section>
       }
       <section class="panel" aria-labelledby="services-title">
@@ -296,9 +306,11 @@
           <div>
             <h2 id="services-title">Nuestros servicios</h2>
             <p>
-              {{ business.virtualQueueEnabled
-                ? 'Conocé los servicios disponibles.'
-                : 'Elegí el servicio que necesitás y consultá los turnos disponibles.' }}
+              {{
+                business.virtualQueueEnabled
+                  ? 'Conocé los servicios disponibles.'
+                  : 'Elegí el servicio que necesitás y consultá los turnos disponibles.'
+              }}
             </p>
           </div>
         </div>

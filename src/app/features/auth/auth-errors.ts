@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-export function authErrorMessage(error: unknown): string {
+export function authErrorMessage(error: unknown, method: 'password' | 'google' = 'password'): string {
   if (!(error instanceof HttpErrorResponse)) {
     return 'No pudimos completar la operacion.';
   }
@@ -14,7 +14,13 @@ export function authErrorMessage(error: unknown): string {
   }
 
   if (error.status === 401) {
-    return 'Email o contrasena incorrectos.';
+    return method === 'google'
+      ? 'La cuenta de Google no corresponde a una empresa habilitada.'
+      : 'Email o contrasena incorrectos.';
+  }
+
+  if (error.status === 403 && method === 'google') {
+    return 'El acceso con Google solo esta disponible para empresas configuradas.';
   }
 
   if (error.status === 409) {
