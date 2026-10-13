@@ -124,6 +124,7 @@ describe('AuthService', () => {
       name: 'Usuario',
       email: 'user@test.com',
       password: 'supersecret',
+      role: 'BUSINESS' as const,
     };
 
     service.register(payload).subscribe();

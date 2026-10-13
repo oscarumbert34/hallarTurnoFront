@@ -126,7 +126,10 @@ export class RegisterPage {
     this.isSubmitting = true;
 
     this.authService
-      .register(this.form.getRawValue())
+      .register({
+        ...this.form.getRawValue(),
+        role: 'BUSINESS',
+      })
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: () => this.router.navigate(['/auth/login'], { queryParams: { registered: true } }),
