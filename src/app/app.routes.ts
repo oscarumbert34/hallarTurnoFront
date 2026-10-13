@@ -85,6 +85,13 @@ export const routes: Routes = [
         path: 'register',
         loadComponent: () => import('./features/auth/register.page').then((m) => m.RegisterPage),
       },
+      {
+        path: 'business-setup',
+        canActivate: [authGuard],
+        data: { roles: ['BUSINESS'], standalone: true },
+        loadComponent: () =>
+          import('./features/auth/business-setup.page').then((m) => m.BusinessSetupPage),
+      },
     ],
   },
   {

@@ -81,6 +81,53 @@ describe('AuthService', () => {
     expect(service.withBusinessSlug('/auth/login')).toBe('/auth/login');
   });
 
+  it('should send business users without a company to the one-time setup', () => {
+    service.login({ email: 'owner@test.com', password: 'supersecret' }).subscribe();
+    httpTesting.expectOne('/api/auth/login').flush({
+      token: 'jwt-token',
+      user: {
+        email: 'owner@test.com',
+        roles: ['BUSINESS'],
+      },
+    });
+
+    expect(service.nextUrlForRole()).toBe('/auth/business-setup');
+  });
+
+  it('should create the company and persist its id and slug in the session', () => {
+    service.login({ email: 'owner@test.com', password: 'supersecret' }).subscribe();
+    httpTesting.expectOne('/api/auth/login').flush({
+      token: 'jwt-token',
+      user: {
+        email: 'owner@test.com',
+        roles: ['BUSINESS'],
+      },
+    });
+
+    const payload = {
+      name: 'Barbería Afilados',
+      category: 'BARBERSHOP' as const,
+      shortDescription: 'Atención por orden de llegada',
+      aboutUs: '',
+      whatsapp: '+5491149473804',
+      instagram: '',
+      phone: '+5491149473804',
+      contactEmail: 'owner@test.com',
+      depositEnabled: false,
+    };
+
+    service.createBusiness(payload).subscribe();
+
+    const request = httpTesting.expectOne('/api/businesses');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+    request.flush({ id: 'business-1', name: payload.name, slug: 'barberia-afilados' });
+
+    expect(service.businessId).toBe('business-1');
+    expect(service.businessSlug).toBe('barberia-afilados');
+    expect(service.nextUrlForRole()).toBe('/barberia-afilados/bookings');
+  });
+
   it('should exchange a Google credential for the regular application session', () => {
     service.loginWithGoogle('google-id-token').subscribe((session) => {
       expect(session.token).toBe('application-jwt');

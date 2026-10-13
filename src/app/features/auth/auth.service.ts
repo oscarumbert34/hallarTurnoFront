@@ -2,7 +2,15 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, map, Observable, of, tap, timeout } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
-import { AuthResponse, AuthSession, AuthUser, LoginRequest, RegisterRequest } from './auth.models';
+import {
+  AuthResponse,
+  AuthSession,
+  AuthUser,
+  CreatedBusiness,
+  CreateBusinessRequest,
+  LoginRequest,
+  RegisterRequest,
+} from './auth.models';
 
 const STORAGE_KEY = 'turnero.auth.session';
 
@@ -41,6 +49,10 @@ export class AuthService {
     return this.sessionSubject.value?.user.businessSlug ?? null;
   }
 
+  get email(): string {
+    return this.sessionSubject.value?.user.email ?? '';
+  }
+
   login(request: LoginRequest): Observable<AuthSession> {
     return this.http.post<AuthResponse>(this.apiUrl.build('/auth/login'), request).pipe(
       timeout(10000),
@@ -63,6 +75,30 @@ export class AuthService {
     return this.http.post<void>(this.apiUrl.build('/auth/register'), request).pipe(timeout(10000));
   }
 
+  createBusiness(request: CreateBusinessRequest): Observable<CreatedBusiness> {
+    return this.http
+      .post<CreatedBusiness>(this.apiUrl.build('/businesses'), request)
+      .pipe(
+        timeout(10000),
+        tap((business) => {
+          const session = this.sessionSubject.value;
+
+          if (!session) {
+            return;
+          }
+
+          this.storeSession({
+            ...session,
+            user: {
+              ...session.user,
+              businessId: business.id,
+              businessSlug: business.slug,
+            },
+          });
+        }),
+      );
+  }
+
   logout(): void {
     this.clearSession();
   }
@@ -83,6 +119,10 @@ export class AuthService {
 
   nextUrlForRole(): string {
     const roles = this.sessionSubject.value?.user.roles ?? [];
+
+    if (roles.includes('BUSINESS') && !this.businessId) {
+      return '/auth/business-setup';
+    }
 
     if (roles.includes('ADMIN') || roles.includes('BUSINESS')) {
       return this.withBusinessSlug('/bookings');

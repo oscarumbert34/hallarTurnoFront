@@ -10,6 +10,36 @@ export interface RegisterRequest {
   role: 'BUSINESS';
 }
 
+export type BusinessCategory =
+  | 'BARBERSHOP'
+  | 'HAIRDRESSER'
+  | 'BEAUTY'
+  | 'WELLNESS'
+  | 'HEALTH'
+  | 'FITNESS'
+  | 'PET_SERVICES'
+  | 'EDUCATION'
+  | 'PROFESSIONAL_SERVICES'
+  | 'OTHERS';
+
+export interface CreateBusinessRequest {
+  name: string;
+  category: BusinessCategory;
+  shortDescription: string;
+  aboutUs: string;
+  whatsapp: string;
+  instagram: string;
+  phone: string;
+  contactEmail: string;
+  depositEnabled: boolean;
+}
+
+export interface CreatedBusiness {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface AuthUser {
   id?: string;
   name?: string;
