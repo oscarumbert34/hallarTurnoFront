@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { finalize } from 'rxjs';
+import { finalize, switchMap } from 'rxjs';
 import { authErrorMessage } from './auth-errors';
 import { AuthService } from './auth.service';
 
@@ -125,11 +125,21 @@ export class RegisterPage {
     this.errorMessage = '';
     this.isSubmitting = true;
 
+    const formValue = this.form.getRawValue();
+
     this.authService
-      .register(this.form.getRawValue())
-      .pipe(finalize(() => (this.isSubmitting = false)))
+      .register({
+        ...formValue,
+        role: 'BUSINESS',
+      })
+      .pipe(
+        switchMap(() =>
+          this.authService.login({ email: formValue.email, password: formValue.password }),
+        ),
+        finalize(() => (this.isSubmitting = false)),
+      )
       .subscribe({
-        next: () => this.router.navigate(['/auth/login'], { queryParams: { registered: true } }),
+        next: () => this.router.navigateByUrl(this.authService.nextUrlForRole()),
         error: (error) => (this.errorMessage = authErrorMessage(error)),
       });
   }
