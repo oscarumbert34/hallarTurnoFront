@@ -19,7 +19,16 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
     expect(fixture.nativeElement.querySelectorAll('.benefit-grid article')).toHaveLength(6);
     expect(fixture.nativeElement.querySelectorAll('.plan-card')).toHaveLength(3);
-    expect(fixture.nativeElement.querySelectorAll('.email-card')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.email-card')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.plan-email-features')).toHaveLength(3);
+    const emailLimits = [...fixture.nativeElement.querySelectorAll('.plan-email-features p')].map(
+      (element: HTMLElement) => element.textContent?.trim(),
+    );
+    expect(emailLimits).toEqual([
+      'Hasta 180 correos mensuales',
+      'Hasta 800 correos mensuales',
+      'Hasta 1.300 correos mensuales',
+    ]);
     expect(fixture.nativeElement.textContent).toContain(
       'Todo lo que necesitás para organizar tus turnos',
     );
@@ -63,9 +72,9 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelector('.mobile-instagram-link')?.href).toBe(
       'https://www.instagram.com/hallarturno/',
     );
-    expect(fixture.nativeElement.querySelector('.mobile-instagram-link mat-icon')?.textContent).toBe(
-      'alternate_email',
-    );
+    expect(
+      fixture.nativeElement.querySelector('.mobile-instagram-link mat-icon')?.textContent,
+    ).toBe('alternate_email');
     expect(document.title).toBe('HallarTurno | Sistema de turnos online para negocios');
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain(
       'Organizá tu agenda',
@@ -84,7 +93,7 @@ describe('BusinessLandingPage', () => {
     expect(pricingLink.textContent).toContain('Ver planes');
     expect(fixture.nativeElement.querySelector('#planes')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.trial-card')?.textContent).toContain(
-      '30 días gratis',
+      '60 días gratis',
     );
   });
 
