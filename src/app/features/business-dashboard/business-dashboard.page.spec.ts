@@ -97,6 +97,7 @@ describe('BusinessDashboardPage', () => {
       deleteResource: vi.fn(),
       copyBookingsWeek: vi.fn(() => of(undefined)),
       cancelBooking: vi.fn(),
+      approveBooking: vi.fn(),
       updateBookingDepositStatus: vi.fn(),
       rescheduleBooking: vi.fn(),
     };
@@ -1147,6 +1148,7 @@ describe('BusinessDashboardPage', () => {
       weeklyBookingCopyEnabled: true,
       depositEnabled: false,
       appointmentConfirmationEnabled: true,
+      internalBookingCreation: false,
       virtualQueueEnabled: false,
     });
     expect(component.appointmentConfirmationEnabled()).toBe(true);

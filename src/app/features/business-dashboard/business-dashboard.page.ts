@@ -75,6 +75,12 @@ import {
           <h1>{{ pageTitle() }}</h1>
           <p>{{ pageSubtitle() }}</p>
         </div>
+        @if (pendingApprovalCount() > 0) {
+          <span class="booking-count-pill" role="status">
+            {{ pendingApprovalCount() }}
+            {{ pendingApprovalCount() === 1 ? 'solicitud pendiente' : 'solicitudes pendientes' }}
+          </span>
+        }
       </header>
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
@@ -774,6 +780,19 @@ import {
                   <p class="configuration-help">
                     Al habilitarlo, las reservas podrán registrarse con la seña pagada o pendiente.
                   </p>
+                  <section class="configuration-section" aria-labelledby="booking-creation-title">
+                    <h3 id="booking-creation-title">Creación de turnos</h3>
+                    <mat-checkbox
+                      [checked]="internalBookingCreation()"
+                      (change)="internalBookingCreation.set($event.checked)"
+                    >
+                      Solo el negocio puede crear turnos
+                    </mat-checkbox>
+                    <p class="configuration-help">
+                      Si está activo, los clientes podrán consultar disponibilidad, pero no reservar
+                      desde la página pública.
+                    </p>
+                  </section>
                   <section class="configuration-section" aria-labelledby="virtual-queue-title">
                     <h3 id="virtual-queue-title">Fila virtual</h3>
                     <mat-checkbox
@@ -1108,6 +1127,7 @@ import {
                           class="booking-status"
                           [class.pending]="
                             booking.status === 'PENDING' ||
+                            booking.status === 'PENDING_APPROVAL' ||
                             booking.status === 'PENDING_CONFIRMATION'
                           "
                           [class.cancelled]="booking.status === 'CANCELLED'"
@@ -1163,7 +1183,9 @@ import {
                       <small
                         class="booking-status"
                         [class.pending]="
-                          booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                          booking.status === 'PENDING' ||
+                          booking.status === 'PENDING_APPROVAL' ||
+                          booking.status === 'PENDING_CONFIRMATION'
                         "
                         [class.cancelled]="booking.status === 'CANCELLED'"
                       >
@@ -1285,7 +1307,9 @@ import {
                     <span
                       class="booking-status"
                       [class.pending]="
-                        booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                        booking.status === 'PENDING' ||
+                        booking.status === 'PENDING_APPROVAL' ||
+                        booking.status === 'PENDING_CONFIRMATION'
                       "
                       [class.cancelled]="booking.status === 'CANCELLED'"
                     >
@@ -1303,6 +1327,26 @@ import {
             </mat-dialog-content>
             <mat-dialog-actions class="booking-detail-actions" align="end">
               <button mat-button type="button" mat-dialog-close>Cerrar</button>
+              @if (booking.status === 'PENDING_APPROVAL') {
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="updatingBookingApproval()"
+                  mat-dialog-close
+                  (click)="approveBooking(booking.id)"
+                >
+                  Confirmar turno
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cancel-booking-button"
+                  mat-dialog-close
+                  (click)="cancelBooking(booking.id)"
+                >
+                  Rechazar solicitud
+                </button>
+              }
               @if (booking.status !== 'CANCELLED') {
                 @if (depositEnabled() && booking.depositStatus !== 'NOT_REQUIRED') {
                   <button
@@ -1318,9 +1362,15 @@ import {
                     }}
                   </button>
                 }
-                <button mat-stroked-button type="button" (click)="openRescheduleDialog(booking)">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="booking.status === 'PENDING_APPROVAL'"
+                  (click)="openRescheduleDialog(booking)"
+                >
                   Reprogramar turno
                 </button>
+                @if (booking.status !== 'PENDING_APPROVAL') {
                 <button
                   mat-flat-button
                   type="button"
@@ -1330,6 +1380,7 @@ import {
                 >
                   Cancelar reserva
                 </button>
+                }
               }
             </mat-dialog-actions>
           </section>
@@ -1481,6 +1532,8 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly depositEnabled = signal(false);
   protected readonly appointmentConfirmationEnabled = signal(false);
+  protected readonly internalBookingCreation = signal(false);
+  protected readonly updatingBookingApproval = signal(false);
   protected readonly virtualQueueEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
@@ -1620,6 +1673,7 @@ export class BusinessDashboardPage implements OnInit {
             weeklyBookingCopyEnabled: false,
             depositEnabled: false,
             appointmentConfirmationEnabled: false,
+            internalBookingCreation: false,
             virtualQueueEnabled: false,
           }),
         ),
@@ -1636,6 +1690,7 @@ export class BusinessDashboardPage implements OnInit {
           this.appointmentConfirmationEnabled.set(
             result.configuration.appointmentConfirmationEnabled ?? false,
           );
+          this.internalBookingCreation.set(result.configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(result.configuration.virtualQueueEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(
             result.configuration.virtualQueueEnabled ?? false,
@@ -2501,6 +2556,17 @@ export class BusinessDashboardPage implements OnInit {
     });
   }
 
+  protected approveBooking(id: string): void {
+    this.updatingBookingApproval.set(true);
+    this.dashboardService
+      .approveBooking(id)
+      .pipe(finalize(() => this.updatingBookingApproval.set(false)))
+      .subscribe({
+        next: () => this.loadCurrentBookings(),
+        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+      });
+  }
+
   protected saveConfiguration(): void {
     this.savingConfiguration.set(true);
     this.configurationError.set('');
@@ -2509,6 +2575,7 @@ export class BusinessDashboardPage implements OnInit {
         weeklyBookingCopyEnabled: this.weeklyBookingCopyEnabled(),
         depositEnabled: this.depositEnabled(),
         appointmentConfirmationEnabled: this.appointmentConfirmationEnabled(),
+        internalBookingCreation: this.internalBookingCreation(),
         virtualQueueEnabled: this.virtualQueueEnabled(),
       })
       .pipe(finalize(() => this.savingConfiguration.set(false)))
@@ -2519,6 +2586,7 @@ export class BusinessDashboardPage implements OnInit {
           this.appointmentConfirmationEnabled.set(
             configuration.appointmentConfirmationEnabled ?? false,
           );
+          this.internalBookingCreation.set(configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(configuration.virtualQueueEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(configuration.virtualQueueEnabled ?? false);
         },
@@ -2628,6 +2696,10 @@ export class BusinessDashboardPage implements OnInit {
     return `${count} ${count === 1 ? 'reserva' : 'reservas'}`;
   }
 
+  protected pendingApprovalCount(): number {
+    return this.bookings().filter((booking) => booking.status === 'PENDING_APPROVAL').length;
+  }
+
   protected reservationSummaryLabel(bookings: Booking[]): string {
     if (bookings.length === 0) {
       return 'Sin reservas cargadas';
@@ -2635,7 +2707,10 @@ export class BusinessDashboardPage implements OnInit {
 
     const confirmed = bookings.filter((booking) => booking.status === 'CONFIRMED').length;
     const pending = bookings.filter(
-      (booking) => booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION',
+      (booking) =>
+        booking.status === 'PENDING' ||
+        booking.status === 'PENDING_APPROVAL' ||
+        booking.status === 'PENDING_CONFIRMATION',
     ).length;
 
     return `${this.reservationCountLabel(bookings.length)} · ${confirmed} confirmadas · ${pending} pendientes`;
@@ -2795,6 +2870,7 @@ export class BusinessDashboardPage implements OnInit {
       CANCELLED: 'Cancelada',
       CONFIRMED: 'Confirmada',
       PENDING: 'Pendiente',
+      PENDING_APPROVAL: 'Pendiente de aprobación',
       PENDING_CONFIRMATION: 'Confirmación pendiente',
     };
 

@@ -318,6 +318,12 @@ export class BusinessDashboardService {
     return this.http.post<Booking>(this.apiUrl.build(`/bookings/${id}/cancel`), {});
   }
 
+  approveBooking(id: string): Observable<Booking> {
+    return this.http
+      .post<BookingResponse>(this.apiUrl.build(`/bookings/${id}/approve`), {})
+      .pipe(map((booking) => this.toBooking(booking)));
+  }
+
   updateBookingDepositStatus(id: string, depositStatus: 'PENDING' | 'PAID'): Observable<Booking> {
     return this.http
       .patch<BookingResponse>(this.apiUrl.build(`/bookings/${id}/deposit-status`), {
@@ -682,6 +688,7 @@ interface BusinessConfiguration {
   weeklyBookingCopyEnabled: boolean;
   depositEnabled?: boolean;
   appointmentConfirmationEnabled?: boolean;
+  internalBookingCreation?: boolean;
   virtualQueueEnabled?: boolean;
 }
 

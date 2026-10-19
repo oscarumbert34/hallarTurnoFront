@@ -148,7 +148,9 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
 
             @if (confirmedBooking(); as confirmedBooking) {
               <p class="success" role="status">
-                @if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
+                @if (confirmedBooking.status === 'PENDING_APPROVAL') {
+                  Solicitud enviada. El negocio debe confirmarla; recibirás un email cuando sea aprobada.
+                } @else if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
                   Reserva creada. El cliente deberá confirmarla desde el email.
                 } @else {
                   Reserva confirmada.

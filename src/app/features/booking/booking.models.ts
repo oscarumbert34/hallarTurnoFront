@@ -108,7 +108,13 @@ export interface CustomerBooking {
   branchName?: string;
   serviceName: string;
   startsAt: string;
-  status: 'PENDING' | 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED' | string;
+  status:
+    | 'PENDING'
+    | 'PENDING_APPROVAL'
+    | 'PENDING_CONFIRMATION'
+    | 'CONFIRMED'
+    | 'CANCELLED'
+    | string;
   canCancel?: boolean;
   price?: number;
   depositStatus?: DepositStatus;
