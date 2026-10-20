@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-25 -58 464 464">
+  <circle cx="207" cy="174" r="220" fill="#fff" stroke="#dbe5f0" stroke-width="8"/>
+  <path fill="#073B7A" d="M31 1c17 0 31 13 31 30v78c0 10 5 15 15 15h56c12 0 20-3 27-10 6-6 11-13 17-19 10-11 21-21 33-25v195c0 17-13 31-30 31s-30-13-30-30v-75c0-10-6-16-16-16H77c-10 0-15 5-15 15v75c0 18-13 31-31 31S0 283 0 265V31C0 14 13 1 31 1Z"/>
+  <path fill="#06B3A2" d="M173 0h196c18 0 31 13 31 31 0 17-13 30-31 30h-67v65c-9-2-18-3-26-3-9 0-18 1-26 3V61h-31c-14 0-25 5-36 14-10 8-18 18-26 26-4 4-8 8-13 12V30c0-17 13-30 29-30Z"/>
+  <path fill="#073B7A" fill-rule="evenodd" d="M276 129c52 0 94 42 94 94 0 19-5 36-14 51l12 5 39 38c9 9 9 21 1 29s-20 8-29 0l-38-38-5-12c-17 10-37 21-60 21-52 0-94-42-94-94s42-94 94-94Zm0 19c-41 0-74 33-74 75 0 41 33 74 74 74s74-33 74-74c0-42-33-75-74-75Z"/>
+  <path fill="#fff" stroke="#073B7A" stroke-width="6" stroke-linejoin="round" d="M226 194c0-9 7-15 16-15h68c10 0 17 7 17 17v55c0 12-8 20-20 20h-62c-12 0-19-8-19-20Z"/>
+  <path fill="#06B3A2" d="M226 194c0-9 7-15 16-15h68c10 0 17 7 17 17v9H226Z"/>
+  <g fill="#073B7A" stroke="#fff" stroke-width="4"><rect x="241" y="168" width="15" height="27" rx="7"/><rect x="298" y="168" width="15" height="27" rx="7"/></g>
+  <g fill="#073B7A"><rect x="242" y="217" width="16" height="16" rx="4"/><rect x="270" y="217" width="16" height="16" rx="4"/><rect x="298" y="217" width="16" height="16" rx="4"/><rect x="242" y="244" width="16" height="16" rx="4"/><rect x="270" y="244" width="16" height="16" rx="4"/></g>
+  <rect x="295" y="240" width="23" height="23" rx="6" fill="#06B3A2"/>
+</svg>
