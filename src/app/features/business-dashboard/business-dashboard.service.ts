@@ -185,6 +185,25 @@ export class BusinessDashboardService {
     );
   }
 
+  getPublicProfile(): Observable<PublicProfile> {
+    return this.http
+      .get<PublicProfile>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile`),
+      )
+      .pipe(
+        map((profile) => ({
+          publicDescription: profile.publicDescription ?? '',
+          aboutUs: profile.aboutUs ?? '',
+          whatsapp: profile.whatsapp ?? '',
+          instagram: profile.instagram ?? '',
+          logoImageKey: profile.logoImageKey ?? null,
+          coverImageKey: profile.coverImageKey ?? null,
+          logoUrl: profile.logoUrl ?? null,
+          coverImageUrl: profile.coverImageUrl ?? null,
+        })),
+      );
+  }
+
   updateConfiguration(
     configuration: Omit<BusinessConfiguration, 'businessId'>,
   ): Observable<BusinessConfiguration> {
@@ -236,6 +255,7 @@ export class BusinessDashboardService {
         })),
       );
   }
+
 
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
@@ -684,6 +704,7 @@ interface BusinessConfiguration {
   appointmentConfirmationEnabled?: boolean;
   virtualQueueEnabled?: boolean;
 }
+
 
 interface ImageUploadResponse {
   imageKey: string;

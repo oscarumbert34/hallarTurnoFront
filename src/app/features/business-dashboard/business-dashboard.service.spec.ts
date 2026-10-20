@@ -101,6 +101,35 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should load public profile data and its signed image URLs', () => {
+    service.getPublicProfile().subscribe((profile) => {
+      expect(profile).toEqual({
+        publicDescription: 'Cortes y barba',
+        aboutUs: 'Atención personalizada',
+        whatsapp: '541112345678',
+        instagram: 'barberianorte',
+        logoImageKey: 'business/logo.png',
+        coverImageKey: 'business/cover.png',
+        logoUrl: 'https://storage.test/logo',
+        coverImageUrl: 'https://storage.test/cover',
+      });
+    });
+
+    const profileRequest = httpTesting.expectOne(`/api/businesses/${businessId}/public-profile`);
+    expect(profileRequest.request.method).toBe('GET');
+    profileRequest.flush({
+      businessId,
+      publicDescription: 'Cortes y barba',
+      aboutUs: 'Atención personalizada',
+      whatsapp: '541112345678',
+      instagram: 'barberianorte',
+      logoImageKey: 'business/logo.png',
+      coverImageKey: 'business/cover.png',
+      logoUrl: 'https://storage.test/logo',
+      coverImageUrl: 'https://storage.test/cover',
+    });
+  });
+
   it('should send all-day and partial absences with the complete resource', () => {
     service
       .updateResource('resource-1', {
