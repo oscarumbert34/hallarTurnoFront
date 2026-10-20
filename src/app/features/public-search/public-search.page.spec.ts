@@ -663,7 +663,26 @@ describe('PublicSearchPage', () => {
     expect(timeFields.every((field) => field.querySelector('.clock-icon'))).toBe(true);
     expect(
       timeFields.map((field) => field.querySelector<HTMLInputElement>('input[readonly]')?.value),
-    ).toEqual(['09:00', '18:00']);
+    ).toEqual(['08:00', '20:00']);
+  });
+
+  it('should default the search to tomorrow from 08:00 to 20:00', () => {
+    vi.setSystemTime(new Date(2026, 7, 17, 13, 15));
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        controls: {
+          date: { value: Date | string };
+          timeFrom: { value: string };
+          timeTo: { value: string };
+        };
+      };
+    };
+
+    expect(component.form.controls.date.value).toEqual(new Date(2026, 7, 18));
+    expect(component.form.controls.timeFrom.value).toBe('08:00');
+    expect(component.form.controls.timeTo.value).toBe('20:00');
   });
 
   it('should search with the selected business id', () => {
