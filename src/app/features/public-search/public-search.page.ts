@@ -311,11 +311,11 @@ export class PublicSearchPage implements OnInit {
     branchId: [''],
     service: [''],
     date: [
-      new Date() as Date | string,
+      this.tomorrow() as Date | string,
       [Validators.required, this.notPastDateValidator.bind(this)],
     ],
-    timeFrom: ['09:00', [this.notPastStartTimeValidator.bind(this)]],
-    timeTo: ['18:00'],
+    timeFrom: ['08:00', [this.notPastStartTimeValidator.bind(this)]],
+    timeTo: ['20:00'],
   });
   ngOnInit(): void {
     const stored = sessionStorage.getItem('turnero.search');
@@ -860,6 +860,13 @@ export class PublicSearchPage implements OnInit {
 
   private startOfToday(): Date {
     return this.startOfDay(new Date());
+  }
+
+  private tomorrow(): Date {
+    const tomorrow = this.startOfToday();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return tomorrow;
   }
 
   private startOfDay(value: Date | string): Date {

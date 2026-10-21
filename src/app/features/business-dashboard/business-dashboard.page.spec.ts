@@ -59,6 +59,16 @@ describe('BusinessDashboardPage', () => {
           weeklyBookingCopyEnabled: true,
         }),
       ),
+      getPublicProfile: vi.fn(() =>
+        of({
+          publicDescription: 'Cortes y color',
+          aboutUs: 'Más de diez años de experiencia',
+          whatsapp: '541112345678',
+          instagram: 'salon.demo',
+          logoUrl: 'https://storage.test/logo',
+          coverImageUrl: 'https://storage.test/cover',
+        }),
+      ),
       updateConfiguration: vi.fn(),
       updatePublicProfile: vi.fn(),
       listBookings: vi.fn(() => of([])),
@@ -120,7 +130,25 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.listServices).toHaveBeenCalled();
     expect(dashboardService.listResources).toHaveBeenCalled();
     expect(dashboardService.listBookingsPage).toHaveBeenCalled();
+    expect(dashboardService.getPublicProfile).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Centro');
+  });
+
+  it('should preload the public profile form and image previews', () => {
+    const component = fixture.componentInstance as unknown as {
+      publicProfileForm: { getRawValue: () => Record<string, string> };
+      logoUrl: () => string | null;
+      coverImageUrl: () => string | null;
+    };
+
+    expect(component.publicProfileForm.getRawValue()).toEqual({
+      shortDescription: 'Cortes y color',
+      aboutUs: 'Más de diez años de experiencia',
+      whatsapp: '541112345678',
+      instagram: 'salon.demo',
+    });
+    expect(component.logoUrl()).toBe('https://storage.test/logo');
+    expect(component.coverImageUrl()).toBe('https://storage.test/cover');
   });
 
   it('should not show the global refresh button', () => {
