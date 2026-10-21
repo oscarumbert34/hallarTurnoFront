@@ -95,6 +95,11 @@ describe('BusinessLandingPage', () => {
     expect(fixture.nativeElement.querySelector('.trial-card')?.textContent).toContain(
       '60 días gratis',
     );
+    const pricing = fixture.nativeElement.querySelector('#planes');
+    expect(
+      pricing.querySelector('.trial-card').compareDocumentPosition(pricing.querySelector('.plan-grid')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('links the hero to the product video and renders the demo', () => {

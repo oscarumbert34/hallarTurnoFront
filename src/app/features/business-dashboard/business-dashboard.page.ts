@@ -1667,6 +1667,7 @@ export class BusinessDashboardPage implements OnInit {
       branches: this.dashboardService.listBranches().pipe(catchError(() => of([]))),
       services: this.dashboardService.listServices().pipe(catchError(() => of([]))),
       resources: this.dashboardService.listResources().pipe(catchError(() => of([]))),
+      publicProfile: this.dashboardService.getPublicProfile().pipe(catchError(() => of(null))),
       configuration: this.dashboardService.getConfiguration().pipe(
         catchError(() =>
           of({
@@ -1685,6 +1686,16 @@ export class BusinessDashboardPage implements OnInit {
           this.branches.set(result.branches);
           this.services.set(result.services);
           this.resources.set(result.resources);
+          if (result.publicProfile) {
+            this.publicProfileForm.setValue({
+              shortDescription: result.publicProfile.publicDescription,
+              aboutUs: result.publicProfile.aboutUs,
+              whatsapp: result.publicProfile.whatsapp,
+              instagram: result.publicProfile.instagram,
+            });
+            this.logoUrl.set(result.publicProfile.logoUrl ?? null);
+            this.coverImageUrl.set(result.publicProfile.coverImageUrl ?? null);
+          }
           this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
           this.depositEnabled.set(result.configuration.depositEnabled ?? false);
           this.appointmentConfirmationEnabled.set(
