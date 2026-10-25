@@ -1,6 +1,7 @@
 import {
   ownerBookingUrl,
   whatsappBookingConfirmationUrl,
+  whatsappPhone,
   whatsappBookingUrl,
 } from './whatsapp-booking';
 
@@ -70,22 +71,36 @@ describe('whatsappBookingUrl', () => {
   });
 
   it('builds a customer confirmation message for the created booking', () => {
-    const message = messageFrom(
-      whatsappBookingConfirmationUrl('+54 9 11 1234-5678', {
-        customerName: 'Ana',
-        businessName: 'Barbería Central',
-        branchName: 'Centro',
-        serviceName: 'Corte',
-        startsAt: '2026-10-09T15:30:00',
-        resourceName: 'Martín',
-      }),
-    );
+    const url = whatsappBookingConfirmationUrl('1124541101', {
+      customerName: 'Ana',
+      businessName: 'Barbería Central',
+      branchName: 'Centro',
+      serviceName: 'Corte',
+      startsAt: '2026-10-09T15:30:00',
+      resourceName: 'Martín',
+    });
+    const message = messageFrom(url);
 
+    expect(url).toContain('https://wa.me/5491124541101?text=');
     expect(message).toContain('¡Hola Ana! 👋');
     expect(message).toContain('✅ Tu turno en *Barbería Central* quedó reservado.');
     expect(message).toContain('📅 Fecha: 2026-10-09');
     expect(message).toContain('🕐 Hora: 15:30');
     expect(message).toContain('👤 Profesional: Martín');
+  });
+});
+
+describe('whatsappPhone', () => {
+  it('adds the Argentine WhatsApp prefix to a local ten-digit phone', () => {
+    expect(whatsappPhone('1124541101')).toBe('5491124541101');
+  });
+
+  it('adds the mobile indicator to an Argentine number that only has country code', () => {
+    expect(whatsappPhone('+54 11 2454-1101')).toBe('5491124541101');
+  });
+
+  it('keeps an already normalized Argentine WhatsApp phone', () => {
+    expect(whatsappPhone('+54 9 11 2454-1101')).toBe('5491124541101');
   });
 });
 
