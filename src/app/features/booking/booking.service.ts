@@ -18,6 +18,7 @@ import {
   BranchSummary,
   BusinessSummary,
   BusinessAvailability,
+  BookingShortLinkPayload,
   CreateBookingRequest,
   CustomerContactSearchResponse,
   CustomerBooking,
@@ -138,7 +139,17 @@ export class BookingService {
     );
   }
 
-  createBooking(request: CreateBookingRequest): Observable<CustomerBooking> {
+  createBooking(
+    request: CreateBookingRequest,
+    ownerBookingCode?: string,
+  ): Observable<CustomerBooking> {
+    if (ownerBookingCode) {
+      return this.http.post<CustomerBooking>(
+        this.apiUrl.build(`/public/booking-links/${encodeURIComponent(ownerBookingCode)}/bookings`),
+        request,
+        { context: this.publicHttpContext() },
+      );
+    }
     if (this.authService.isAuthenticated) {
       return this.http.post<CustomerBooking>(this.apiUrl.build('/bookings'), request);
     }
@@ -146,6 +157,19 @@ export class BookingService {
     return this.http.post<CustomerBooking>(this.apiUrl.build('/public/bookings'), request, {
       context: this.publicHttpContext(),
     });
+  }
+
+  createBookingShortLink(payload: BookingShortLinkPayload): Observable<{ code: string }> {
+    return this.http.post<{ code: string }>(this.apiUrl.build('/public/booking-links'), payload, {
+      context: this.publicHttpContext(),
+    });
+  }
+
+  getBookingShortLink(code: string): Observable<BookingShortLinkPayload> {
+    return this.http.get<BookingShortLinkPayload>(
+      this.apiUrl.build(`/public/booking-links/${encodeURIComponent(code)}`),
+      { context: this.publicHttpContext() },
+    );
   }
 
   private toAvailabilityPage(

@@ -26,7 +26,12 @@ import { BookingService } from './booking.service';
 import { AnalyticsService } from '../../shared/analytics.service';
 import { BusinessCategory } from '../public-business/public-business.models';
 import { PublicBusiness } from '../public-business/public-business.models';
-import { whatsappBookingUrl } from './whatsapp-booking';
+import {
+  ownerBookingPayload,
+  shortOwnerBookingUrl,
+  whatsappBookingConfirmationUrl,
+  whatsappBookingUrl,
+} from './whatsapp-booking';
 import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
 
 @Component({
@@ -148,7 +153,10 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
 
             @if (confirmedBooking(); as confirmedBooking) {
               <p class="success" role="status">
-                @if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
+                @if (confirmedBooking.status === 'PENDING_APPROVAL') {
+                  Solicitud enviada. El negocio debe confirmarla; recibirás un email cuando sea
+                  aprobada.
+                } @else if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
                   Reserva creada. El cliente deberá confirmarla desde el email.
                 } @else {
                   Reserva confirmada.
@@ -175,6 +183,10 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
                   Confirmar turno
                 </button>
               }
+            } @else if (authService.isAuthenticated || ownerBookingCode) {
+              <button mat-flat-button type="button" (click)="sendBookingByWhatsapp()">
+                Enviar turno por WhatsApp
+              </button>
             }
             <a mat-button [routerLink]="searchRoute">Buscar otro</a>
           </mat-card-actions>
@@ -194,13 +206,15 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
   styleUrl: './booking.page.scss',
 })
 export class BookingPage implements OnInit {
-  private readonly authService = inject(AuthService);
+  protected readonly authService = inject(AuthService);
   private readonly bookingService = inject(BookingService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly analytics = inject(AnalyticsService);
   private readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
+  protected readonly ownerBookingCode =
+    this.route.snapshot.queryParamMap.get('ownerBookingCode') ?? '';
   protected readonly searchRoute = this.businessSlug
     ? `/${this.businessSlug}/search`
     : this.authService.isAuthenticated
@@ -315,20 +329,26 @@ export class BookingPage implements OnInit {
     const customerEmail = customer.customerEmail.trim();
     const skipCustomerContact = this.emailRequired() && customer.skipCustomerContact;
 
-    this.bookingService
-      .createBooking({
-        businessId: selectedSlot.businessId,
-        branchId: selectedSlot.branchId,
-        serviceOfferingId: selectedSlot.serviceId,
-        resourceId: selectedSlot.resourceId,
-        date,
-        startsAt: time,
-        customerName: customer.customerName.trim(),
-        customerPhone: customer.customerPhone.trim(),
-        skipCustomerContact: skipCustomerContact ? true : null,
-        ...(selectedSlot.depositEnabled ? { depositPaid: customer.depositPaid } : {}),
-        ...(this.emailRequired() && !skipCustomerContact && customerEmail ? { customerEmail } : {}),
-      })
+    const request = {
+          businessId: selectedSlot.businessId,
+          branchId: selectedSlot.branchId,
+          serviceOfferingId: selectedSlot.serviceId,
+          resourceId: selectedSlot.resourceId,
+          date,
+          startsAt: time,
+          customerName: customer.customerName.trim(),
+          customerPhone: customer.customerPhone.trim(),
+          skipCustomerContact: skipCustomerContact ? true : null,
+          ...(selectedSlot.depositEnabled ? { depositPaid: customer.depositPaid } : {}),
+          ...(this.emailRequired() && !skipCustomerContact && customerEmail
+            ? { customerEmail }
+            : {}),
+        };
+    const creation = this.ownerBookingCode
+      ? this.bookingService.createBooking(request, this.ownerBookingCode)
+      : this.bookingService.createBooking(request);
+
+    creation
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
         next: (booking) => {
@@ -356,19 +376,64 @@ export class BookingPage implements OnInit {
       this.errorMessage.set('Este negocio no tiene un número de WhatsApp disponible.');
       return;
     }
+    const selectedBusiness = {
+      businessId: selectedSlot.businessId,
+      businessName: selectedSlot.businessName,
+      branchId: selectedSlot.branchId,
+      branchName: selectedSlot.branchName,
+      serviceId: selectedSlot.serviceId,
+      serviceName: selectedSlot.serviceName,
+      price: selectedSlot.price,
+      depositEnabled: selectedSlot.depositEnabled,
+    };
+    const slot = {
+      id: selectedSlot.slotId,
+      startsAt: selectedSlot.startsAt,
+      endsAt: selectedSlot.endsAt ?? selectedSlot.startsAt,
+      resourceId: selectedSlot.resourceId,
+      resourceName: selectedSlot.resourceName,
+    };
+    this.bookingService.createBookingShortLink(ownerBookingPayload(selectedBusiness, slot)).subscribe({
+      next: ({ code }) => {
+        window.open(
+          whatsappBookingUrl(phone, {
+            businessName: selectedSlot.businessName,
+            branchName: selectedSlot.branchName,
+            serviceName: selectedSlot.serviceName,
+            slot: selectedSlot,
+            ownerBookingUrl: shortOwnerBookingUrl(window.location.origin, code),
+          }),
+          '_blank',
+          'noopener',
+        );
+      },
+      error: () => this.errorMessage.set('No pudimos preparar el enlace del turno.'),
+    });
+  }
+
+  protected sendBookingByWhatsapp(): void {
+    const selectedSlot = this.selectedSlot();
+    const booking = this.confirmedBooking();
+    const customer = this.customerForm.getRawValue();
+    if (!selectedSlot || !booking || !customer.customerPhone.trim()) {
+      return;
+    }
+
     window.open(
-      whatsappBookingUrl(phone, {
-        businessName: selectedSlot.businessName,
-        branchName: selectedSlot.branchName,
-        serviceName: selectedSlot.serviceName,
-        slot: selectedSlot,
+      whatsappBookingConfirmationUrl(customer.customerPhone, {
+        customerName: customer.customerName.trim(),
+        businessName: booking.businessName || selectedSlot.businessName,
+        branchName: booking.branchName || selectedSlot.branchName,
+        serviceName: booking.serviceName || selectedSlot.serviceName,
+        startsAt: booking.startsAt || selectedSlot.startsAt,
+        resourceName: selectedSlot.resourceName,
       }),
       '_blank',
       'noopener',
     );
   }
 
-  private isPublicCustomerFlow(): boolean {
+  protected isPublicCustomerFlow(): boolean {
     return !!this.businessSlug && this.selectedSlot()?.source === 'PUBLIC';
   }
 

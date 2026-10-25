@@ -93,7 +93,14 @@ export interface Booking {
   branchId?: string;
   branchName?: string;
   startsAt: string;
-  status: 'PENDING' | 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED' | string;
+  status:
+    | 'PENDING'
+    | 'PENDING_APPROVAL'
+    | 'PENDING_CONFIRMATION'
+    | 'CONFIRMED'
+    | 'CANCELLED'
+    | 'REJECTED'
+    | string;
   depositStatus?: 'NOT_REQUIRED' | 'PENDING' | 'PAID';
 }
 

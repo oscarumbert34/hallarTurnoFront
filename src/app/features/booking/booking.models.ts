@@ -108,7 +108,14 @@ export interface CustomerBooking {
   branchName?: string;
   serviceName: string;
   startsAt: string;
-  status: 'PENDING' | 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED' | string;
+  status:
+    | 'PENDING'
+    | 'PENDING_APPROVAL'
+    | 'PENDING_CONFIRMATION'
+    | 'CONFIRMED'
+    | 'CANCELLED'
+    | 'REJECTED'
+    | string;
   canCancel?: boolean;
   price?: number;
   depositStatus?: DepositStatus;
@@ -133,3 +140,5 @@ export interface SelectedSlot {
   businessCategory?: BusinessCategory | null;
   source?: 'PUBLIC' | 'QR' | 'DIRECT_LINK';
 }
+
+export type BookingShortLinkPayload = Omit<SelectedSlot, 'businessCategory' | 'source'>;
