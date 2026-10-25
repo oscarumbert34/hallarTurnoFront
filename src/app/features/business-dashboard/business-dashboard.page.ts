@@ -75,6 +75,12 @@ import {
           <h1>{{ pageTitle() }}</h1>
           <p>{{ pageSubtitle() }}</p>
         </div>
+        @if (pendingApprovalCount() > 0) {
+          <span class="booking-count-pill" role="status">
+            {{ pendingApprovalCount() }}
+            {{ pendingApprovalCount() === 1 ? 'solicitud pendiente' : 'solicitudes pendientes' }}
+          </span>
+        }
       </header>
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
@@ -774,6 +780,19 @@ import {
                   <p class="configuration-help">
                     Al habilitarlo, las reservas podrán registrarse con la seña pagada o pendiente.
                   </p>
+                  <section class="configuration-section" aria-labelledby="booking-creation-title">
+                    <h3 id="booking-creation-title">Creación de turnos</h3>
+                    <mat-checkbox
+                      [checked]="internalBookingCreation()"
+                      (change)="internalBookingCreation.set($event.checked)"
+                    >
+                      Solo el negocio puede crear turnos
+                    </mat-checkbox>
+                    <p class="configuration-help">
+                      Si está activo, los clientes podrán consultar disponibilidad, pero no reservar
+                      desde la página pública.
+                    </p>
+                  </section>
                   <section class="configuration-section" aria-labelledby="virtual-queue-title">
                     <h3 id="virtual-queue-title">Fila virtual</h3>
                     <mat-checkbox
@@ -955,7 +974,9 @@ import {
                     <mat-option value="ACTIVE">Activas</mat-option>
                     <mat-option value="CONFIRMED">Confirmadas</mat-option>
                     <mat-option value="PENDING">Pendientes</mat-option>
+                    <mat-option value="PENDING_APPROVAL">Pendientes de aprobación</mat-option>
                     <mat-option value="CANCELLED">Canceladas</mat-option>
+                    <mat-option value="REJECTED">Rechazadas</mat-option>
                     <mat-option value="ALL">Todas</mat-option>
                   </mat-select>
                 </mat-form-field>
@@ -1092,6 +1113,7 @@ import {
                       type="button"
                       class="week-booking-row"
                       [class.cancelled]="booking.status === 'CANCELLED'"
+                      [class.rejected]="booking.status === 'REJECTED'"
                       (click)="openBookingDetail(booking)"
                     >
                       <strong class="week-booking-time">
@@ -1108,9 +1130,11 @@ import {
                           class="booking-status"
                           [class.pending]="
                             booking.status === 'PENDING' ||
+                            booking.status === 'PENDING_APPROVAL' ||
                             booking.status === 'PENDING_CONFIRMATION'
                           "
                           [class.cancelled]="booking.status === 'CANCELLED'"
+                          [class.rejected]="booking.status === 'REJECTED'"
                         >
                           {{ statusLabel(booking.status) }}
                         </small>
@@ -1150,6 +1174,7 @@ import {
                     type="button"
                     class="week-booking-row"
                     [class.cancelled]="booking.status === 'CANCELLED'"
+                    [class.rejected]="booking.status === 'REJECTED'"
                     (click)="openBookingDetail(booking)"
                   >
                     <strong class="week-booking-time">
@@ -1163,9 +1188,12 @@ import {
                       <small
                         class="booking-status"
                         [class.pending]="
-                          booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                          booking.status === 'PENDING' ||
+                          booking.status === 'PENDING_APPROVAL' ||
+                          booking.status === 'PENDING_CONFIRMATION'
                         "
                         [class.cancelled]="booking.status === 'CANCELLED'"
+                        [class.rejected]="booking.status === 'REJECTED'"
                       >
                         {{ statusLabel(booking.status) }}
                       </small>
@@ -1285,9 +1313,12 @@ import {
                     <span
                       class="booking-status"
                       [class.pending]="
-                        booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION'
+                        booking.status === 'PENDING' ||
+                        booking.status === 'PENDING_APPROVAL' ||
+                        booking.status === 'PENDING_CONFIRMATION'
                       "
                       [class.cancelled]="booking.status === 'CANCELLED'"
+                      [class.rejected]="booking.status === 'REJECTED'"
                     >
                       {{ statusLabel(booking.status) }}
                     </span>
@@ -1303,8 +1334,32 @@ import {
             </mat-dialog-content>
             <mat-dialog-actions class="booking-detail-actions" align="end">
               <button mat-button type="button" mat-dialog-close>Cerrar</button>
+              @if (booking.status === 'PENDING_APPROVAL') {
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="updatingBookingApproval()"
+                  mat-dialog-close
+                  (click)="approveBooking(booking.id)"
+                >
+                  Confirmar turno
+                </button>
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="cancel-booking-button"
+                  mat-dialog-close
+                  (click)="cancelBooking(booking.id)"
+                >
+                  Rechazar solicitud
+                </button>
+              }
               @if (booking.status !== 'CANCELLED') {
-                @if (depositEnabled() && booking.depositStatus !== 'NOT_REQUIRED') {
+                @if (
+                  booking.status !== 'PENDING_APPROVAL' &&
+                  depositEnabled() &&
+                  booking.depositStatus !== 'NOT_REQUIRED'
+                ) {
                   <button
                     mat-stroked-button
                     type="button"
@@ -1313,14 +1368,20 @@ import {
                   >
                     {{
                       booking.depositStatus === 'PAID'
-                        ? 'Marcar como pendiente'
-                        : 'Marcar como señado'
+                        ? 'Marcar seña pendiente'
+                        : 'Marcar seña pagada'
                     }}
                   </button>
                 }
-                <button mat-stroked-button type="button" (click)="openRescheduleDialog(booking)">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="booking.status === 'PENDING_APPROVAL'"
+                  (click)="openRescheduleDialog(booking)"
+                >
                   Reprogramar turno
                 </button>
+                @if (booking.status !== 'PENDING_APPROVAL') {
                 <button
                   mat-flat-button
                   type="button"
@@ -1330,6 +1391,7 @@ import {
                 >
                   Cancelar reserva
                 </button>
+                }
               }
             </mat-dialog-actions>
           </section>
@@ -1481,6 +1543,8 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly depositEnabled = signal(false);
   protected readonly appointmentConfirmationEnabled = signal(false);
+  protected readonly internalBookingCreation = signal(false);
+  protected readonly updatingBookingApproval = signal(false);
   protected readonly virtualQueueEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
@@ -1565,7 +1629,7 @@ export class BusinessDashboardPage implements OnInit {
     endsAt: [''],
   });
   protected readonly bookingForm = this.formBuilder.nonNullable.group({
-    date: [new Date() as Date | string, Validators.required],
+    date: [this.initialBookingDate() as Date | string, Validators.required],
     status: ['ACTIVE' as BookingStatusFilter],
     branchId: [''],
     resourceId: [''],
@@ -1614,12 +1678,14 @@ export class BusinessDashboardPage implements OnInit {
       branches: this.dashboardService.listBranches().pipe(catchError(() => of([]))),
       services: this.dashboardService.listServices().pipe(catchError(() => of([]))),
       resources: this.dashboardService.listResources().pipe(catchError(() => of([]))),
+      publicProfile: this.dashboardService.getPublicProfile().pipe(catchError(() => of(null))),
       configuration: this.dashboardService.getConfiguration().pipe(
         catchError(() =>
           of({
             weeklyBookingCopyEnabled: false,
             depositEnabled: false,
             appointmentConfirmationEnabled: false,
+            internalBookingCreation: false,
             virtualQueueEnabled: false,
           }),
         ),
@@ -1631,11 +1697,22 @@ export class BusinessDashboardPage implements OnInit {
           this.branches.set(result.branches);
           this.services.set(result.services);
           this.resources.set(result.resources);
+          if (result.publicProfile) {
+            this.publicProfileForm.setValue({
+              shortDescription: result.publicProfile.publicDescription,
+              aboutUs: result.publicProfile.aboutUs,
+              whatsapp: result.publicProfile.whatsapp,
+              instagram: result.publicProfile.instagram,
+            });
+            this.logoUrl.set(result.publicProfile.logoUrl ?? null);
+            this.coverImageUrl.set(result.publicProfile.coverImageUrl ?? null);
+          }
           this.weeklyBookingCopyEnabled.set(result.configuration.weeklyBookingCopyEnabled);
           this.depositEnabled.set(result.configuration.depositEnabled ?? false);
           this.appointmentConfirmationEnabled.set(
             result.configuration.appointmentConfirmationEnabled ?? false,
           );
+          this.internalBookingCreation.set(result.configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(result.configuration.virtualQueueEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(
             result.configuration.virtualQueueEnabled ?? false,
@@ -2496,9 +2573,20 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     this.dashboardService.cancelBooking(id).subscribe({
-      next: () => this.loadCurrentBookings(),
+      next: (updated) => this.updateBookingInView(updated),
       error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
     });
+  }
+
+  protected approveBooking(id: string): void {
+    this.updatingBookingApproval.set(true);
+    this.dashboardService
+      .approveBooking(id)
+      .pipe(finalize(() => this.updatingBookingApproval.set(false)))
+      .subscribe({
+        next: (updated) => this.updateBookingInView(updated),
+        error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
+      });
   }
 
   protected saveConfiguration(): void {
@@ -2509,6 +2597,7 @@ export class BusinessDashboardPage implements OnInit {
         weeklyBookingCopyEnabled: this.weeklyBookingCopyEnabled(),
         depositEnabled: this.depositEnabled(),
         appointmentConfirmationEnabled: this.appointmentConfirmationEnabled(),
+        internalBookingCreation: this.internalBookingCreation(),
         virtualQueueEnabled: this.virtualQueueEnabled(),
       })
       .pipe(finalize(() => this.savingConfiguration.set(false)))
@@ -2519,6 +2608,7 @@ export class BusinessDashboardPage implements OnInit {
           this.appointmentConfirmationEnabled.set(
             configuration.appointmentConfirmationEnabled ?? false,
           );
+          this.internalBookingCreation.set(configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(configuration.virtualQueueEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(configuration.virtualQueueEnabled ?? false);
         },
@@ -2565,20 +2655,22 @@ export class BusinessDashboardPage implements OnInit {
       .updateBookingDepositStatus(booking.id, depositStatus)
       .pipe(finalize(() => this.updatingDeposit.set(false)))
       .subscribe({
-        next: (updated) => {
-          this.selectedBooking.set(updated);
-          this.bookings.update((bookings) =>
-            bookings.map((item) => (item.id === updated.id ? updated : item)),
-          );
-          this.weeklyBookings.update((days) =>
-            days.map((day) => ({
-              ...day,
-              bookings: day.bookings.map((item) => (item.id === updated.id ? updated : item)),
-            })),
-          );
-        },
+        next: (updated) => this.updateBookingInView(updated),
         error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
       });
+  }
+
+  private updateBookingInView(updated: Booking): void {
+    this.selectedBooking.set(updated);
+    this.bookings.update((bookings) =>
+      bookings.map((item) => (item.id === updated.id ? updated : item)),
+    );
+    this.weeklyBookings.update((days) =>
+      days.map((day) => ({
+        ...day,
+        bookings: day.bookings.map((item) => (item.id === updated.id ? updated : item)),
+      })),
+    );
   }
 
   protected depositStatusLabel(status: 'NOT_REQUIRED' | 'PENDING' | 'PAID'): string {
@@ -2628,6 +2720,10 @@ export class BusinessDashboardPage implements OnInit {
     return `${count} ${count === 1 ? 'reserva' : 'reservas'}`;
   }
 
+  protected pendingApprovalCount(): number {
+    return this.bookings().filter((booking) => booking.status === 'PENDING_APPROVAL').length;
+  }
+
   protected reservationSummaryLabel(bookings: Booking[]): string {
     if (bookings.length === 0) {
       return 'Sin reservas cargadas';
@@ -2635,7 +2731,10 @@ export class BusinessDashboardPage implements OnInit {
 
     const confirmed = bookings.filter((booking) => booking.status === 'CONFIRMED').length;
     const pending = bookings.filter(
-      (booking) => booking.status === 'PENDING' || booking.status === 'PENDING_CONFIRMATION',
+      (booking) =>
+        booking.status === 'PENDING' ||
+        booking.status === 'PENDING_APPROVAL' ||
+        booking.status === 'PENDING_CONFIRMATION',
     ).length;
 
     return `${this.reservationCountLabel(bookings.length)} · ${confirmed} confirmadas · ${pending} pendientes`;
@@ -2793,8 +2892,10 @@ export class BusinessDashboardPage implements OnInit {
   protected statusLabel(status: string): string {
     const labels: Record<string, string> = {
       CANCELLED: 'Cancelada',
+      REJECTED: 'Rechazada',
       CONFIRMED: 'Confirmada',
       PENDING: 'Pendiente',
+      PENDING_APPROVAL: 'Pendiente de aprobación',
       PENDING_CONFIRMATION: 'Confirmación pendiente',
     };
 
@@ -2811,6 +2912,12 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     return value;
+  }
+
+  private initialBookingDate(): Date {
+    const requestedDate = this.route.snapshot.queryParamMap?.get('date');
+
+    return requestedDate ? this.dateInputValue(requestedDate) : new Date();
   }
 
   protected dateInputValue(value: Date | string): Date {
@@ -3010,7 +3117,15 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     if (status === 'ACTIVE') {
-      return bookings.filter((booking) => booking.status !== 'CANCELLED');
+      return bookings.filter(
+        (booking) => booking.status !== 'CANCELLED' && booking.status !== 'REJECTED',
+      );
+    }
+
+    if (status === 'PENDING') {
+      return bookings.filter((booking) =>
+        ['PENDING', 'PENDING_APPROVAL', 'PENDING_CONFIRMATION'].includes(booking.status),
+      );
     }
 
     return bookings.filter((booking) => booking.status === status);
@@ -3228,7 +3343,14 @@ interface ResourceScheduleRange {
   endsAt: string;
 }
 
-type BookingStatusFilter = 'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'CANCELLED' | 'ALL';
+type BookingStatusFilter =
+  | 'ACTIVE'
+  | 'CONFIRMED'
+  | 'PENDING'
+  | 'PENDING_APPROVAL'
+  | 'CANCELLED'
+  | 'REJECTED'
+  | 'ALL';
 type BookingViewMode = 'day' | 'week';
 
 interface WeekBookingDay {

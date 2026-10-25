@@ -8,9 +8,14 @@ import { VirtualQueueAvailabilityService } from './shared/virtual-queue-availabi
 const businessVirtualQueueEnabledGuard = () => {
   const router = inject(Router);
   const auth = inject(AuthService);
-  return inject(VirtualQueueAvailabilityService).refresh().pipe(
-    map((enabled) => enabled || router.createUrlTree([auth.withBusinessSlug('/business-dashboard')])),
-  );
+  return inject(VirtualQueueAvailabilityService)
+    .refresh()
+    .pipe(
+      map(
+        (enabled) =>
+          enabled || router.createUrlTree([auth.withBusinessSlug('/business-dashboard')]),
+      ),
+    );
 };
 
 export const routes: Routes = [
@@ -37,6 +42,12 @@ export const routes: Routes = [
       import('./features/appointment-action/appointment-action.page').then(
         (m) => m.AppointmentActionPage,
       ),
+  },
+  {
+    path: 't/:code',
+    data: { standalone: true },
+    loadComponent: () =>
+      import('./features/booking/booking-short-link.page').then((m) => m.BookingShortLinkPage),
   },
   {
     path: 'fila/:business/:branch/espera/:entry',
@@ -137,9 +148,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { roles: ['ADMIN', 'BUSINESS'] },
     loadComponent: () =>
-      import('./features/business-emails/business-emails.page').then(
-        (m) => m.BusinessEmailsPage,
-      ),
+      import('./features/business-emails/business-emails.page').then((m) => m.BusinessEmailsPage),
   },
   {
     path: ':slug/business-dashboard',
@@ -164,9 +173,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { roles: ['ADMIN', 'BUSINESS'] },
     loadComponent: () =>
-      import('./features/business-emails/business-emails.page').then(
-        (m) => m.BusinessEmailsPage,
-      ),
+      import('./features/business-emails/business-emails.page').then((m) => m.BusinessEmailsPage),
   },
   {
     path: ':slug/admin/fila',

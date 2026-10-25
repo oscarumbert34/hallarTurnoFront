@@ -15,6 +15,7 @@ describe('PublicSearchPage', () => {
     searchAvailability: ReturnType<typeof vi.fn>;
     listAvailabilitySlots: ReturnType<typeof vi.fn>;
     getPublicBusiness: ReturnType<typeof vi.fn>;
+    createBookingShortLink: ReturnType<typeof vi.fn>;
   };
   let router: {
     navigate: ReturnType<typeof vi.fn>;
@@ -156,6 +157,68 @@ describe('PublicSearchPage', () => {
       'noopener',
     );
     expect(router.navigate).not.toHaveBeenCalled();
+    const message = new URL(windowOpen.mock.calls[0][0] as string).searchParams.get('text');
+    expect(message).toContain(`${window.location.origin}/t/Ab3Cd4Ef`);
+  });
+
+  it('loads and searches the filters from an owner booking link', () => {
+    authService.isAuthenticated = true;
+    route.snapshot.data = { businessScoped: true };
+    route.snapshot.queryParamMap = convertToParamMap({
+      branchId: 'branch-1',
+      service: 'Corte',
+      date: '2026-08-17',
+      timeFrom: '10:00',
+      timeTo: '10:30',
+      ownerBooking: 'true',
+    });
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    expect(component.form.getRawValue()).toEqual(
+      expect.objectContaining({
+        branchId: 'branch-1',
+        service: 'Corte',
+        date: '2026-08-17',
+        timeFrom: '10:00',
+        timeTo: '10:30',
+      }),
+    );
+    expect(bookingService.searchAvailability).toHaveBeenCalledWith(
+      expect.objectContaining({
+        businessId: 'business-1',
+        branchId: 'branch-1',
+        service: 'Corte',
+        date: '2026-08-17',
+        timeFrom: '10:00',
+        timeTo: '10:30',
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('sends an unauthenticated owner to login and preserves the booking link', () => {
+    authService.isAuthenticated = false;
+    bookingService.listBranches.mockClear();
+    bookingService.listServiceOfferings.mockClear();
+    router.navigate.mockClear();
+    route.snapshot.queryParamMap = convertToParamMap({
+      branchId: 'branch-1',
+      service: 'Corte',
+      ownerBooking: 'true',
+    });
+
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: {
+        returnUrl: `${window.location.pathname}${window.location.search}`,
+      },
+    });
+    expect(bookingService.listBranches).not.toHaveBeenCalled();
   });
 
   it('keeps booking navigation when entering with credentials', () => {
@@ -334,6 +397,7 @@ describe('PublicSearchPage', () => {
           branches: [],
         }),
       ),
+      createBookingShortLink: vi.fn(() => of({ code: 'Ab3Cd4Ef' })),
     };
     router = { navigate: vi.fn() };
     route = { snapshot: { data: {} } };
@@ -402,9 +466,7 @@ describe('PublicSearchPage', () => {
 
     expect(searchButton().disabled).toBe(true);
 
-    branches.next([
-      { id: 'branch-1', name: 'Centro', address: 'Calle 1', locality: 'Palermo' },
-    ]);
+    branches.next([{ id: 'branch-1', name: 'Centro', address: 'Calle 1', locality: 'Palermo' }]);
     branches.complete();
     fixture.detectChanges();
     expect(searchButton().disabled).toBe(true);
@@ -663,7 +725,26 @@ describe('PublicSearchPage', () => {
     expect(timeFields.every((field) => field.querySelector('.clock-icon'))).toBe(true);
     expect(
       timeFields.map((field) => field.querySelector<HTMLInputElement>('input[readonly]')?.value),
-    ).toEqual(['09:00', '18:00']);
+    ).toEqual(['08:00', '20:00']);
+  });
+
+  it('should default the search to tomorrow from 08:00 to 20:00', () => {
+    vi.setSystemTime(new Date(2026, 7, 17, 13, 15));
+    fixture = TestBed.createComponent(PublicSearchPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      form: {
+        controls: {
+          date: { value: Date | string };
+          timeFrom: { value: string };
+          timeTo: { value: string };
+        };
+      };
+    };
+
+    expect(component.form.controls.date.value).toEqual(new Date(2026, 7, 18));
+    expect(component.form.controls.timeFrom.value).toBe('08:00');
+    expect(component.form.controls.timeTo.value).toBe('20:00');
   });
 
   it('should search with the selected business id', () => {

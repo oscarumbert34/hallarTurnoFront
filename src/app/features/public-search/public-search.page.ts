@@ -27,7 +27,11 @@ import { navigateToBooking } from '../booking/booking-navigation';
 import { BookingService } from '../booking/booking.service';
 import { AnalyticsService } from '../../shared/analytics.service';
 import { BusinessCategory, PublicBusiness } from '../public-business/public-business.models';
-import { whatsappBookingUrl } from '../booking/whatsapp-booking';
+import {
+  ownerBookingPayload,
+  shortOwnerBookingUrl,
+  whatsappBookingUrl,
+} from '../booking/whatsapp-booking';
 
 @Component({
   selector: 'app-public-search-page',
@@ -281,6 +285,9 @@ export class PublicSearchPage implements OnInit {
   private readonly publicSource = this.route.snapshot.queryParamMap?.get('source') === 'public';
   private readonly publicBusinessCategory =
     (this.route.snapshot.queryParamMap?.get('businessCategory') as BusinessCategory | null) ?? null;
+  private readonly ownerBookingLink =
+    this.route.snapshot.queryParamMap?.get('ownerBooking') === 'true';
+  private ownerBookingSearchStarted = false;
   protected readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
   protected readonly businessScoped =
     Boolean(this.route.snapshot.data['businessScoped']) || !!this.publicBusinessId;
@@ -311,13 +318,20 @@ export class PublicSearchPage implements OnInit {
     branchId: [''],
     service: [''],
     date: [
-      new Date() as Date | string,
+      this.tomorrow() as Date | string,
       [Validators.required, this.notPastDateValidator.bind(this)],
     ],
-    timeFrom: ['09:00', [this.notPastStartTimeValidator.bind(this)]],
-    timeTo: ['18:00'],
+    timeFrom: ['08:00', [this.notPastStartTimeValidator.bind(this)]],
+    timeTo: ['20:00'],
   });
   ngOnInit(): void {
+    if (this.ownerBookingLink && !this.authService.isAuthenticated) {
+      void this.router.navigate(['/auth/login'], {
+        queryParams: { returnUrl: `${window.location.pathname}${window.location.search}` },
+      });
+      return;
+    }
+
     const stored = sessionStorage.getItem('turnero.search');
 
     if (stored) {
@@ -330,6 +344,17 @@ export class PublicSearchPage implements OnInit {
       if (!this.businessScoped) {
         this.syncBusinessSelection(this.form.controls.business.value);
       }
+    }
+
+    if (this.ownerBookingLink) {
+      const params = this.route.snapshot.queryParamMap;
+      this.form.patchValue({
+        branchId: params.get('branchId') ?? '',
+        service: params.get('service') ?? '',
+        date: params.get('date') ?? this.tomorrow(),
+        timeFrom: params.get('timeFrom') ?? '08:00',
+        timeTo: params.get('timeTo') ?? '20:00',
+      });
     }
 
     this.form.controls.business.valueChanges
@@ -493,10 +518,7 @@ export class PublicSearchPage implements OnInit {
 
   protected canSearch(): boolean {
     return (
-      this.businessDataReady() &&
-      !!this.selectedBusinessId() &&
-      this.form.valid &&
-      !this.loading()
+      this.businessDataReady() && !!this.selectedBusinessId() && this.form.valid && !this.loading()
     );
   }
 
@@ -549,16 +571,22 @@ export class PublicSearchPage implements OnInit {
         this.errorMessage.set('Este negocio no tiene un número de WhatsApp disponible.');
         return;
       }
-      window.open(
-        whatsappBookingUrl(phone, {
-          businessName: business.businessName,
-          branchName: business.branchName,
-          serviceName: business.serviceName,
-          slot,
-        }),
-        '_blank',
-        'noopener',
-      );
+      this.bookingService.createBookingShortLink(ownerBookingPayload(business, slot)).subscribe({
+        next: ({ code }) => {
+          window.open(
+            whatsappBookingUrl(phone, {
+              businessName: business.businessName,
+              branchName: business.branchName,
+              serviceName: business.serviceName,
+              slot,
+              ownerBookingUrl: shortOwnerBookingUrl(window.location.origin, code),
+            }),
+            '_blank',
+            'noopener',
+          );
+        },
+        error: () => this.errorMessage.set('No pudimos preparar el enlace del turno.'),
+      });
       return;
     }
     navigateToBooking(
@@ -862,6 +890,13 @@ export class PublicSearchPage implements OnInit {
     return this.startOfDay(new Date());
   }
 
+  private tomorrow(): Date {
+    const tomorrow = this.startOfToday();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return tomorrow;
+  }
+
   private startOfDay(value: Date | string): Date {
     const date = this.dateInputValue(value);
 
@@ -962,6 +997,10 @@ export class PublicSearchPage implements OnInit {
         this.serviceOfferings.set(serviceOfferings);
         this.pruneServiceForBranch();
         this.businessDataReady.set(true);
+        if (this.ownerBookingLink && !this.ownerBookingSearchStarted) {
+          this.ownerBookingSearchStarted = true;
+          this.search();
+        }
       },
       error: () => {
         this.branches.set([]);

@@ -185,6 +185,25 @@ export class BusinessDashboardService {
     );
   }
 
+  getPublicProfile(): Observable<PublicProfile> {
+    return this.http
+      .get<PublicProfile>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile`),
+      )
+      .pipe(
+        map((profile) => ({
+          publicDescription: profile.publicDescription ?? '',
+          aboutUs: profile.aboutUs ?? '',
+          whatsapp: profile.whatsapp ?? '',
+          instagram: profile.instagram ?? '',
+          logoImageKey: profile.logoImageKey ?? null,
+          coverImageKey: profile.coverImageKey ?? null,
+          logoUrl: profile.logoUrl ?? null,
+          coverImageUrl: profile.coverImageUrl ?? null,
+        })),
+      );
+  }
+
   updateConfiguration(
     configuration: Omit<BusinessConfiguration, 'businessId'>,
   ): Observable<BusinessConfiguration> {
@@ -236,6 +255,7 @@ export class BusinessDashboardService {
         })),
       );
   }
+
 
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
@@ -316,6 +336,12 @@ export class BusinessDashboardService {
 
   cancelBooking(id: string): Observable<Booking> {
     return this.http.post<Booking>(this.apiUrl.build(`/bookings/${id}/cancel`), {});
+  }
+
+  approveBooking(id: string): Observable<Booking> {
+    return this.http
+      .post<BookingResponse>(this.apiUrl.build(`/bookings/${id}/approve`), {})
+      .pipe(map((booking) => this.toBooking(booking)));
   }
 
   updateBookingDepositStatus(id: string, depositStatus: 'PENDING' | 'PAID'): Observable<Booking> {
@@ -682,8 +708,10 @@ interface BusinessConfiguration {
   weeklyBookingCopyEnabled: boolean;
   depositEnabled?: boolean;
   appointmentConfirmationEnabled?: boolean;
+  internalBookingCreation?: boolean;
   virtualQueueEnabled?: boolean;
 }
+
 
 interface ImageUploadResponse {
   imageKey: string;

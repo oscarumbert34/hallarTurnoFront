@@ -15,6 +15,7 @@ describe('BookingPage', () => {
     createBooking: ReturnType<typeof vi.fn>;
     searchAvailability: ReturnType<typeof vi.fn>;
     getPublicBusiness: ReturnType<typeof vi.fn>;
+    createBookingShortLink: ReturnType<typeof vi.fn>;
   };
   let authService: {
     isAuthenticated: boolean;
@@ -47,6 +48,7 @@ describe('BookingPage', () => {
           branches: [],
         }),
       ),
+      createBookingShortLink: vi.fn(() => of({ code: 'Ab3Cd4Ef' })),
     };
     authService = {
       isAuthenticated: false,
@@ -510,5 +512,42 @@ describe('BookingPage', () => {
     };
 
     expect(component.searchRoute).toBe('/search');
+  });
+
+  it('offers the owner a WhatsApp template after creating the booking', async () => {
+    vi.useFakeTimers();
+    authService.isAuthenticated = true;
+    bookingService.createBooking.mockReturnValue(
+      of({
+        id: 'booking-1',
+        businessName: 'Turnos SA',
+        branchName: 'Centro',
+        serviceName: 'Corte',
+        startsAt: '2026-08-17T10:00:00',
+        status: 'CONFIRMED',
+      }),
+    );
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+    component.customerForm.patchValue({
+      customerName: 'Juan Gonzalez',
+      customerPhone: '1124546622',
+    });
+    await vi.advanceTimersByTimeAsync(300);
+    component.confirmBooking();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Enviar turno por WhatsApp');
+
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    component.sendBookingByWhatsapp();
+    const url = windowOpen.mock.calls.at(-1)?.[0] as string;
+    const message = new URL(url).searchParams.get('text');
+    expect(url).toContain('https://wa.me/1124546622');
+    expect(message).toContain('¡Hola Juan Gonzalez! 👋');
+    expect(message).toContain('✅ Tu turno en *Turnos SA* quedó reservado.');
+    expect(message).toContain('✂️ Servicio: Corte');
+    expect(message).toContain('🕐 Hora: 10:00');
   });
 });

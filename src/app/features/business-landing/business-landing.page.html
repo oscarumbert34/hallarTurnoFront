@@ -170,6 +170,23 @@
         <p>Podés cambiar en cualquier momento.</p>
       </div>
 
+      <aside class="trial-card" aria-label="Prueba gratis del plan Pro">
+        <span class="trial-icon" aria-hidden="true">🎁</span>
+        <div>
+          <h2>Plan Pro: 60 días gratis</h2>
+          <p>Después $8.000/mes si lo elegís.</p>
+          <p>Podés seguir en Básico gratis. Sin cobro automático.</p>
+        </div>
+        <a
+          class="button"
+          [href]="whatsappUrl"
+          target="_blank"
+          rel="noopener"
+          (click)="trackCta('START_FREE')"
+          >Empezar prueba gratis</a
+        >
+      </aside>
+
       <div class="plan-grid">
         <article class="plan-card">
           <div class="plan-summary">
@@ -260,22 +277,6 @@
         </article>
       </div>
 
-      <aside class="trial-card" aria-label="Prueba gratis del plan Pro">
-        <span class="trial-icon" aria-hidden="true">🎁</span>
-        <div>
-          <h2>Plan Pro: 60 días gratis</h2>
-          <p>Después $8.000/mes si lo elegís.</p>
-          <p>Podés seguir en Básico gratis. Sin cobro automático.</p>
-        </div>
-        <a
-          class="button"
-          [href]="whatsappUrl"
-          target="_blank"
-          rel="noopener"
-          (click)="trackCta('START_FREE')"
-          >Empezar prueba gratis</a
-        >
-      </aside>
     </section>
     <section id="comercios" class="section demos" aria-labelledby="demos-title">
       <div class="section-heading">
