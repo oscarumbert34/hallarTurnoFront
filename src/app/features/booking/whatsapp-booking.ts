@@ -9,6 +9,18 @@ export interface WhatsappBookingInquiry {
   ownerBookingUrl?: string;
 }
 
+export function whatsappPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+
+  if (/^\d{10}$/.test(digits)) {
+    return `549${digits}`;
+  }
+  if (/^54\d{10}$/.test(digits)) {
+    return `549${digits.slice(2)}`;
+  }
+  return digits;
+}
+
 export function whatsappBookingUrl(phone: string, inquiry: WhatsappBookingInquiry): string {
   const date = inquiry.slot.startsAt.slice(0, 10);
   const time = inquiry.slot.startsAt.slice(11, 16);
@@ -21,7 +33,7 @@ export function whatsappBookingUrl(phone: string, inquiry: WhatsappBookingInquir
     : '';
   const message = `Hola ${inquiry.businessName} 👋\n\nQuiero solicitar este turno:\n\n✂️ Servicio: ${inquiry.serviceName}\n📅 ${day}\n🕐 Hora: ${time}\n📍 Sucursal: ${inquiry.branchName}${professional}${ownerBookingLink}`;
 
-  return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
 }
 
 export function ownerBookingUrl(
@@ -105,5 +117,5 @@ export function whatsappBookingConfirmationUrl(
   const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
   const message = `¡Hola ${booking.customerName}! 👋\n\n✅ Tu turno en *${booking.businessName}* quedó reservado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
 
-  return `https://wa.me/${customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
 }
