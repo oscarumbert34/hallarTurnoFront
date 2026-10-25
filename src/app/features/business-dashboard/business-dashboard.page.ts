@@ -1539,7 +1539,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingTotalElements = signal(0);
   protected readonly bookingTotalPages = signal(0);
   protected readonly bookingHasMore = signal(false);
-  protected readonly bookingViewMode = signal<BookingViewMode>('day');
+  protected readonly bookingViewMode = signal<BookingViewMode>(this.initialBookingViewMode());
   protected readonly weeklyBookingCopyEnabled = signal(false);
   protected readonly depositEnabled = signal(false);
   protected readonly appointmentConfirmationEnabled = signal(false);
@@ -2921,6 +2921,10 @@ export class BusinessDashboardPage implements OnInit {
     const requestedDate = this.route.snapshot.queryParamMap?.get('date');
 
     return requestedDate ? this.dateInputValue(requestedDate) : new Date();
+  }
+
+  private initialBookingViewMode(): BookingViewMode {
+    return this.route.snapshot.queryParamMap?.get('view') === 'week' ? 'week' : 'day';
   }
 
   protected dateInputValue(value: Date | string): Date {

@@ -140,9 +140,13 @@ describe('BusinessDashboardPage', () => {
   it('should open the booking date received from the approval email', () => {
     fixture.destroy();
     dashboardService.listBookingsPage.mockClear();
-    route.snapshot.queryParamMap = convertToParamMap({ date: '2026-09-08' });
+    route.snapshot.queryParamMap = convertToParamMap({ date: '2026-09-08', view: 'day' });
     fixture = TestBed.createComponent(BusinessDashboardPage);
     fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      bookingViewMode: () => string;
+    };
 
     expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
       '2026-09-08',
@@ -152,6 +156,7 @@ describe('BusinessDashboardPage', () => {
       '',
       '',
     );
+    expect(component.bookingViewMode()).toBe('day');
   });
 
   it('should preload the public profile form and image previews', () => {
