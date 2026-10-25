@@ -236,6 +236,60 @@ describe('BusinessDashboardPage', () => {
     vi.useRealTimers();
   });
 
+  it('should move the agenda to the new date after rescheduling a booking', () => {
+    const updatedBooking = {
+      id: 'booking-1',
+      branchId: 'branch-1',
+      serviceOfferingId: 'service-1',
+      resourceId: 'resource-1',
+      customerName: 'Ana',
+      serviceName: 'Corte',
+      branchName: 'Centro',
+      startsAt: '2026-09-11T17:30:00',
+      status: 'CONFIRMED',
+    };
+    dashboardService.rescheduleBooking.mockReturnValue(of(updatedBooking));
+    dashboardService.listBookingsPage.mockClear();
+
+    const component = fixture.componentInstance as unknown as {
+      selectedBooking: { set: (booking: unknown) => void };
+      selectedRescheduleSlot: { set: (slot: unknown) => void };
+      rescheduleForm: {
+        setValue: (
+          value: { date: Date; resourceId: string },
+          options: { emitEvent: boolean },
+        ) => void;
+      };
+      bookingForm: { controls: { date: { value: Date | string } } };
+      selectedWeekDate: () => string;
+      confirmReschedule: () => void;
+    };
+    component.selectedBooking.set({
+      ...updatedBooking,
+      startsAt: '2026-09-09T17:30:00',
+    });
+    component.selectedRescheduleSlot.set({
+      id: 'slot-1',
+      startsAt: '2026-09-11T17:30:00',
+      endsAt: '2026-09-11T18:00:00',
+      resourceId: 'resource-1',
+    });
+    component.rescheduleForm.setValue(
+      { date: new Date(2026, 8, 11), resourceId: 'resource-1' },
+      { emitEvent: false },
+    );
+
+    component.confirmReschedule();
+
+    expect(dashboardService.rescheduleBooking).toHaveBeenCalledWith('booking-1', {
+      date: '2026-09-11',
+      startTime: '17:30',
+      resourceId: 'resource-1',
+    });
+    expect(component.bookingForm.controls.date.value).toEqual(new Date(2026, 8, 11));
+    expect(component.selectedWeekDate()).toBe('2026-09-11');
+  });
+
   it('should keep entity forms collapsed until create or edit is selected', () => {
     const component = fixture.componentInstance as unknown as {
       branchFormExpanded: () => boolean;

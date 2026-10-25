@@ -2420,6 +2420,9 @@ export class BusinessDashboardPage implements OnInit {
           this.bookings.update((bookings) =>
             bookings.map((item) => (item.id === updated.id ? updated : item)),
           );
+          const rescheduledDate = this.dateInputValue(updated.startsAt);
+          this.bookingForm.controls.date.setValue(rescheduledDate, { emitEvent: false });
+          this.selectedWeekDate.set(this.dateValue(rescheduledDate));
           this.dialog.closeAll();
           this.bookingSuccess.set('El turno fue reprogramado correctamente.');
           this.loadCurrentBookings(true);
@@ -2925,7 +2928,7 @@ export class BusinessDashboardPage implements OnInit {
       return new Date(value);
     }
 
-    const [year, month, day] = value.split('-').map(Number);
+    const [year, month, day] = value.slice(0, 10).split('-').map(Number);
 
     if (!year || !month || !day) {
       return new Date();
