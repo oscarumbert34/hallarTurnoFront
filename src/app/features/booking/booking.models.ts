@@ -114,6 +114,7 @@ export interface CustomerBooking {
     | 'PENDING_CONFIRMATION'
     | 'CONFIRMED'
     | 'CANCELLED'
+    | 'REJECTED'
     | string;
   canCancel?: boolean;
   price?: number;
@@ -139,3 +140,5 @@ export interface SelectedSlot {
   businessCategory?: BusinessCategory | null;
   source?: 'PUBLIC' | 'QR' | 'DIRECT_LINK';
 }
+
+export type BookingShortLinkPayload = Omit<SelectedSlot, 'businessCategory' | 'source'>;

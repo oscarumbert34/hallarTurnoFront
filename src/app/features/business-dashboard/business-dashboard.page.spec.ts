@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { BusinessDashboardPage } from './business-dashboard.page';
@@ -11,9 +11,11 @@ describe('BusinessDashboardPage', () => {
   let fixture: ComponentFixture<BusinessDashboardPage>;
   let dashboardService: BusinessDashboardServiceMock;
   let bookingService: { listAvailabilitySlots: ReturnType<typeof vi.fn> };
+  let route: { snapshot: { data: Record<string, unknown>; queryParamMap?: ParamMap } };
 
   beforeEach(async () => {
     bookingService = { listAvailabilitySlots: vi.fn(() => of({ slots: [] })) };
+    route = { snapshot: { data: {} } };
     dashboardService = {
       listBranches: vi.fn(() =>
         of([
@@ -118,7 +120,7 @@ describe('BusinessDashboardPage', () => {
         { provide: BusinessDashboardService, useValue: dashboardService },
         { provide: BookingService, useValue: bookingService },
         { provide: VirtualQueueAvailabilityService, useValue: { setEnabled: vi.fn() } },
-        { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
+        { provide: ActivatedRoute, useValue: route },
       ],
     }).compileComponents();
 
@@ -133,6 +135,23 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.listBookingsPage).toHaveBeenCalled();
     expect(dashboardService.getPublicProfile).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Centro');
+  });
+
+  it('should open the booking date received from the approval email', () => {
+    fixture.destroy();
+    dashboardService.listBookingsPage.mockClear();
+    route.snapshot.queryParamMap = convertToParamMap({ date: '2026-09-08' });
+    fixture = TestBed.createComponent(BusinessDashboardPage);
+    fixture.detectChanges();
+
+    expect(dashboardService.listBookingsPage).toHaveBeenCalledWith(
+      '2026-09-08',
+      0,
+      20,
+      'branch-1',
+      '',
+      '',
+    );
   });
 
   it('should preload the public profile form and image previews', () => {
@@ -1389,7 +1408,16 @@ describe('BusinessDashboardPage', () => {
       bookingForm: {
         controls: {
           status: {
-            setValue: (value: 'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'CANCELLED' | 'ALL') => void;
+            setValue: (
+              value:
+                | 'ACTIVE'
+                | 'CONFIRMED'
+                | 'PENDING'
+                | 'PENDING_APPROVAL'
+                | 'CANCELLED'
+                | 'REJECTED'
+                | 'ALL'
+            ) => void;
           };
         };
       };
@@ -1405,6 +1433,13 @@ describe('BusinessDashboardPage', () => {
         status: 'CONFIRMED',
       },
       {
+        id: 'booking-pending-approval',
+        customerName: 'Ana Perez',
+        serviceName: 'Masajes',
+        startsAt: '2026-08-22T12:30:00Z',
+        status: 'PENDING_APPROVAL',
+      },
+      {
         id: 'booking-cancelled',
         customerName: 'Maria Gomez',
         serviceName: 'Masajes',
@@ -1413,14 +1448,67 @@ describe('BusinessDashboardPage', () => {
       },
     ]);
 
-    expect(component.filteredBookings().map((booking) => booking.id)).toEqual(['booking-active']);
+    expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
+      'booking-active',
+      'booking-pending-approval',
+    ]);
+
+    component.bookingForm.controls.status.setValue('PENDING');
+
+    expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
+      'booking-pending-approval',
+    ]);
+
+    component.bookingForm.controls.status.setValue('PENDING_APPROVAL');
+
+    expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
+      'booking-pending-approval',
+    ]);
 
     component.bookingForm.controls.status.setValue('ALL');
 
     expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
       'booking-active',
+      'booking-pending-approval',
       'booking-cancelled',
     ]);
+  });
+
+  it('should update a pending approval immediately after approving it', () => {
+    const pending = {
+      id: 'booking-pending',
+      customerName: 'Ana Perez',
+      serviceName: 'Masajes',
+      startsAt: '2026-08-22T12:30:00Z',
+      status: 'PENDING_APPROVAL',
+    };
+    const confirmed = { ...pending, status: 'CONFIRMED' };
+    dashboardService.approveBooking.mockReturnValue(of(confirmed));
+    const component = fixture.componentInstance as any;
+    component.bookings.set([pending]);
+
+    component.approveBooking(pending.id);
+
+    expect(component.bookings()[0].status).toBe('CONFIRMED');
+  });
+
+  it('should update a pending approval immediately after rejecting it', () => {
+    const pending = {
+      id: 'booking-pending',
+      customerName: 'Ana Perez',
+      serviceName: 'Masajes',
+      startsAt: '2026-08-22T12:30:00Z',
+      status: 'PENDING_APPROVAL',
+    };
+    const rejected = { ...pending, status: 'REJECTED' };
+    dashboardService.cancelBooking.mockReturnValue(of(rejected));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const component = fixture.componentInstance as any;
+    component.bookings.set([pending]);
+
+    component.cancelBooking(pending.id);
+
+    expect(component.bookings()[0].status).toBe('REJECTED');
   });
 });
 

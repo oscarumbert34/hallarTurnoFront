@@ -108,6 +108,17 @@
   background: #dcfce7;
 }
 
+.cancel-booking-button {
+  --mdc-filled-button-container-color: #dc2626;
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mat-filled-button-state-layer-color: #ffffff;
+}
+
+.booking-status.rejected {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
 .reschedule-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
