@@ -523,7 +523,7 @@ describe('BookingPage', () => {
         businessName: 'Turnos SA',
         branchName: 'Centro',
         serviceName: 'Corte',
-        startsAt: '2026-08-17T10:00:00',
+        startsAt: '2026-08-17T13:00:00Z',
         status: 'CONFIRMED',
       }),
     );
@@ -544,10 +544,11 @@ describe('BookingPage', () => {
     component.sendBookingByWhatsapp();
     const url = windowOpen.mock.calls.at(-1)?.[0] as string;
     const message = new URL(url).searchParams.get('text');
-    expect(url).toContain('https://wa.me/1124546622');
+    expect(url).toContain('https://wa.me/5491124546622');
     expect(message).toContain('¡Hola Juan Gonzalez! 👋');
     expect(message).toContain('✅ Tu turno en *Turnos SA* quedó reservado.');
     expect(message).toContain('✂️ Servicio: Corte');
     expect(message).toContain('🕐 Hora: 10:00');
+    expect(message).not.toContain('🕐 Hora: 13:00');
   });
 });
