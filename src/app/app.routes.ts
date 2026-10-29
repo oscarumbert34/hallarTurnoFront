@@ -45,7 +45,8 @@ export const routes: Routes = [
   },
   {
     path: 't/:code',
-    data: { standalone: true },
+    canActivate: [authGuard],
+    data: { standalone: true, roles: ['ADMIN', 'BUSINESS'] },
     loadComponent: () =>
       import('./features/booking/booking-short-link.page').then((m) => m.BookingShortLinkPage),
   },

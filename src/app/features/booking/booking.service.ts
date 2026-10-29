@@ -147,7 +147,6 @@ export class BookingService {
       return this.http.post<CustomerBooking>(
         this.apiUrl.build(`/public/booking-links/${encodeURIComponent(ownerBookingCode)}/bookings`),
         request,
-        { context: this.publicHttpContext() },
       );
     }
     if (this.authService.isAuthenticated) {
@@ -168,7 +167,6 @@ export class BookingService {
   getBookingShortLink(code: string): Observable<BookingShortLinkPayload> {
     return this.http.get<BookingShortLinkPayload>(
       this.apiUrl.build(`/public/booking-links/${encodeURIComponent(code)}`),
-      { context: this.publicHttpContext() },
     );
   }
 

@@ -118,6 +118,24 @@ describe('authInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  it('should attach the token when resolving an owner booking link', () => {
+    http.get('/api/public/booking-links/Ab3Cd4Ef').subscribe();
+
+    const request = httpTesting.expectOne('/api/public/booking-links/Ab3Cd4Ef');
+
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jwt-token');
+    request.flush({});
+  });
+
+  it('should attach the token when creating a booking from an owner link', () => {
+    http.post('/api/public/booking-links/Ab3Cd4Ef/bookings', {}).subscribe();
+
+    const request = httpTesting.expectOne('/api/public/booking-links/Ab3Cd4Ef/bookings');
+
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jwt-token');
+    request.flush({});
+  });
+
   it('should not attach stale tokens or redirect when auth is explicitly skipped', () => {
     http
       .get('/api/businesses', {
