@@ -1,5 +1,6 @@
 import {
   ownerBookingUrl,
+  whatsappBookingApprovalUrl,
   whatsappBookingCancellationUrl,
   whatsappBookingConfirmationUrl,
   whatsappBookingRescheduleUrl,
@@ -114,6 +115,14 @@ describe('booking update WhatsApp URLs', () => {
     startsAt: '2026-11-04T16:30:00',
     resourceName: 'Sofía',
   };
+
+  it('builds an approval message with the confirmed appointment', () => {
+    const message = messageFrom(whatsappBookingApprovalUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue confirmado');
+    expect(message).toContain('Fecha: 2026-11-04');
+    expect(message).toContain('Hora: 16:30');
+  });
 
   it('builds a reschedule message with the new date and time', () => {
     const message = messageFrom(whatsappBookingRescheduleUrl('1124541101', booking));
