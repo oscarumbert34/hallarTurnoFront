@@ -1,6 +1,8 @@
 import {
   ownerBookingUrl,
+  whatsappBookingCancellationUrl,
   whatsappBookingConfirmationUrl,
+  whatsappBookingRescheduleUrl,
   whatsappPhone,
   whatsappBookingUrl,
 } from './whatsapp-booking';
@@ -101,6 +103,32 @@ describe('whatsappPhone', () => {
 
   it('keeps an already normalized Argentine WhatsApp phone', () => {
     expect(whatsappPhone('+54 9 11 2454-1101')).toBe('5491124541101');
+  });
+});
+
+describe('booking update WhatsApp URLs', () => {
+  const booking = {
+    customerName: 'Ana',
+    branchName: 'Centro',
+    serviceName: 'Corte',
+    startsAt: '2026-11-04T16:30:00',
+    resourceName: 'Sofía',
+  };
+
+  it('builds a reschedule message with the new date and time', () => {
+    const message = messageFrom(whatsappBookingRescheduleUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue reprogramado');
+    expect(message).toContain('Nueva fecha: 2026-11-04');
+    expect(message).toContain('Nuevo horario: 16:30');
+  });
+
+  it('builds a cancellation message with the cancelled appointment', () => {
+    const message = messageFrom(whatsappBookingCancellationUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue cancelado');
+    expect(message).toContain('Fecha: 2026-11-04');
+    expect(message).toContain('Hora: 16:30');
   });
 });
 

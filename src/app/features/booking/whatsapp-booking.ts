@@ -119,3 +119,29 @@ export function whatsappBookingConfirmationUrl(
 
   return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
 }
+
+export type WhatsappBookingUpdate = Omit<WhatsappBookingConfirmation, 'businessName'>;
+
+export function whatsappBookingRescheduleUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `¡Hola ${booking.customerName}! 👋\n\n🔄 Tu turno fue reprogramado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Nueva fecha: ${date}\n🕐 Nuevo horario: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
+
+export function whatsappBookingCancellationUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `Hola ${booking.customerName}.\n\n❌ Tu turno fue cancelado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\nSi necesitás otro horario, comunicate con nosotros.`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
