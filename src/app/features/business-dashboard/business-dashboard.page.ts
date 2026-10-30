@@ -2621,6 +2621,7 @@ export class BusinessDashboardPage implements OnInit {
         ? whatsappBookingRescheduleUrl(phone, details)
         : whatsappBookingCancellationUrl(phone, details);
     window.open(url, '_blank', 'noopener');
+    this.whatsappBookingNotification.set(null);
   }
 
   protected approveBooking(id: string): void {

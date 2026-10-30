@@ -186,6 +186,7 @@ describe('BusinessDashboardPage', () => {
     const component = fixture.componentInstance as unknown as {
       whatsappBookingNotification: {
         set: (notification: unknown) => void;
+        (): unknown;
       };
       sendBookingUpdateByWhatsapp: () => void;
     };
@@ -213,6 +214,7 @@ describe('BusinessDashboardPage', () => {
     expect(decodeURIComponent(open.mock.calls[0][0] as string)).toContain(
       'Tu turno fue reprogramado',
     );
+    expect(component.whatsappBookingNotification()).toBeNull();
     open.mockRestore();
   });
 
