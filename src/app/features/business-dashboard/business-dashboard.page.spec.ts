@@ -1574,7 +1574,9 @@ describe('BusinessDashboardPage', () => {
     const pending = {
       id: 'booking-pending',
       customerName: 'Ana Perez',
+      customerPhone: '1124541101',
       serviceName: 'Masajes',
+      branchName: 'Centro',
       startsAt: '2026-08-22T12:30:00Z',
       status: 'PENDING_APPROVAL',
     };
@@ -1586,6 +1588,11 @@ describe('BusinessDashboardPage', () => {
     component.approveBooking(pending.id);
 
     expect(component.bookings()[0].status).toBe('CONFIRMED');
+    expect(component.bookingSuccess()).toBe('El turno fue confirmado correctamente.');
+    expect(component.whatsappBookingNotification()).toEqual({
+      booking: confirmed,
+      type: 'CONFIRMATION',
+    });
   });
 
   it('should update a pending approval immediately after rejecting it', () => {

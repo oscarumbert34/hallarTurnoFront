@@ -31,6 +31,7 @@ import { VirtualQueueAvailabilityService } from '../../shared/virtual-queue-avai
 import { BookingService } from '../booking/booking.service';
 import { AvailabilitySlot } from '../booking/booking.models';
 import {
+  whatsappBookingApprovalUrl,
   whatsappBookingCancellationUrl,
   whatsappBookingRescheduleUrl,
 } from '../booking/whatsapp-booking';
@@ -1540,7 +1541,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly bookingSuccess = signal('');
   protected readonly whatsappBookingNotification = signal<{
     booking: Booking;
-    type: 'RESCHEDULE' | 'CANCELLATION';
+    type: 'CONFIRMATION' | 'RESCHEDULE' | 'CANCELLATION';
   } | null>(null);
   protected readonly rescheduleError = signal('');
   protected readonly loadingSlots = signal(false);
@@ -2617,9 +2618,11 @@ export class BusinessDashboardPage implements OnInit {
       resourceName: booking.resourceName,
     };
     const url =
-      notification.type === 'RESCHEDULE'
-        ? whatsappBookingRescheduleUrl(phone, details)
-        : whatsappBookingCancellationUrl(phone, details);
+      notification.type === 'CONFIRMATION'
+        ? whatsappBookingApprovalUrl(phone, details)
+        : notification.type === 'RESCHEDULE'
+          ? whatsappBookingRescheduleUrl(phone, details)
+          : whatsappBookingCancellationUrl(phone, details);
     window.open(url, '_blank', 'noopener');
     this.whatsappBookingNotification.set(null);
   }
@@ -2630,7 +2633,11 @@ export class BusinessDashboardPage implements OnInit {
       .approveBooking(id)
       .pipe(finalize(() => this.updatingBookingApproval.set(false)))
       .subscribe({
-        next: (updated) => this.updateBookingInView(updated),
+        next: (updated) => {
+          this.updateBookingInView(updated);
+          this.bookingSuccess.set('El turno fue confirmado correctamente.');
+          this.whatsappBookingNotification.set({ booking: updated, type: 'CONFIRMATION' });
+        },
         error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
       });
   }

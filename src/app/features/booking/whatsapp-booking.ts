@@ -122,6 +122,18 @@ export function whatsappBookingConfirmationUrl(
 
 export type WhatsappBookingUpdate = Omit<WhatsappBookingConfirmation, 'businessName'>;
 
+export function whatsappBookingApprovalUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `¡Hola ${booking.customerName}! 👋\n\n✅ Tu turno fue confirmado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
+
 export function whatsappBookingRescheduleUrl(
   customerPhone: string,
   booking: WhatsappBookingUpdate,
