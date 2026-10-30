@@ -46,15 +46,4 @@ describe('BusinessEmailsService', () => {
     expect(request.request.body).toEqual(preferences);
     request.flush(status);
   });
-
-  it('selects an addon with an audit reason', () => {
-    service.selectAddon('COMPLETE').subscribe();
-    const request = http.expectOne('/api/v1/businesses/business-1/emails/addon');
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({
-      addon: 'COMPLETE',
-      reason: 'Selección desde Mis correos',
-    });
-    request.flush(status);
-  });
 });

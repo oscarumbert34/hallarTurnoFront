@@ -181,6 +181,43 @@ describe('BusinessDashboardPage', () => {
     expect(buttons.some((button) => button.textContent?.includes('Actualizar'))).toBe(false);
   });
 
+  it('opens WhatsApp with the updated booking after a reschedule', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const component = fixture.componentInstance as unknown as {
+      whatsappBookingNotification: {
+        set: (notification: unknown) => void;
+        (): unknown;
+      };
+      sendBookingUpdateByWhatsapp: () => void;
+    };
+    component.whatsappBookingNotification.set({
+      type: 'RESCHEDULE',
+      booking: {
+        id: 'booking-1',
+        customerName: 'Ana',
+        customerPhone: '1124541101',
+        serviceName: 'Corte',
+        branchId: 'branch-1',
+        branchName: 'Centro',
+        startsAt: '2026-11-04T16:30:00',
+        status: 'CONFIRMED',
+      },
+    });
+
+    component.sendBookingUpdateByWhatsapp();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491124541101?text='),
+      '_blank',
+      'noopener',
+    );
+    expect(decodeURIComponent(open.mock.calls[0][0] as string)).toContain(
+      'Tu turno fue reprogramado',
+    );
+    expect(component.whatsappBookingNotification()).toBeNull();
+    open.mockRestore();
+  });
+
   it('should request reschedule slots using the existing availability page size', () => {
     const component = fixture.componentInstance as unknown as {
       selectedBooking: { set: (booking: unknown) => void };
@@ -1475,7 +1512,7 @@ describe('BusinessDashboardPage', () => {
                 | 'PENDING_APPROVAL'
                 | 'CANCELLED'
                 | 'REJECTED'
-                | 'ALL'
+                | 'ALL',
             ) => void;
           };
         };
