@@ -42,5 +42,11 @@ describe('PlatformAdminService', () => {
     expect(update.request.method).toBe('PATCH');
     expect(update.request.body).toEqual({ email: 'nuevo@example.com' });
     update.flush({ id: 'business-1', ownerEmail: 'nuevo@example.com' });
+
+    service.updateBusinessPassword('business-1', 'Segura#2026Password').subscribe();
+    const passwordUpdate = http.expectOne('/api/platform-admin/businesses/business-1/password');
+    expect(passwordUpdate.request.method).toBe('PATCH');
+    expect(passwordUpdate.request.body).toEqual({ password: 'Segura#2026Password' });
+    passwordUpdate.flush({ id: 'business-1', ownerEmail: 'nuevo@example.com' });
   });
 });
