@@ -10,6 +10,7 @@ export interface PlatformBusiness {
   contactEmail: string | null;
   ownerEmail: string;
   status: string;
+  ownerLockedUntil: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +37,13 @@ export class PlatformAdminService {
     return this.http.patch<PlatformBusiness>(
       this.apiUrl.build(`/platform-admin/businesses/${businessId}/email`),
       { email },
+    );
+  }
+
+  updateBusinessPassword(businessId: string, password: string): Observable<PlatformBusiness> {
+    return this.http.patch<PlatformBusiness>(
+      this.apiUrl.build(`/platform-admin/businesses/${businessId}/password`),
+      { password },
     );
   }
 }

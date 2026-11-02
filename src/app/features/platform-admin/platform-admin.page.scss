@@ -56,6 +56,18 @@ mat-card-content {
 .email-display span {
   color: #667895;
 }
+.lock-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #a33a18 !important;
+  font-weight: 700;
+}
+.lock-status mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
 .title-line,
 .email-display,
 .actions {
@@ -90,6 +102,24 @@ form {
   gap: 8px;
   padding-top: 16px;
   border-top: 1px solid #e5edf7;
+}
+form h3 {
+  margin: 0;
+  color: #10284e;
+  font-size: 1rem;
+}
+.form-help {
+  margin: 0 0 8px;
+  color: #667895;
+  font-size: 0.88rem;
+}
+.password-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.password-actions {
+  flex-wrap: wrap;
 }
 .actions {
   justify-content: flex-end;
@@ -130,5 +160,8 @@ form {
   }
   .actions {
     flex-direction: column;
+  }
+  .password-fields {
+    grid-template-columns: 1fr;
   }
 }
