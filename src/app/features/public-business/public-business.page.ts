@@ -19,11 +19,12 @@ import {
   PublicBranch,
   PublicBusiness,
   PublicService,
+  PublicProduct,
 } from './public-business.models';
 import { ServiceAvailabilityDialogComponent } from './service-availability-dialog.component';
 import { AnalyticsService } from '../../shared/analytics.service';
 import { AvailabilitySlot } from '../booking/booking.models';
-import { whatsappBookingUrl } from '../booking/whatsapp-booking';
+import { whatsappBookingUrl, whatsappProductInquiryUrl } from '../booking/whatsapp-booking';
 import { VirtualQueue } from '../virtual-queue/virtual-queue.models';
 import { VirtualQueueService } from '../virtual-queue/virtual-queue.service';
 
@@ -43,11 +44,15 @@ export class PublicBusinessPageComponent implements OnInit {
   private readonly virtualQueueApi = inject(VirtualQueueService);
   private businessRequest?: Subscription;
   private servicesRequest?: Subscription;
+  private productsRequest?: Subscription;
   private todayAvailabilityRequest?: Subscription;
   private queueRequest?: Subscription;
   protected readonly business = signal<PublicBusiness | null>(null);
   protected readonly selectedBranch = signal<PublicBranch | null>(null);
   protected readonly services = signal<PublicService[]>([]);
+  protected readonly products = signal<PublicProduct[]>([]);
+  protected readonly activeCatalogTab = signal<'services' | 'products'>('services');
+  protected readonly productQuantities = signal<Record<string, number>>({});
   protected readonly loading = signal(true);
   protected readonly servicesLoading = signal(false);
   protected readonly error = signal('');
@@ -81,16 +86,31 @@ export class PublicBusinessPageComponent implements OnInit {
       ? this.todaySlots().filter((slot) => slot.resourceId === professionalId)
       : this.todaySlots();
   });
+  protected readonly selectedProductCount = computed(() =>
+    Object.values(this.productQuantities()).reduce((sum, quantity) => sum + quantity, 0),
+  );
+  protected readonly selectedProducts = computed(() =>
+    this.products()
+      .map((product) => ({ ...product, quantity: this.productQuantity(product.id) }))
+      .filter((product) => product.quantity > 0),
+  );
+  protected readonly selectedProductsTotal = computed(() =>
+    this.selectedProducts().reduce((total, product) => total + product.price * product.quantity, 0),
+  );
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.businessRequest?.unsubscribe();
       this.servicesRequest?.unsubscribe();
+      this.productsRequest?.unsubscribe();
       this.todayAvailabilityRequest?.unsubscribe();
       this.queueRequest?.unsubscribe();
       this.business.set(null);
       this.selectedBranch.set(null);
       this.services.set([]);
+      this.products.set([]);
+      this.productQuantities.set({});
+      this.activeCatalogTab.set('services');
       this.openQueues.set([]);
       this.checkingOpenQueue.set(false);
       this.loading.set(true);
@@ -104,6 +124,7 @@ export class PublicBusinessPageComponent implements OnInit {
             this.analytics.event('business_page_view', this.businessAnalyticsParams(business));
             this.loading.set(false);
             this.loadOpenQueues(business);
+            this.loadProducts(business.id);
             if (business.branches[0]) this.selectBranch(business.branches[0]);
           },
           error: (error) => {
@@ -166,6 +187,48 @@ export class PublicBusinessPageComponent implements OnInit {
       style: 'currency',
       currency: service.currency,
     }).format(service.price);
+  }
+
+  protected productPrice(product: PublicProduct): string {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(
+      product.price,
+    );
+  }
+
+  protected productQuantity(productId: string): number {
+    return this.productQuantities()[productId] ?? 0;
+  }
+
+  protected changeProductQuantity(productId: string, change: number): void {
+    this.productQuantities.update((quantities) => {
+      const quantity = Math.max(0, (quantities[productId] ?? 0) + change);
+      const updated = { ...quantities };
+      if (quantity) updated[productId] = quantity;
+      else delete updated[productId];
+      return updated;
+    });
+  }
+
+  protected productSubtotal(product: PublicProduct): string {
+    return this.referencePrice(product.price * this.productQuantity(product.id));
+  }
+
+  protected selectedTotal(): string {
+    return this.referencePrice(this.selectedProductsTotal());
+  }
+
+  protected consultProductsByWhatsapp(): void {
+    const whatsapp = this.business()?.whatsapp;
+    const products = this.selectedProducts();
+    if (!whatsapp || !products.length) return;
+    window.open(
+      whatsappProductInquiryUrl(
+        whatsapp,
+        products.map(({ name, price, quantity }) => ({ name, price, quantity })),
+      ),
+      '_blank',
+      'noopener',
+    );
   }
 
   protected selectTodayService(serviceId: string): void {
@@ -377,6 +440,25 @@ export class PublicBusinessPageComponent implements OnInit {
           this.selectInitialTodayService();
         }
       });
+  }
+
+  private loadProducts(businessId: string): void {
+    this.productsRequest = this.api
+      .listPublicProducts(businessId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => of([])),
+      )
+      .subscribe((products) => this.products.set(products.filter((product) => product.active)));
+  }
+
+  private referencePrice(value: number): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
   }
 
   private resetTodayAvailability(): void {

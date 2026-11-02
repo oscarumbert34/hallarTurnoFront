@@ -130,6 +130,44 @@ describe('BusinessDashboardService', () => {
     });
   });
 
+  it('should manage products and their image through the catalog API', () => {
+    const payload = { name: 'Mate', description: 'Acero', price: 1200.5, active: true };
+
+    service.listProducts().subscribe((products) => expect(products[0].name).toBe('Mate'));
+    const listRequest = httpTesting.expectOne(`/api/businesses/${businessId}/products`);
+    expect(listRequest.request.method).toBe('GET');
+    listRequest.flush([{ id: 'product-1', businessId, ...payload, imageUrl: null }]);
+
+    service.createProduct(payload).subscribe();
+    const createRequest = httpTesting.expectOne(`/api/businesses/${businessId}/products`);
+    expect(createRequest.request.method).toBe('POST');
+    expect(createRequest.request.body).toEqual(payload);
+    createRequest.flush({ id: 'product-1', businessId, ...payload });
+
+    service.setProductActive('product-1', false).subscribe();
+    const activeRequest = httpTesting.expectOne('/api/products/product-1/active');
+    expect(activeRequest.request.method).toBe('PATCH');
+    expect(activeRequest.request.body).toEqual({ active: false });
+    activeRequest.flush({ id: 'product-1', businessId, ...payload, active: false });
+
+    const image = new File(['photo'], 'product.webp', { type: 'image/webp' });
+    service.uploadProductImage('product-1', image).subscribe();
+    const imageRequest = httpTesting.expectOne('/api/products/product-1/image');
+    expect(imageRequest.request.method).toBe('POST');
+    expect(imageRequest.request.body.get('file')).toBe(image);
+    imageRequest.flush({ id: 'product-1', businessId, ...payload, imageUrl: 'https://image.test' });
+
+    service.deleteProductImage('product-1').subscribe();
+    const deleteImageRequest = httpTesting.expectOne('/api/products/product-1/image');
+    expect(deleteImageRequest.request.method).toBe('DELETE');
+    deleteImageRequest.flush(null);
+
+    service.deleteProduct('product-1').subscribe();
+    const deleteRequest = httpTesting.expectOne('/api/products/product-1');
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+  });
+
   it('should send all-day and partial absences with the complete resource', () => {
     service
       .updateResource('resource-1', {

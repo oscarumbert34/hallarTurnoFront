@@ -1,0 +1,134 @@
+.platform-admin {
+  display: grid;
+  gap: 20px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+header {
+  padding: 8px 0;
+}
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #0879df;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.search {
+  width: min(100%, 520px);
+}
+.summary {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: #667895;
+}
+.summary strong {
+  color: #10284e;
+  font-size: 1.5rem;
+}
+.business-list {
+  display: grid;
+  gap: 14px;
+}
+mat-card {
+  border-color: #e1eaf5;
+  border-radius: 18px;
+  background: #fff;
+  transition: border-color 160ms ease;
+}
+mat-card.editing {
+  border-color: #79bdf6;
+}
+mat-card-content {
+  display: grid;
+  gap: 18px;
+  padding: 22px !important;
+}
+.business-copy {
+  display: grid;
+  gap: 4px;
+}
+.business-copy > span,
+.business-copy small,
+.email-display span {
+  color: #667895;
+}
+.title-line,
+.email-display,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+h2 {
+  margin: 0;
+  color: #10284e;
+  font-size: 1.1rem;
+}
+.status {
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #17643a !important;
+  background: #dcfce7;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.email-display > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.email-display strong {
+  overflow-wrap: anywhere;
+}
+form {
+  display: grid;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5edf7;
+}
+.actions {
+  justify-content: flex-end;
+}
+.empty {
+  justify-items: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+.empty mat-icon {
+  width: 48px;
+  height: 48px;
+  color: #0879df;
+  font-size: 48px;
+}
+.empty p {
+  margin: 0;
+  color: #667895;
+}
+@media (max-width: 640px) {
+  .platform-admin {
+    gap: 14px;
+  }
+  mat-card-content {
+    padding: 17px !important;
+  }
+  .title-line,
+  .email-display {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .status {
+    width: fit-content;
+  }
+  .email-display button,
+  .actions button {
+    width: 100%;
+  }
+  .actions {
+    flex-direction: column;
+  }
+}

@@ -4,6 +4,7 @@ import { map } from 'rxjs';
 import { authGuard } from './features/auth/auth.guard';
 import { AuthService } from './features/auth/auth.service';
 import { VirtualQueueAvailabilityService } from './shared/virtual-queue-availability.service';
+import { platformAdminGuard } from './features/platform-admin/platform-admin.guard';
 
 const businessVirtualQueueEnabledGuard = () => {
   const router = inject(Router);
@@ -150,6 +151,12 @@ export const routes: Routes = [
     data: { roles: ['ADMIN', 'BUSINESS'] },
     loadComponent: () =>
       import('./features/business-emails/business-emails.page').then((m) => m.BusinessEmailsPage),
+  },
+  {
+    path: 'platform-admin',
+    canActivate: [authGuard, platformAdminGuard],
+    loadComponent: () =>
+      import('./features/platform-admin/platform-admin.page').then((m) => m.PlatformAdminPage),
   },
   {
     path: ':slug/business-dashboard',

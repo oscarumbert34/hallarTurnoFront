@@ -18,6 +18,8 @@ import {
   ServiceCatalogItem,
   PublicProfile,
   PublicProfileUpdate,
+  Product,
+  ProductPayload,
 } from './dashboard.models';
 
 @Injectable({ providedIn: 'root' })
@@ -130,6 +132,41 @@ export class BusinessDashboardService {
     return this.http.delete<void>(this.apiUrl.build(`/service-offerings/${id}`));
   }
 
+  listProducts(): Observable<Product[]> {
+    return this.http.get<Product[]>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/products`),
+    );
+  }
+
+  createProduct(payload: ProductPayload): Observable<Product> {
+    return this.http.post<Product>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/products`),
+      payload,
+    );
+  }
+
+  updateProduct(id: string, payload: ProductPayload): Observable<Product> {
+    return this.http.put<Product>(this.apiUrl.build(`/products/${id}`), payload);
+  }
+
+  setProductActive(id: string, active: boolean): Observable<Product> {
+    return this.http.patch<Product>(this.apiUrl.build(`/products/${id}/active`), { active });
+  }
+
+  deleteProduct(id: string): Observable<void> {
+    return this.http.delete<void>(this.apiUrl.build(`/products/${id}`));
+  }
+
+  uploadProductImage(id: string, file: File): Observable<Product> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<Product>(this.apiUrl.build(`/products/${id}/image`), body);
+  }
+
+  deleteProductImage(id: string): Observable<void> {
+    return this.http.delete<void>(this.apiUrl.build(`/products/${id}/image`));
+  }
+
   listResources(): Observable<Resource[]> {
     return this.listBranches().pipe(
       switchMap((branches) => {
@@ -187,9 +224,7 @@ export class BusinessDashboardService {
 
   getPublicProfile(): Observable<PublicProfile> {
     return this.http
-      .get<PublicProfile>(
-        this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile`),
-      )
+      .get<PublicProfile>(this.apiUrl.build(`/businesses/${this.currentBusinessId}/public-profile`))
       .pipe(
         map((profile) => ({
           publicDescription: profile.publicDescription ?? '',
@@ -255,7 +290,6 @@ export class BusinessDashboardService {
         })),
       );
   }
-
 
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
@@ -711,7 +745,6 @@ interface BusinessConfiguration {
   internalBookingCreation?: boolean;
   virtualQueueEnabled?: boolean;
 }
-
 
 interface ImageUploadResponse {
   imageKey: string;
