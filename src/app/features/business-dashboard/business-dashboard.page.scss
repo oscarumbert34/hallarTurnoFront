@@ -9,6 +9,11 @@
   border-radius: 10px;
   color: #14532d;
   background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .business-configuration {

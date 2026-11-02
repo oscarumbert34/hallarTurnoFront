@@ -10,8 +10,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.token;
+  const protectedBookingLink = isProtectedBookingLinkUrl(request.url);
   const shouldSkipAuth =
-    request.context.get(SKIP_AUTH) || isAuthUrl(request.url) || isPublicUrl(request.url);
+    request.context.get(SKIP_AUTH) ||
+    isAuthUrl(request.url) ||
+    (isPublicUrl(request.url) && !protectedBookingLink);
   const shouldAttachToken = Boolean(token) && !shouldSkipAuth;
   const authRequest = shouldAttachToken
     ? request.clone({
@@ -39,6 +42,10 @@ function isAuthUrl(url: string): boolean {
 
 function isPublicUrl(url: string): boolean {
   return /\/public(\/|$)/.test(pathName(url));
+}
+
+function isProtectedBookingLinkUrl(url: string): boolean {
+  return /\/public\/booking-links\/[^/]+(?:\/bookings)?\/?$/.test(pathName(url));
 }
 
 function pathName(url: string): string {

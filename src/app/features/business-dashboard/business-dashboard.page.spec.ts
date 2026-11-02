@@ -104,6 +104,13 @@ describe('BusinessDashboardPage', () => {
       createService: vi.fn(),
       updateService: vi.fn(),
       deleteService: vi.fn(),
+      listProducts: vi.fn(() => of([])),
+      createProduct: vi.fn(),
+      updateProduct: vi.fn(),
+      setProductActive: vi.fn(),
+      deleteProduct: vi.fn(),
+      uploadProductImage: vi.fn(),
+      deleteProductImage: vi.fn(),
       createResource: vi.fn(),
       updateResource: vi.fn(),
       deleteResource: vi.fn(),
@@ -179,6 +186,43 @@ describe('BusinessDashboardPage', () => {
   it('should not show the global refresh button', () => {
     const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
     expect(buttons.some((button) => button.textContent?.includes('Actualizar'))).toBe(false);
+  });
+
+  it('opens WhatsApp with the updated booking after a reschedule', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const component = fixture.componentInstance as unknown as {
+      whatsappBookingNotification: {
+        set: (notification: unknown) => void;
+        (): unknown;
+      };
+      sendBookingUpdateByWhatsapp: () => void;
+    };
+    component.whatsappBookingNotification.set({
+      type: 'RESCHEDULE',
+      booking: {
+        id: 'booking-1',
+        customerName: 'Ana',
+        customerPhone: '1124541101',
+        serviceName: 'Corte',
+        branchId: 'branch-1',
+        branchName: 'Centro',
+        startsAt: '2026-11-04T16:30:00',
+        status: 'CONFIRMED',
+      },
+    });
+
+    component.sendBookingUpdateByWhatsapp();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491124541101?text='),
+      '_blank',
+      'noopener',
+    );
+    expect(decodeURIComponent(open.mock.calls[0][0] as string)).toContain(
+      'Tu turno fue reprogramado',
+    );
+    expect(component.whatsappBookingNotification()).toBeNull();
+    open.mockRestore();
   });
 
   it('should request reschedule slots using the existing availability page size', () => {
@@ -1475,7 +1519,7 @@ describe('BusinessDashboardPage', () => {
                 | 'PENDING_APPROVAL'
                 | 'CANCELLED'
                 | 'REJECTED'
-                | 'ALL'
+                | 'ALL',
             ) => void;
           };
         };
@@ -1537,7 +1581,9 @@ describe('BusinessDashboardPage', () => {
     const pending = {
       id: 'booking-pending',
       customerName: 'Ana Perez',
+      customerPhone: '1124541101',
       serviceName: 'Masajes',
+      branchName: 'Centro',
       startsAt: '2026-08-22T12:30:00Z',
       status: 'PENDING_APPROVAL',
     };
@@ -1549,6 +1595,11 @@ describe('BusinessDashboardPage', () => {
     component.approveBooking(pending.id);
 
     expect(component.bookings()[0].status).toBe('CONFIRMED');
+    expect(component.bookingSuccess()).toBe('El turno fue confirmado correctamente.');
+    expect(component.whatsappBookingNotification()).toEqual({
+      booking: confirmed,
+      type: 'CONFIRMATION',
+    });
   });
 
   it('should update a pending approval immediately after rejecting it', () => {

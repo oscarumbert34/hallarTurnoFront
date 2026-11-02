@@ -55,3 +55,13 @@ export interface PublicService {
   price: number;
   currency: string;
 }
+
+export interface PublicProduct {
+  id: string;
+  businessId: string;
+  name: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  active: boolean;
+}

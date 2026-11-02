@@ -36,6 +36,38 @@ export function whatsappBookingUrl(phone: string, inquiry: WhatsappBookingInquir
   return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
 }
 
+export interface WhatsappProductSelection {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function whatsappProductInquiryUrl(
+  phone: string,
+  products: WhatsappProductSelection[],
+): string {
+  const selected = products.filter((product) => product.quantity > 0);
+  const lines = selected.map((product) => {
+    const subtotal = product.price * product.quantity;
+    return product.quantity > 1
+      ? `- ${product.quantity} x ${product.name} — ${formatReferencePrice(product.price)} c/u — Subtotal ${formatReferencePrice(subtotal)}`
+      : `- 1 x ${product.name} — ${formatReferencePrice(product.price)}`;
+  });
+  const total = selected.reduce((sum, product) => sum + product.price * product.quantity, 0);
+  const message = `Hola, estuve viendo tus productos en HallarTurno y me interesan:\n\n${lines.join('\n')}\n\nTotal de referencia: ${formatReferencePrice(total)}\n\n¿Tenés disponibilidad?`;
+
+  return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
+}
+
+function formatReferencePrice(value: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function ownerBookingUrl(
   origin: string,
   business: Pick<
@@ -116,6 +148,44 @@ export function whatsappBookingConfirmationUrl(
   const time = booking.startsAt.slice(11, 16);
   const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
   const message = `¡Hola ${booking.customerName}! 👋\n\n✅ Tu turno en *${booking.businessName}* quedó reservado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
+
+export type WhatsappBookingUpdate = Omit<WhatsappBookingConfirmation, 'businessName'>;
+
+export function whatsappBookingApprovalUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `¡Hola ${booking.customerName}! 👋\n\n✅ Tu turno fue confirmado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
+
+export function whatsappBookingRescheduleUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `¡Hola ${booking.customerName}! 👋\n\n🔄 Tu turno fue reprogramado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Nueva fecha: ${date}\n🕐 Nuevo horario: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\n¡Te esperamos! 😊`;
+
+  return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
+}
+
+export function whatsappBookingCancellationUrl(
+  customerPhone: string,
+  booking: WhatsappBookingUpdate,
+): string {
+  const date = booking.startsAt.slice(0, 10);
+  const time = booking.startsAt.slice(11, 16);
+  const professional = booking.resourceName ? `\n👤 Profesional: ${booking.resourceName}` : '';
+  const message = `Hola ${booking.customerName}.\n\n❌ Tu turno fue cancelado.\n\n✂️ Servicio: ${booking.serviceName}\n📅 Fecha: ${date}\n🕐 Hora: ${time}\n📍 Sucursal: ${booking.branchName}${professional}\n\nSi necesitás otro horario, comunicate con nosotros.`;
 
   return `https://wa.me/${whatsappPhone(customerPhone)}?text=${encodeURIComponent(message)}`;
 }

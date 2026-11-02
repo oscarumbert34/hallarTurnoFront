@@ -11,10 +11,11 @@ import {
 } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { filter, map, startWith, switchMap, tap } from 'rxjs';
+import { filter, map, of, startWith, switchMap, tap } from 'rxjs';
 import { AuthService } from './features/auth/auth.service';
 import { clearChunkLoadRecoveryFlag } from './shared/chunk-load-recovery';
 import { VirtualQueueAvailabilityService } from './shared/virtual-queue-availability.service';
+import { PlatformAdminService } from './features/platform-admin/platform-admin.service';
 
 @Component({
   selector: 'app-root',
@@ -34,6 +35,7 @@ export class App {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly virtualQueueAvailability = inject(VirtualQueueAvailabilityService);
+  private readonly platformAdmin = inject(PlatformAdminService);
   protected readonly session$ = this.authService.session$;
   protected readonly showShellNavigation$ = this.router.events.pipe(
     filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -46,6 +48,7 @@ export class App {
     { label: 'Reservas', path: '/bookings' },
     { label: 'Mis correos', path: '/emails' },
     ...(this.virtualQueueAvailability.enabled() ? [{ label: 'Fila', path: '/admin/fila' }] : []),
+    ...(this.platformAdmin.allowed() ? [{ label: 'Administración', path: '/platform-admin' }] : []),
     { label: 'Panel', path: '/business-dashboard' },
   ]);
 
@@ -53,6 +56,16 @@ export class App {
     this.authService.session$
       .pipe(
         switchMap(() => this.virtualQueueAvailability.refresh()),
+        takeUntilDestroyed(),
+      )
+      .subscribe();
+    this.authService.session$
+      .pipe(
+        switchMap((session) => {
+          if (session) return this.platformAdmin.checkAccess();
+          this.platformAdmin.allowed.set(false);
+          return of({ allowed: false });
+        }),
         takeUntilDestroyed(),
       )
       .subscribe();
@@ -65,6 +78,7 @@ export class App {
   }
 
   protected navigationPath(path: string): string {
+    if (path === '/platform-admin') return path;
     const segments = this.router.parseUrl(this.router.url).root.children['primary']?.segments ?? [];
     const firstSegment = segments[0]?.path;
     const slug =

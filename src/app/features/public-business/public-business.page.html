@@ -202,170 +202,294 @@
       </section>
     }
     @if (selectedBranch()) {
-      @if (!business.virtualQueueEnabled && !checkingOpenQueue() && !hasOpenQueue()) {
-        <section class="panel today-availability" aria-labelledby="today-availability-title">
-          <div class="today-heading">
-            <mat-icon aria-hidden="true">calendar_today</mat-icon>
-            <div>
-              <h2 id="today-availability-title">¿Querés venir hoy?</h2>
-              <p>Turnos disponibles para {{ business.name }}</p>
+      @if (products().length) {
+        <nav class="catalog-tabs" aria-label="Catálogo del comercio">
+          <button
+            type="button"
+            [class.active]="activeCatalogTab() === 'services'"
+            [attr.aria-selected]="activeCatalogTab() === 'services'"
+            (click)="activeCatalogTab.set('services')"
+          >
+            Servicios
+          </button>
+          <button
+            type="button"
+            [class.active]="activeCatalogTab() === 'products'"
+            [attr.aria-selected]="activeCatalogTab() === 'products'"
+            (click)="activeCatalogTab.set('products')"
+          >
+            Productos
+          </button>
+        </nav>
+      }
+      @if (activeCatalogTab() === 'services') {
+        @if (!business.virtualQueueEnabled && !checkingOpenQueue() && !hasOpenQueue()) {
+          <section class="panel today-availability" aria-labelledby="today-availability-title">
+            <div class="today-heading">
+              <mat-icon aria-hidden="true">calendar_today</mat-icon>
+              <div>
+                <h2 id="today-availability-title">¿Querés venir hoy?</h2>
+                <p>Turnos disponibles para {{ business.name }}</p>
+              </div>
             </div>
-          </div>
-          <div class="today-card">
-            <h3>Horarios disponibles hoy</h3>
-            <div class="today-slots">
-              @for (slot of visibleTodaySlots(); track slot.id) {
-                <button
-                  type="button"
-                  class="slot-chip"
-                  [class.selected]="selectedTodaySlot()?.id === slot.id"
-                  [attr.aria-pressed]="selectedTodaySlot()?.id === slot.id"
-                  (click)="selectTodaySlot(slot)"
-                >
-                  {{ slotTime(slot) }}
-                </button>
-              }
-            </div>
-            @if (services().length) {
-              <div class="today-filters">
-                <label>
-                  <span>Servicio</span>
-                  <select
-                    #todayService
-                    [value]="selectedTodayServiceId()"
-                    (change)="selectTodayService(todayService.value)"
+            <div class="today-card">
+              <h3>Horarios disponibles hoy</h3>
+              <div class="today-slots">
+                @for (slot of visibleTodaySlots(); track slot.id) {
+                  <button
+                    type="button"
+                    class="slot-chip"
+                    [class.selected]="selectedTodaySlot()?.id === slot.id"
+                    [attr.aria-pressed]="selectedTodaySlot()?.id === slot.id"
+                    (click)="selectTodaySlot(slot)"
                   >
-                    @for (service of services(); track service.id) {
-                      <option [value]="service.id">{{ service.name }}</option>
-                    }
-                  </select>
-                </label>
-                @if (professionals().length > 1) {
+                    {{ slotTime(slot) }}
+                  </button>
+                }
+              </div>
+              @if (services().length) {
+                <div class="today-filters">
                   <label>
-                    <span>Profesional</span>
+                    <span>Servicio</span>
                     <select
-                      #professional
-                      [value]="selectedProfessionalId()"
-                      (change)="selectProfessional(professional.value)"
+                      #todayService
+                      [value]="selectedTodayServiceId()"
+                      (change)="selectTodayService(todayService.value)"
                     >
-                      <option value="">Cualquiera</option>
-                      @for (item of professionals(); track item.id) {
-                        <option [value]="item.id">{{ item.name }}</option>
+                      @for (service of services(); track service.id) {
+                        <option [value]="service.id">{{ service.name }}</option>
                       }
                     </select>
                   </label>
+                  @if (professionals().length > 1) {
+                    <label>
+                      <span>Profesional</span>
+                      <select
+                        #professional
+                        [value]="selectedProfessionalId()"
+                        (change)="selectProfessional(professional.value)"
+                      >
+                        <option value="">Cualquiera</option>
+                        @for (item of professionals(); track item.id) {
+                          <option [value]="item.id">{{ item.name }}</option>
+                        }
+                      </select>
+                    </label>
+                  }
+                </div>
+              }
+              @if (todaySlotsLoading()) {
+                <p role="status">Cargando turnos de hoy...</p>
+              }
+              @if (todaySlotsError()) {
+                <p role="alert">{{ todaySlotsError() }}</p>
+                <button mat-button (click)="selectTodayService(selectedTodayServiceId())">
+                  Reintentar
+                </button>
+              }
+              @if (!todaySlotsLoading() && !todaySlotsError() && !visibleTodaySlots().length) {
+                <p class="today-empty" role="status">No hay más turnos disponibles hoy.</p>
+              }
+              @if (selectedTodaySlot(); as slot) {
+                <div class="today-summary">
+                  <mat-icon aria-hidden="true">event</mat-icon>
+                  <div>
+                    <strong>Tu turno</strong><b>Hoy, {{ slotTime(slot) }}</b>
+                    <span>{{ selectedTodayService()?.name }}</span>
+                    <span>
+                      {{ selectedTodayService()?.durationMinutes }} minutos
+                      @if (selectedTodayService(); as service) {
+                        @if (service.price != null && service.currency) {
+                          · {{ price(service) }}
+                        }
+                      }
+                      @if (slot.resourceName) {
+                        · {{ slot.resourceName }}
+                      }
+                    </span>
+                  </div>
+                </div>
+                <button
+                  class="whatsapp-action"
+                  [disabled]="!!validatingSlotId()"
+                  (click)="actOnTodaySlot(slot)"
+                >
+                  {{ validatingSlotId() === slot.id ? 'Validando...' : 'Consultar por WhatsApp' }}
+                </button>
+                <small>El comercio te confirmará el turno.</small>
+              }
+            </div>
+          </section>
+        }
+        <section class="panel" aria-labelledby="services-title">
+          <div class="section-heading">
+            <mat-icon aria-hidden="true">settings_suggest</mat-icon>
+            <div>
+              <h2 id="services-title">Nuestros servicios</h2>
+              <p>
+                {{
+                  business.virtualQueueEnabled
+                    ? 'Conocé los servicios disponibles.'
+                    : 'Elegí el servicio que necesitás y consultá los turnos disponibles.'
+                }}
+              </p>
+            </div>
+          </div>
+          @if (servicesLoading()) {
+            <p role="status">Cargando servicios...</p>
+          }
+          @if (servicesError()) {
+            <p role="alert">{{ servicesError() }}</p>
+          }
+          <div class="services">
+            @for (service of services(); track service.id) {
+              <article>
+                <div class="service-avatar" aria-hidden="true">
+                  <mat-icon>design_services</mat-icon>
+                </div>
+                <div class="service-copy">
+                  <h3>{{ service.name }}</h3>
+                  @if (service.description) {
+                    <p>{{ service.description }}</p>
+                  }
+                </div>
+                <div class="details">
+                  @if (service.durationMinutes != null) {
+                    <span
+                      ><mat-icon aria-hidden="true">schedule</mat-icon
+                      >{{ service.durationMinutes }} minutos</span
+                    >
+                  }
+                  @if (service.price != null && service.currency) {
+                    <strong
+                      ><mat-icon aria-hidden="true">sell</mat-icon>{{ price(service) }}</strong
+                    >
+                  }
+                </div>
+                @if (!business.virtualQueueEnabled) {
+                  <button mat-stroked-button (click)="openAvailability(service)">Reservar</button>
+                }
+              </article>
+            } @empty {
+              @if (!servicesLoading() && !servicesError()) {
+                <p>No hay servicios disponibles en esta sucursal.</p>
+              }
+            }
+          </div>
+          @if (services().length && !business.virtualQueueEnabled) {
+            <aside class="booking-help" aria-label="Cómo reservar un turno">
+              <h3>
+                <mat-icon aria-hidden="true">format_list_numbered</mat-icon>¿Cómo reservar un turno?
+              </h3>
+              <ol>
+                <li>Elegí un servicio</li>
+                <li>Tocá “Ver turnos” y elegí un horario</li>
+                <li>Completá tus datos y confirmá</li>
+              </ol>
+            </aside>
+          }
+        </section>
+      } @else {
+        <section class="panel products-panel" aria-labelledby="products-title">
+          <div class="section-heading">
+            <mat-icon aria-hidden="true">shopping_bag</mat-icon>
+            <div>
+              <h2 id="products-title">Nuestros productos</h2>
+              <p>Elegí uno o varios productos para consultar.</p>
+            </div>
+          </div>
+          <div class="products-grid">
+            @for (product of products(); track product.id) {
+              <div class="product-card" [class.selected]="productQuantity(product.id) > 0">
+                <div class="product-image">
+                  @if (product.imageUrl) {
+                    <img [src]="product.imageUrl" [alt]="'Fotografía de ' + product.name" />
+                  } @else {
+                    <mat-icon aria-hidden="true">image</mat-icon>
+                    <span>Sin fotografía</span>
+                  }
+                </div>
+                <div class="product-copy">
+                  <div class="product-title">
+                    <h3>{{ product.name }}</h3>
+                    @if (productQuantity(product.id) > 0) {
+                      <span class="selected-badge"><mat-icon>check</mat-icon>Seleccionado</span>
+                    }
+                  </div>
+                  @if (product.description) {
+                    <p>{{ product.description }}</p>
+                  }
+                  <strong>{{ productPrice(product) }}</strong>
+                </div>
+                @if (productQuantity(product.id) === 0) {
+                  <button
+                    class="add-product"
+                    type="button"
+                    (click)="changeProductQuantity(product.id, 1)"
+                  >
+                    <mat-icon aria-hidden="true">add</mat-icon>Agregar
+                  </button>
+                } @else {
+                  <div class="quantity" aria-label="Cantidad seleccionada">
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Quitar ' + product.name"
+                      (click)="changeProductQuantity(product.id, -1)"
+                    >
+                      −
+                    </button>
+                    <strong>{{ productQuantity(product.id) }}</strong>
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Agregar otro ' + product.name"
+                      (click)="changeProductQuantity(product.id, 1)"
+                    >
+                      +
+                    </button>
+                  </div>
                 }
               </div>
             }
-            @if (todaySlotsLoading()) {
-              <p role="status">Cargando turnos de hoy...</p>
-            }
-            @if (todaySlotsError()) {
-              <p role="alert">{{ todaySlotsError() }}</p>
-              <button mat-button (click)="selectTodayService(selectedTodayServiceId())">
-                Reintentar
-              </button>
-            }
-            @if (!todaySlotsLoading() && !todaySlotsError() && !visibleTodaySlots().length) {
-              <p class="today-empty" role="status">No hay más turnos disponibles hoy.</p>
-            }
-            @if (selectedTodaySlot(); as slot) {
-              <div class="today-summary">
-                <mat-icon aria-hidden="true">event</mat-icon>
-                <div>
-                  <strong>Tu turno</strong><b>Hoy, {{ slotTime(slot) }}</b>
-                  <span>{{ selectedTodayService()?.name }}</span>
-                  <span>
-                    {{ selectedTodayService()?.durationMinutes }} minutos
-                    @if (selectedTodayService(); as service) {
-                      @if (service.price != null && service.currency) {
-                        · {{ price(service) }}
-                      }
-                    }
-                    @if (slot.resourceName) {
-                      · {{ slot.resourceName }}
-                    }
-                  </span>
-                </div>
-              </div>
-              <button
-                class="whatsapp-action"
-                [disabled]="!!validatingSlotId()"
-                (click)="actOnTodaySlot(slot)"
-              >
-                {{ validatingSlotId() === slot.id ? 'Validando...' : 'Consultar por WhatsApp' }}
-              </button>
-              <small>El comercio te confirmará el turno.</small>
-            }
           </div>
+          @if (selectedProductCount() > 0) {
+            <aside class="product-selection" aria-live="polite">
+              <div class="selection-heading">
+                <div>
+                  <span>Tu selección</span>
+                  <strong>
+                    {{ selectedProductCount() }}
+                    {{ selectedProductCount() === 1 ? 'producto' : 'productos' }}
+                  </strong>
+                </div>
+                <strong class="selection-total">{{ selectedTotal() }}</strong>
+              </div>
+              <ul>
+                @for (product of selectedProducts(); track product.id) {
+                  <li>
+                    <span>{{ product.quantity }} × {{ product.name }}</span>
+                    <strong>{{ productSubtotal(product) }}</strong>
+                  </li>
+                }
+              </ul>
+              @if (business.whatsapp) {
+                <button
+                  class="product-whatsapp"
+                  type="button"
+                  (click)="consultProductsByWhatsapp()"
+                >
+                  <mat-icon aria-hidden="true">chat</mat-icon>
+                  Consultar por WhatsApp
+                </button>
+                <small>Es una consulta de disponibilidad, no confirma una compra.</small>
+              } @else {
+                <p class="whatsapp-unavailable" role="status">
+                  Este comercio no tiene un WhatsApp configurado para consultas de productos.
+                </p>
+              }
+            </aside>
+          }
         </section>
       }
-      <section class="panel" aria-labelledby="services-title">
-        <div class="section-heading">
-          <mat-icon aria-hidden="true">settings_suggest</mat-icon>
-          <div>
-            <h2 id="services-title">Nuestros servicios</h2>
-            <p>
-              {{
-                business.virtualQueueEnabled
-                  ? 'Conocé los servicios disponibles.'
-                  : 'Elegí el servicio que necesitás y consultá los turnos disponibles.'
-              }}
-            </p>
-          </div>
-        </div>
-        @if (servicesLoading()) {
-          <p role="status">Cargando servicios...</p>
-        }
-        @if (servicesError()) {
-          <p role="alert">{{ servicesError() }}</p>
-        }
-        <div class="services">
-          @for (service of services(); track service.id) {
-            <article>
-              <div class="service-avatar" aria-hidden="true">
-                <mat-icon>design_services</mat-icon>
-              </div>
-              <div class="service-copy">
-                <h3>{{ service.name }}</h3>
-                @if (service.description) {
-                  <p>{{ service.description }}</p>
-                }
-              </div>
-              <div class="details">
-                @if (service.durationMinutes != null) {
-                  <span
-                    ><mat-icon aria-hidden="true">schedule</mat-icon
-                    >{{ service.durationMinutes }} minutos</span
-                  >
-                }
-                @if (service.price != null && service.currency) {
-                  <strong><mat-icon aria-hidden="true">sell</mat-icon>{{ price(service) }}</strong>
-                }
-              </div>
-              @if (!business.virtualQueueEnabled) {
-                <button mat-stroked-button (click)="openAvailability(service)">Reservar</button>
-              }
-            </article>
-          } @empty {
-            @if (!servicesLoading() && !servicesError()) {
-              <p>No hay servicios disponibles en esta sucursal.</p>
-            }
-          }
-        </div>
-        @if (services().length && !business.virtualQueueEnabled) {
-          <aside class="booking-help" aria-label="Cómo reservar un turno">
-            <h3>
-              <mat-icon aria-hidden="true">format_list_numbered</mat-icon>¿Cómo reservar un turno?
-            </h3>
-            <ol>
-              <li>Elegí un servicio</li>
-              <li>Tocá “Ver turnos” y elegí un horario</li>
-              <li>Completá tus datos y confirmá</li>
-            </ol>
-          </aside>
-        }
-      </section>
     }
     @if (business.aboutUs) {
       <section class="panel about-us" aria-labelledby="about-title">

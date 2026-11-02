@@ -30,8 +30,14 @@ import { UiStateComponent } from '../../shared/ui-state.component';
 import { VirtualQueueAvailabilityService } from '../../shared/virtual-queue-availability.service';
 import { BookingService } from '../booking/booking.service';
 import { AvailabilitySlot } from '../booking/booking.models';
+import {
+  whatsappBookingApprovalUrl,
+  whatsappBookingCancellationUrl,
+  whatsappBookingRescheduleUrl,
+} from '../booking/whatsapp-booking';
 import { BusinessDashboardService } from './business-dashboard.service';
 import { ImageUploadComponent } from './image-upload.component';
+import { ProductsAdminComponent } from './products-admin.component';
 import { dashboardErrorMessage } from './dashboard-error';
 import {
   Booking,
@@ -66,6 +72,7 @@ import {
     ReactiveFormsModule,
     UiStateComponent,
     ImageUploadComponent,
+    ProductsAdminComponent,
   ],
   providers: [provideNativeDateAdapter()],
   template: `
@@ -508,6 +515,10 @@ import {
             </section>
           </mat-tab>
 
+          <mat-tab label="Productos">
+            <app-products-admin />
+          </mat-tab>
+
           <mat-tab label="Recursos">
             <section class="tab-panel">
               <div class="entity-toolbar">
@@ -802,7 +813,8 @@ import {
                       Habilitar fila virtual
                     </mat-checkbox>
                     <p class="configuration-help">
-                      Permite abrir una fila por sucursal y compartir el seguimiento con los clientes.
+                      Permite abrir una fila por sucursal y compartir el seguimiento con los
+                      clientes.
                     </p>
                   </section>
                   <section class="configuration-section" aria-labelledby="notifications-title">
@@ -1026,7 +1038,14 @@ import {
 
           <app-ui-state [loading]="loadingBookings()" [error]="bookingError()" />
           @if (bookingSuccess()) {
-            <p class="booking-success" role="status">{{ bookingSuccess() }}</p>
+            <div class="booking-success" role="status">
+              <span>{{ bookingSuccess() }}</span>
+              @if (whatsappBookingNotification()?.booking?.customerPhone) {
+                <button mat-flat-button type="button" (click)="sendBookingUpdateByWhatsapp()">
+                  <mat-icon aria-hidden="true">chat</mat-icon>Avisar por WhatsApp
+                </button>
+              }
+            </div>
           }
 
           @if (bookingViewMode() === 'week') {
@@ -1382,15 +1401,15 @@ import {
                   Reprogramar turno
                 </button>
                 @if (booking.status !== 'PENDING_APPROVAL') {
-                <button
-                  mat-flat-button
-                  type="button"
-                  class="cancel-booking-button"
-                  mat-dialog-close
-                  (click)="cancelBooking(booking.id)"
-                >
-                  Cancelar reserva
-                </button>
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="cancel-booking-button"
+                    mat-dialog-close
+                    (click)="cancelBooking(booking.id)"
+                  >
+                    Cancelar reserva
+                  </button>
                 }
               }
             </mat-dialog-actions>
@@ -1527,6 +1546,10 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly errorMessage = signal('');
   protected readonly bookingError = signal('');
   protected readonly bookingSuccess = signal('');
+  protected readonly whatsappBookingNotification = signal<{
+    booking: Booking;
+    type: 'CONFIRMATION' | 'RESCHEDULE' | 'CANCELLATION';
+  } | null>(null);
   protected readonly rescheduleError = signal('');
   protected readonly loadingSlots = signal(false);
   protected readonly rescheduling = signal(false);
@@ -2302,6 +2325,7 @@ export class BusinessDashboardPage implements OnInit {
       '';
     this.selectedBooking.set(booking);
     this.bookingSuccess.set('');
+    this.whatsappBookingNotification.set(null);
     this.rescheduleError.set('');
     this.rescheduleSlots.set([]);
     this.selectedRescheduleSlot.set(null);
@@ -2425,6 +2449,7 @@ export class BusinessDashboardPage implements OnInit {
           this.selectedWeekDate.set(this.dateValue(rescheduledDate));
           this.dialog.closeAll();
           this.bookingSuccess.set('El turno fue reprogramado correctamente.');
+          this.whatsappBookingNotification.set({ booking: updated, type: 'RESCHEDULE' });
           this.loadCurrentBookings(true);
         },
         error: (error: unknown) => {
@@ -2576,9 +2601,37 @@ export class BusinessDashboardPage implements OnInit {
     }
 
     this.dashboardService.cancelBooking(id).subscribe({
-      next: (updated) => this.updateBookingInView(updated),
+      next: (updated) => {
+        this.updateBookingInView(updated);
+        this.bookingSuccess.set('La reserva fue cancelada correctamente.');
+        this.whatsappBookingNotification.set({ booking: updated, type: 'CANCELLATION' });
+      },
       error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
     });
+  }
+
+  protected sendBookingUpdateByWhatsapp(): void {
+    const notification = this.whatsappBookingNotification();
+    const phone = notification?.booking.customerPhone?.trim();
+    if (!notification || !phone) {
+      return;
+    }
+    const booking = notification.booking;
+    const details = {
+      customerName: booking.customerName,
+      branchName: this.bookingBranchName(booking),
+      serviceName: booking.serviceName,
+      startsAt: booking.startsAt,
+      resourceName: booking.resourceName,
+    };
+    const url =
+      notification.type === 'CONFIRMATION'
+        ? whatsappBookingApprovalUrl(phone, details)
+        : notification.type === 'RESCHEDULE'
+          ? whatsappBookingRescheduleUrl(phone, details)
+          : whatsappBookingCancellationUrl(phone, details);
+    window.open(url, '_blank', 'noopener');
+    this.whatsappBookingNotification.set(null);
   }
 
   protected approveBooking(id: string): void {
@@ -2587,7 +2640,11 @@ export class BusinessDashboardPage implements OnInit {
       .approveBooking(id)
       .pipe(finalize(() => this.updatingBookingApproval.set(false)))
       .subscribe({
-        next: (updated) => this.updateBookingInView(updated),
+        next: (updated) => {
+          this.updateBookingInView(updated);
+          this.bookingSuccess.set('El turno fue confirmado correctamente.');
+          this.whatsappBookingNotification.set({ booking: updated, type: 'CONFIRMATION' });
+        },
         error: (error) => this.bookingError.set(dashboardErrorMessage(error)),
       });
   }
@@ -3351,13 +3408,7 @@ interface ResourceScheduleRange {
 }
 
 type BookingStatusFilter =
-  | 'ACTIVE'
-  | 'CONFIRMED'
-  | 'PENDING'
-  | 'PENDING_APPROVAL'
-  | 'CANCELLED'
-  | 'REJECTED'
-  | 'ALL';
+  'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'PENDING_APPROVAL' | 'CANCELLED' | 'REJECTED' | 'ALL';
 type BookingViewMode = 'day' | 'week';
 
 interface WeekBookingDay {

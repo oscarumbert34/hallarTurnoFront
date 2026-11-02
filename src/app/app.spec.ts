@@ -57,6 +57,17 @@ describe('App', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
   });
 
+  it('requires login for an owner booking link and preserves its destination', async () => {
+    localStorage.clear();
+    const harness = await RouterTestingHarness.create();
+    const router = TestBed.inject(Router);
+
+    await harness.navigateByUrl('/t/Ab3Cd4Ef');
+
+    expect(router.url).toBe('/auth/login?returnUrl=%2Ft%2FAb3Cd4Ef');
+    expect(harness.routeNativeElement?.textContent).toContain('Ingresar');
+  });
+
   it('keeps the business id when building the search navigation', async () => {
     const router = TestBed.inject(Router);
     const fixture = TestBed.createComponent(App);

@@ -1,8 +1,12 @@
 import {
   ownerBookingUrl,
+  whatsappBookingApprovalUrl,
+  whatsappBookingCancellationUrl,
   whatsappBookingConfirmationUrl,
+  whatsappBookingRescheduleUrl,
   whatsappPhone,
   whatsappBookingUrl,
+  whatsappProductInquiryUrl,
 } from './whatsapp-booking';
 
 describe('whatsappBookingUrl', () => {
@@ -101,6 +105,58 @@ describe('whatsappPhone', () => {
 
   it('keeps an already normalized Argentine WhatsApp phone', () => {
     expect(whatsappPhone('+54 9 11 2454-1101')).toBe('5491124541101');
+  });
+});
+
+describe('whatsappProductInquiryUrl', () => {
+  it('encodes multiple products, quantities, subtotals and total', () => {
+    const url = whatsappProductInquiryUrl('+54 9 11 2454-1101', [
+      { name: 'Shampoo Profesional', price: 12000, quantity: 2 },
+      { name: 'Máscara Capilar', price: 11000, quantity: 1 },
+    ]);
+    const message = messageFrom(url);
+
+    expect(url).toContain('https://wa.me/5491124541101?text=');
+    expect(message).toContain('2 x Shampoo Profesional');
+    expect(message).toContain('$ 12.000 c/u');
+    expect(message).toContain('Subtotal $ 24.000');
+    expect(message).toContain('1 x Máscara Capilar — $ 11.000');
+    expect(message).toContain('Total de referencia: $ 35.000');
+    expect(message).toContain('¿Tenés disponibilidad?');
+  });
+});
+
+describe('booking update WhatsApp URLs', () => {
+  const booking = {
+    customerName: 'Ana',
+    branchName: 'Centro',
+    serviceName: 'Corte',
+    startsAt: '2026-11-04T16:30:00',
+    resourceName: 'Sofía',
+  };
+
+  it('builds an approval message with the confirmed appointment', () => {
+    const message = messageFrom(whatsappBookingApprovalUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue confirmado');
+    expect(message).toContain('Fecha: 2026-11-04');
+    expect(message).toContain('Hora: 16:30');
+  });
+
+  it('builds a reschedule message with the new date and time', () => {
+    const message = messageFrom(whatsappBookingRescheduleUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue reprogramado');
+    expect(message).toContain('Nueva fecha: 2026-11-04');
+    expect(message).toContain('Nuevo horario: 16:30');
+  });
+
+  it('builds a cancellation message with the cancelled appointment', () => {
+    const message = messageFrom(whatsappBookingCancellationUrl('1124541101', booking));
+
+    expect(message).toContain('Tu turno fue cancelado');
+    expect(message).toContain('Fecha: 2026-11-04');
+    expect(message).toContain('Hora: 16:30');
   });
 });
 

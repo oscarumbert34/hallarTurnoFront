@@ -42,6 +42,10 @@ describe('BookingService', () => {
     );
     expect(services.request.context.get(SKIP_AUTH)).toBe(true);
     services.flush([]);
+    service.listPublicProducts('business-1').subscribe();
+    const products = httpTesting.expectOne('/api/public/businesses/business-1/products');
+    expect(products.request.context.get(SKIP_AUTH)).toBe(true);
+    products.flush([]);
   });
 
   it('should search public availability with filters', () => {

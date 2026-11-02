@@ -425,7 +425,9 @@ export class BookingPage implements OnInit {
         businessName: booking.businessName || selectedSlot.businessName,
         branchName: booking.branchName || selectedSlot.branchName,
         serviceName: booking.serviceName || selectedSlot.serviceName,
-        startsAt: booking.startsAt || selectedSlot.startsAt,
+        // The API returns the persisted instant in UTC, while the selected slot
+        // keeps the branch-local wall time shown to the owner and customer.
+        startsAt: selectedSlot.startsAt,
         resourceName: selectedSlot.resourceName,
       }),
       '_blank',

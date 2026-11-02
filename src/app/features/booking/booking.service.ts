@@ -8,6 +8,7 @@ import {
   BusinessCategory,
   PublicBusiness,
   PublicService,
+  PublicProduct,
 } from '../public-business/public-business.models';
 import {
   AvailabilityPage,
@@ -43,6 +44,13 @@ export class BookingService {
       this.apiUrl.build(
         `/public/businesses/${encodeURIComponent(slug)}/branches/${encodeURIComponent(branchId)}/services`,
       ),
+      { context: this.publicHttpContext() },
+    );
+  }
+
+  listPublicProducts(businessId: string): Observable<PublicProduct[]> {
+    return this.http.get<PublicProduct[]>(
+      this.apiUrl.build(`/public/businesses/${encodeURIComponent(businessId)}/products`),
       { context: this.publicHttpContext() },
     );
   }
@@ -147,7 +155,6 @@ export class BookingService {
       return this.http.post<CustomerBooking>(
         this.apiUrl.build(`/public/booking-links/${encodeURIComponent(ownerBookingCode)}/bookings`),
         request,
-        { context: this.publicHttpContext() },
       );
     }
     if (this.authService.isAuthenticated) {
@@ -168,7 +175,6 @@ export class BookingService {
   getBookingShortLink(code: string): Observable<BookingShortLinkPayload> {
     return this.http.get<BookingShortLinkPayload>(
       this.apiUrl.build(`/public/booking-links/${encodeURIComponent(code)}`),
-      { context: this.publicHttpContext() },
     );
   }
 
