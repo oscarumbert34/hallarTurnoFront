@@ -28,6 +28,25 @@ export interface ServiceCatalogItem {
   active: boolean;
 }
 
+export interface Product {
+  id: string;
+  businessId: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductPayload {
+  name: string;
+  description: string | null;
+  price: number;
+  active: boolean;
+}
+
 export interface Resource {
   id: string;
   name: string;

@@ -6,6 +6,7 @@ import {
   whatsappBookingRescheduleUrl,
   whatsappPhone,
   whatsappBookingUrl,
+  whatsappProductInquiryUrl,
 } from './whatsapp-booking';
 
 describe('whatsappBookingUrl', () => {
@@ -104,6 +105,24 @@ describe('whatsappPhone', () => {
 
   it('keeps an already normalized Argentine WhatsApp phone', () => {
     expect(whatsappPhone('+54 9 11 2454-1101')).toBe('5491124541101');
+  });
+});
+
+describe('whatsappProductInquiryUrl', () => {
+  it('encodes multiple products, quantities, subtotals and total', () => {
+    const url = whatsappProductInquiryUrl('+54 9 11 2454-1101', [
+      { name: 'Shampoo Profesional', price: 12000, quantity: 2 },
+      { name: 'Máscara Capilar', price: 11000, quantity: 1 },
+    ]);
+    const message = messageFrom(url);
+
+    expect(url).toContain('https://wa.me/5491124541101?text=');
+    expect(message).toContain('2 x Shampoo Profesional');
+    expect(message).toContain('$ 12.000 c/u');
+    expect(message).toContain('Subtotal $ 24.000');
+    expect(message).toContain('1 x Máscara Capilar — $ 11.000');
+    expect(message).toContain('Total de referencia: $ 35.000');
+    expect(message).toContain('¿Tenés disponibilidad?');
   });
 });
 

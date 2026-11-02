@@ -36,6 +36,7 @@ describe('PublicBusinessPageComponent', () => {
   let api: {
     getPublicBusiness: ReturnType<typeof vi.fn>;
     listPublicServices: ReturnType<typeof vi.fn>;
+    listPublicProducts: ReturnType<typeof vi.fn>;
     listAvailabilitySlots: ReturnType<typeof vi.fn>;
   };
   const navigate = vi.fn();
@@ -44,6 +45,7 @@ describe('PublicBusinessPageComponent', () => {
     api = {
       getPublicBusiness: vi.fn(() => of(business)),
       listPublicServices: vi.fn(() => of([service])),
+      listPublicProducts: vi.fn(() => of([])),
       listAvailabilitySlots: vi.fn(() =>
         of({ offset: 0, limit: 10, totalAvailableSlots: 0, hasMore: false, slots: [] }),
       ),
@@ -101,6 +103,77 @@ describe('PublicBusinessPageComponent', () => {
     const fixture = TestBed.createComponent(PublicBusinessPageComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
+  });
+  it('shows products only when the public catalog has active entries and supports quantities', () => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, whatsapp: '1124541101' }));
+    api.listPublicProducts.mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          businessId: business.id,
+          name: 'Shampoo',
+          description: 'Nutritivo',
+          price: 2500,
+          imageUrl: null,
+          active: true,
+        },
+      ]),
+    );
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+    expect(api.listPublicProducts).toHaveBeenCalledWith(business.id);
+    const productTab = [...fixture.nativeElement.querySelectorAll('.catalog-tabs button')].find(
+      (button: Element) => button.textContent?.trim() === 'Productos',
+    ) as HTMLButtonElement;
+    expect(productTab).toBeTruthy();
+    productTab.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Shampoo');
+    expect(fixture.nativeElement.textContent).toContain('Sin fotografía');
+    (fixture.nativeElement.querySelector('.add-product') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.product-card').classList).toContain('selected');
+    expect(fixture.nativeElement.querySelector('.quantity strong').textContent.trim()).toBe('1');
+    expect(fixture.nativeElement.textContent).toContain('1 producto');
+    expect(fixture.nativeElement.textContent).toContain('$ 2.500');
+
+    const whatsappOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    (fixture.nativeElement.querySelector('.product-whatsapp') as HTMLButtonElement).click();
+    const url = whatsappOpen.mock.calls[0][0] as string;
+    expect(new URL(url).searchParams.get('text')).toContain('1 x Shampoo — $ 2.500');
+    expect(whatsappOpen).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/5491124541101'),
+      '_blank',
+      'noopener',
+    );
+    whatsappOpen.mockRestore();
+  });
+
+  it('does not offer WhatsApp when the business has no configured number', () => {
+    api.listPublicProducts.mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          businessId: business.id,
+          name: 'Shampoo',
+          description: null,
+          price: 2500,
+          imageUrl: null,
+          active: true,
+        },
+      ]),
+    );
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+    const tabs = [
+      ...fixture.nativeElement.querySelectorAll('.catalog-tabs button'),
+    ] as HTMLButtonElement[];
+    tabs.find((button) => button.textContent?.trim() === 'Productos')!.click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.add-product') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.product-whatsapp')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('no tiene un WhatsApp configurado');
   });
   it('shows services without booking actions when the business uses virtual queue', () => {
     api.getPublicBusiness.mockReturnValue(of({ ...business, virtualQueueEnabled: true }));

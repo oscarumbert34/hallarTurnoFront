@@ -36,6 +36,38 @@ export function whatsappBookingUrl(phone: string, inquiry: WhatsappBookingInquir
   return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
 }
 
+export interface WhatsappProductSelection {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export function whatsappProductInquiryUrl(
+  phone: string,
+  products: WhatsappProductSelection[],
+): string {
+  const selected = products.filter((product) => product.quantity > 0);
+  const lines = selected.map((product) => {
+    const subtotal = product.price * product.quantity;
+    return product.quantity > 1
+      ? `- ${product.quantity} x ${product.name} — ${formatReferencePrice(product.price)} c/u — Subtotal ${formatReferencePrice(subtotal)}`
+      : `- 1 x ${product.name} — ${formatReferencePrice(product.price)}`;
+  });
+  const total = selected.reduce((sum, product) => sum + product.price * product.quantity, 0);
+  const message = `Hola, estuve viendo tus productos en HallarTurno y me interesan:\n\n${lines.join('\n')}\n\nTotal de referencia: ${formatReferencePrice(total)}\n\n¿Tenés disponibilidad?`;
+
+  return `https://wa.me/${whatsappPhone(phone)}?text=${encodeURIComponent(message)}`;
+}
+
+function formatReferencePrice(value: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function ownerBookingUrl(
   origin: string,
   business: Pick<

@@ -37,6 +37,7 @@ import {
 } from '../booking/whatsapp-booking';
 import { BusinessDashboardService } from './business-dashboard.service';
 import { ImageUploadComponent } from './image-upload.component';
+import { ProductsAdminComponent } from './products-admin.component';
 import { dashboardErrorMessage } from './dashboard-error';
 import {
   Booking,
@@ -71,6 +72,7 @@ import {
     ReactiveFormsModule,
     UiStateComponent,
     ImageUploadComponent,
+    ProductsAdminComponent,
   ],
   providers: [provideNativeDateAdapter()],
   template: `
@@ -513,6 +515,10 @@ import {
             </section>
           </mat-tab>
 
+          <mat-tab label="Productos">
+            <app-products-admin />
+          </mat-tab>
+
           <mat-tab label="Recursos">
             <section class="tab-panel">
               <div class="entity-toolbar">
@@ -807,7 +813,8 @@ import {
                       Habilitar fila virtual
                     </mat-checkbox>
                     <p class="configuration-help">
-                      Permite abrir una fila por sucursal y compartir el seguimiento con los clientes.
+                      Permite abrir una fila por sucursal y compartir el seguimiento con los
+                      clientes.
                     </p>
                   </section>
                   <section class="configuration-section" aria-labelledby="notifications-title">
@@ -1394,15 +1401,15 @@ import {
                   Reprogramar turno
                 </button>
                 @if (booking.status !== 'PENDING_APPROVAL') {
-                <button
-                  mat-flat-button
-                  type="button"
-                  class="cancel-booking-button"
-                  mat-dialog-close
-                  (click)="cancelBooking(booking.id)"
-                >
-                  Cancelar reserva
-                </button>
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="cancel-booking-button"
+                    mat-dialog-close
+                    (click)="cancelBooking(booking.id)"
+                  >
+                    Cancelar reserva
+                  </button>
                 }
               }
             </mat-dialog-actions>
@@ -3401,13 +3408,7 @@ interface ResourceScheduleRange {
 }
 
 type BookingStatusFilter =
-  | 'ACTIVE'
-  | 'CONFIRMED'
-  | 'PENDING'
-  | 'PENDING_APPROVAL'
-  | 'CANCELLED'
-  | 'REJECTED'
-  | 'ALL';
+  'ACTIVE' | 'CONFIRMED' | 'PENDING' | 'PENDING_APPROVAL' | 'CANCELLED' | 'REJECTED' | 'ALL';
 type BookingViewMode = 'day' | 'week';
 
 interface WeekBookingDay {

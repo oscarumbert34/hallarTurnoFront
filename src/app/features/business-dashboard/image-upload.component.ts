@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
           <img [src]="previewUrl" [alt]="label + ' seleccionada'" />
         } @else {
           <mat-icon aria-hidden="true">{{
-            variant === 'cover' ? 'landscape' : 'storefront'
+            variant === 'cover' ? 'landscape' : variant === 'product' ? 'inventory_2' : 'storefront'
           }}</mat-icon>
           <span>Sin imagen</span>
         }
@@ -125,7 +125,7 @@ export class ImageUploadComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) label = '';
   @Input({ required: true }) recommendation = '';
   @Input({ required: true }) maxSizeMb = 1;
-  @Input() variant: 'logo' | 'cover' = 'logo';
+  @Input() variant: 'logo' | 'cover' | 'product' = 'logo';
   @Input() currentUrl: string | null = null;
   @Output() readonly fileChange = new EventEmitter<File | null>();
   @Output() readonly removed = new EventEmitter<void>();
