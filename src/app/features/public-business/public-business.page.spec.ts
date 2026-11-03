@@ -105,7 +105,7 @@ describe('PublicBusinessPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('No encontramos este negocio');
   });
   it('shows products only when the public catalog has active entries and supports quantities', () => {
-    api.getPublicBusiness.mockReturnValue(of({ ...business, whatsapp: '1124541101' }));
+    api.getPublicBusiness.mockReturnValue(of({ ...business, whatsapp: '1124541101', productsEnabled: true }));
     api.listPublicProducts.mockReturnValue(
       of([
         {
@@ -150,6 +150,7 @@ describe('PublicBusinessPageComponent', () => {
   });
 
   it('does not offer WhatsApp when the business has no configured number', () => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, productsEnabled: true }));
     api.listPublicProducts.mockReturnValue(
       of([
         {
@@ -174,6 +175,13 @@ describe('PublicBusinessPageComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.product-whatsapp')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('no tiene un WhatsApp configurado');
+  });
+  it('does not request or show products when the feature is disabled', () => {
+    api.getPublicBusiness.mockReturnValue(of({ ...business, productsEnabled: false }));
+    const fixture = TestBed.createComponent(PublicBusinessPageComponent);
+    fixture.detectChanges();
+    expect(api.listPublicProducts).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('Productos');
   });
   it('shows services without booking actions when the business uses virtual queue', () => {
     api.getPublicBusiness.mockReturnValue(of({ ...business, virtualQueueEnabled: true }));
