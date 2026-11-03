@@ -27,5 +27,9 @@ export function authErrorMessage(error: unknown, method: 'password' | 'google' =
     return 'Ya existe una cuenta con ese email.';
   }
 
+  if (error.status === 423) {
+    return 'La cuenta esta bloqueada temporalmente. Intenta nuevamente en 15 minutos.';
+  }
+
   return 'No pudimos completar la operacion.';
 }

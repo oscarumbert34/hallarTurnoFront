@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +14,7 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
 @Component({
   selector: 'app-platform-admin-page',
   imports: [
+    DatePipe,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -27,7 +29,7 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
         <div>
           <span class="eyebrow">Administración restringida</span>
           <h1>Usuarios de comercios</h1>
-          <p>Actualizá el correo con el que el propietario accede a HallarTurno.</p>
+          <p>Administrá el correo, la contraseña y los bloqueos de los propietarios.</p>
         </div>
       </header>
 
@@ -55,10 +57,16 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
                 </div>
                 <span>/{{ business.slug }}</span>
                 <small>Propietario: {{ business.ownerEmail }}</small>
+                @if (isLocked(business)) {
+                  <small class="lock-status">
+                    <mat-icon aria-hidden="true">lock_clock</mat-icon>
+                    Bloqueado temporalmente hasta {{ business.ownerLockedUntil | date: 'dd/MM/yyyy HH:mm' }}
+                  </small>
+                }
               </div>
 
               @if (editingId() === business.id) {
-                <form [formGroup]="emailForm" (ngSubmit)="save(business)">
+                <form [formGroup]="emailForm" (ngSubmit)="saveEmail(business)">
                   <mat-form-field appearance="outline">
                     <mat-label>Email de acceso del propietario</mat-label>
                     <mat-icon matPrefix aria-hidden="true">mail</mat-icon>
@@ -75,6 +83,56 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
                     </button>
                     <button mat-button type="button" [disabled]="saving()" (click)="cancel()">
                       Cancelar
+                    </button>
+                  </div>
+                </form>
+
+                <form [formGroup]="passwordForm" (ngSubmit)="savePassword(business)">
+                  <h3>Nueva contraseña</h3>
+                  <p class="form-help">
+                    Al guardarla se desbloquea la cuenta y se reinician los intentos fallidos.
+                  </p>
+                  <div class="password-fields">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Contraseña nueva</mat-label>
+                      <input
+                        matInput
+                        [type]="showPassword() ? 'text' : 'password'"
+                        maxlength="72"
+                        autocomplete="new-password"
+                        formControlName="password"
+                      />
+                      <button
+                        mat-icon-button
+                        matSuffix
+                        type="button"
+                        (click)="showPassword.set(!showPassword())"
+                        [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      >
+                        <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                      </button>
+                      <mat-error>Usá 12 caracteres con mayúscula, minúscula, número y símbolo.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Repetir contraseña</mat-label>
+                      <input
+                        matInput
+                        [type]="showPassword() ? 'text' : 'password'"
+                        maxlength="72"
+                        autocomplete="new-password"
+                        formControlName="confirmation"
+                      />
+                      @if (passwordForm.controls.confirmation.hasError('mismatch')) {
+                        <mat-error>Las contraseñas no coinciden.</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                  <div class="actions password-actions">
+                    <button mat-stroked-button type="button" [disabled]="saving()" (click)="generatePassword()">
+                      <mat-icon aria-hidden="true">password</mat-icon>Generar contraseña segura
+                    </button>
+                    <button mat-flat-button type="submit" [disabled]="passwordForm.invalid || saving()">
+                      {{ saving() ? 'Guardando…' : 'Cambiar contraseña' }}
                     </button>
                   </div>
                 </form>
@@ -114,8 +172,21 @@ export class PlatformAdminPage implements OnInit {
   protected readonly saving = signal(false);
   protected readonly error = signal('');
   protected readonly editingId = signal<string | null>(null);
+  protected readonly showPassword = signal(false);
   protected readonly emailForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email, Validators.maxLength(320)]],
+  });
+  protected readonly passwordForm = this.fb.nonNullable.group({
+    password: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(12),
+        Validators.maxLength(72),
+        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/),
+      ],
+    ],
+    confirmation: ['', [Validators.required]],
   });
   protected readonly filteredBusinesses = computed(() => {
     const query = this.query().trim().toLowerCase();
@@ -146,9 +217,11 @@ export class PlatformAdminPage implements OnInit {
   protected cancel(): void {
     this.editingId.set(null);
     this.emailForm.reset({ email: '' });
+    this.passwordForm.reset({ password: '', confirmation: '' });
+    this.showPassword.set(false);
   }
 
-  protected save(business: PlatformBusiness): void {
+  protected saveEmail(business: PlatformBusiness): void {
     if (this.emailForm.invalid) {
       this.emailForm.markAllAsTouched();
       return;
@@ -167,5 +240,71 @@ export class PlatformAdminPage implements OnInit {
         },
         error: (error: unknown) => this.error.set(dashboardErrorMessage(error)),
       });
+  }
+
+  protected generatePassword(): void {
+    const password = this.secureRandomPassword(18);
+    this.passwordForm.setValue({ password, confirmation: password });
+    this.showPassword.set(true);
+  }
+
+  protected savePassword(business: PlatformBusiness): void {
+    this.validatePasswordConfirmation();
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+    this.saving.set(true);
+    this.error.set('');
+    this.service
+      .updateBusinessPassword(business.id, this.passwordForm.controls.password.value)
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (updated) => {
+          this.businesses.update((items) =>
+            items.map((item) => (item.id === updated.id ? updated : item)),
+          );
+          this.cancel();
+        },
+        error: (error: unknown) => this.error.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  protected isLocked(business: PlatformBusiness): boolean {
+    return !!business.ownerLockedUntil && new Date(business.ownerLockedUntil).getTime() > Date.now();
+  }
+
+  private validatePasswordConfirmation(): void {
+    const confirmation = this.passwordForm.controls.confirmation;
+    if (confirmation.value !== this.passwordForm.controls.password.value) {
+      confirmation.setErrors({ ...(confirmation.errors ?? {}), mismatch: true });
+    } else if (confirmation.hasError('mismatch')) {
+      const errors = { ...(confirmation.errors ?? {}) };
+      delete errors['mismatch'];
+      confirmation.setErrors(Object.keys(errors).length ? errors : null);
+    }
+  }
+
+  private secureRandomPassword(length: number): string {
+    const groups = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!@#$%&*+-_='];
+    const all = groups.join('');
+    const characters = groups.map((group) => this.randomCharacter(group));
+    while (characters.length < length) characters.push(this.randomCharacter(all));
+    for (let index = characters.length - 1; index > 0; index--) {
+      const swapIndex = this.randomIndex(index + 1);
+      [characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]];
+    }
+    return characters.join('');
+  }
+
+  private randomCharacter(source: string): string {
+    return source[this.randomIndex(source.length)];
+  }
+
+  private randomIndex(maximum: number): number {
+    const limit = Math.floor(0x100000000 / maximum) * maximum;
+    const value = new Uint32Array(1);
+    do crypto.getRandomValues(value); while (value[0] >= limit);
+    return value[0] % maximum;
   }
 }
