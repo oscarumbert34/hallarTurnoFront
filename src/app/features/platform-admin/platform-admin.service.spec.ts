@@ -48,5 +48,11 @@ describe('PlatformAdminService', () => {
     expect(passwordUpdate.request.method).toBe('PATCH');
     expect(passwordUpdate.request.body).toEqual({ password: 'Segura#2026Password' });
     passwordUpdate.flush({ id: 'business-1', ownerEmail: 'nuevo@example.com' });
+
+    service.updateBusinessFeatures('business-1', { productsEnabled: true, virtualQueueEnabled: false }).subscribe();
+    const featuresUpdate = http.expectOne('/api/platform-admin/businesses/business-1/features');
+    expect(featuresUpdate.request.method).toBe('PATCH');
+    expect(featuresUpdate.request.body).toEqual({ productsEnabled: true, virtualQueueEnabled: false });
+    featuresUpdate.flush({ id: 'business-1', features: { productsEnabled: true, virtualQueueEnabled: false } });
   });
 });

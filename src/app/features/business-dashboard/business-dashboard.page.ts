@@ -515,9 +515,11 @@ import {
             </section>
           </mat-tab>
 
-          <mat-tab label="Productos">
-            <app-products-admin />
-          </mat-tab>
+          @if (productsEnabled()) {
+            <mat-tab label="Productos">
+              <app-products-admin />
+            </mat-tab>
+          }
 
           <mat-tab label="Recursos">
             <section class="tab-panel">
@@ -1569,6 +1571,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly internalBookingCreation = signal(false);
   protected readonly updatingBookingApproval = signal(false);
   protected readonly virtualQueueEnabled = signal(false);
+  protected readonly productsEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
   protected readonly savingPublicProfile = signal(false);
@@ -1710,6 +1713,7 @@ export class BusinessDashboardPage implements OnInit {
             appointmentConfirmationEnabled: false,
             internalBookingCreation: false,
             virtualQueueEnabled: false,
+            productsEnabled: false,
           }),
         ),
       ),
@@ -1737,6 +1741,7 @@ export class BusinessDashboardPage implements OnInit {
           );
           this.internalBookingCreation.set(result.configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(result.configuration.virtualQueueEnabled ?? false);
+          this.productsEnabled.set(result.configuration.productsEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(
             result.configuration.virtualQueueEnabled ?? false,
           );

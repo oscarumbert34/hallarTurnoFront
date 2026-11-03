@@ -97,6 +97,18 @@ h2 {
 .email-display strong {
   overflow-wrap: anywhere;
 }
+.feature-flags {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e5edf7;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+.feature-flags > div { display: grid; gap: 3px; }
+.feature-flags small { color: #667895; }
 form {
   display: grid;
   gap: 8px;
@@ -164,4 +176,5 @@ form h3 {
   .password-fields {
     grid-template-columns: 1fr;
   }
+  .feature-flags { grid-template-columns: 1fr; }
 }
