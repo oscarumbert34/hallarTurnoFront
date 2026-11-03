@@ -1653,7 +1653,7 @@ export class BusinessDashboardPage implements OnInit {
   });
   protected readonly bookingForm = this.formBuilder.nonNullable.group({
     date: [this.initialBookingDate() as Date | string, Validators.required],
-    status: ['ACTIVE' as BookingStatusFilter],
+    status: ['ALL' as BookingStatusFilter],
     branchId: [''],
     resourceId: [''],
     serviceOfferingId: [''],

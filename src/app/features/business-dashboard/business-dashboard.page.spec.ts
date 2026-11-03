@@ -144,6 +144,22 @@ describe('BusinessDashboardPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Centro');
   });
 
+  it('should show all statuses, services and resources by default', () => {
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          status: { value: string };
+          serviceOfferingId: { value: string };
+          resourceId: { value: string };
+        };
+      };
+    };
+
+    expect(component.bookingForm.controls.status.value).toBe('ALL');
+    expect(component.bookingForm.controls.serviceOfferingId.value).toBe('');
+    expect(component.bookingForm.controls.resourceId.value).toBe('');
+  });
+
   it('should open the booking date received from the approval email', () => {
     fixture.destroy();
     dashboardService.listBookingsPage.mockClear();
@@ -1550,6 +1566,8 @@ describe('BusinessDashboardPage', () => {
         status: 'CANCELLED',
       },
     ]);
+
+    component.bookingForm.controls.status.setValue('ACTIVE');
 
     expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
       'booking-active',
