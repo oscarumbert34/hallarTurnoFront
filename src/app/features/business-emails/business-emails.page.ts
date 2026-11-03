@@ -47,50 +47,54 @@ import { BusinessEmailsService } from './business-emails.service';
           </section>
         }
 
-        <section class="section-block" aria-labelledby="automations-title">
-          <header>
-            <div>
-              <span class="eyebrow">PREFERENCIAS</span>
-              <h2 id="automations-title">Automatizaciones</h2>
-              <p>Activá o desactivá los mensajes que querés enviar.</p>
-            </div>
-            <button
-              mat-flat-button
-              type="button"
-              (click)="savePreferences()"
-              [disabled]="savingPreferences() || !preferencesDirty()"
-            >
-              {{ savingPreferences() ? 'Guardando…' : 'Guardar cambios' }}
-            </button>
-          </header>
-          @if (preferencesMessage()) {
-            <p class="feedback" [class.error]="preferencesError()" role="status">
-              {{ preferencesMessage() }}
-            </p>
-          }
-          <div class="automation-list">
-            @for (type of automationOrder; track type) {
-              <article>
-                <div class="automation-icon">
-                  <mat-icon aria-hidden="true">{{ automationIcon(type) }}</mat-icon>
-                </div>
-                <div class="automation-copy">
-                  <strong>{{ automationName(type) }}</strong>
-                  <p>{{ automationDescription(type) }}</p>
-                  @if (!canEnable(type)) {
-                    <small>{{ requiredAddonText(type) }}</small>
-                  }
-                </div>
-                <mat-slide-toggle
-                  [checked]="preferenceValue(type)"
-                  [disabled]="!canEnable(type) || savingPreferences()"
-                  (change)="setPreference(type, $event.checked)"
-                  ><span class="visually-hidden">{{ automationName(type) }}</span></mat-slide-toggle
-                >
-              </article>
+        @if (showAutomationPreferences) {
+          <section class="section-block" aria-labelledby="automations-title">
+            <header>
+              <div>
+                <span class="eyebrow">PREFERENCIAS</span>
+                <h2 id="automations-title">Automatizaciones</h2>
+                <p>Activá o desactivá los mensajes que querés enviar.</p>
+              </div>
+              <button
+                mat-flat-button
+                type="button"
+                (click)="savePreferences()"
+                [disabled]="savingPreferences() || !preferencesDirty()"
+              >
+                {{ savingPreferences() ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            </header>
+            @if (preferencesMessage()) {
+              <p class="feedback" [class.error]="preferencesError()" role="status">
+                {{ preferencesMessage() }}
+              </p>
             }
-          </div>
-        </section>
+            <div class="automation-list">
+              @for (type of automationOrder; track type) {
+                <article>
+                  <div class="automation-icon">
+                    <mat-icon aria-hidden="true">{{ automationIcon(type) }}</mat-icon>
+                  </div>
+                  <div class="automation-copy">
+                    <strong>{{ automationName(type) }}</strong>
+                    <p>{{ automationDescription(type) }}</p>
+                    @if (!canEnable(type)) {
+                      <small>{{ requiredAddonText(type) }}</small>
+                    }
+                  </div>
+                  <mat-slide-toggle
+                    [checked]="preferenceValue(type)"
+                    [disabled]="!canEnable(type) || savingPreferences()"
+                    (change)="setPreference(type, $event.checked)"
+                    ><span class="visually-hidden">{{
+                      automationName(type)
+                    }}</span></mat-slide-toggle
+                  >
+                </article>
+              }
+            </div>
+          </section>
+        }
       } @else if (!loading() && !loadError()) {
         <section class="empty-state">
           <mat-icon aria-hidden="true">mail_off</mat-icon>
@@ -104,6 +108,8 @@ import { BusinessEmailsService } from './business-emails.service';
 })
 export class BusinessEmailsPage implements OnInit {
   private readonly service = inject(BusinessEmailsService);
+  // TODO: Re-enable when email automation preferences are part of the active product flow again.
+  protected readonly showAutomationPreferences = false;
   protected readonly status = signal<EmailStatus | null>(null);
   protected readonly loading = signal(true);
   protected readonly loadError = signal('');
