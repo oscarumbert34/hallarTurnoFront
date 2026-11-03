@@ -160,6 +160,29 @@ describe('BusinessDashboardPage', () => {
     expect(component.bookingForm.controls.resourceId.value).toBe('');
   });
 
+  it('should keep all resources selected after resources are loaded', () => {
+    dashboardService.listResources.mockReturnValue(
+      of([
+        {
+          id: 'resource-1',
+          name: 'Sandra',
+          branchId: 'branch-1',
+          serviceOfferingIds: ['service-1'],
+          weeklySchedule: [],
+          active: true,
+        },
+      ]),
+    );
+
+    fixture = TestBed.createComponent(BusinessDashboardPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: { controls: { resourceId: { value: string } } };
+    };
+
+    expect(component.bookingForm.controls.resourceId.value).toBe('');
+  });
+
   it('should open the booking date received from the approval email', () => {
     fixture.destroy();
     dashboardService.listBookingsPage.mockClear();

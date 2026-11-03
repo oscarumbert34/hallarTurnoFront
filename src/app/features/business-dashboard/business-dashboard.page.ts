@@ -1743,7 +1743,7 @@ export class BusinessDashboardPage implements OnInit {
           this.pruneResourceServicesForBranch();
           if (!this.bookingDefaultsInitialized) {
             this.bookingDefaultsInitialized = true;
-            this.selectFirstBookingFilters();
+            this.selectInitialBookingFilters();
             this.loadCurrentBookings(true);
           }
         },
@@ -3286,15 +3286,10 @@ export class BusinessDashboardPage implements OnInit {
     }
   }
 
-  private selectFirstBookingFilters(): void {
+  private selectInitialBookingFilters(): void {
     const firstBranch = this.branches()[0];
     if (firstBranch) {
       this.bookingForm.controls.branchId.setValue(firstBranch.id, { emitEvent: false });
-    }
-
-    const firstResource = this.bookingResources()[0];
-    if (firstResource) {
-      this.bookingForm.controls.resourceId.setValue(firstResource.id, { emitEvent: false });
     }
   }
 
