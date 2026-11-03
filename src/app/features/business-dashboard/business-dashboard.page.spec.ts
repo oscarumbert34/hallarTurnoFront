@@ -144,7 +144,7 @@ describe('BusinessDashboardPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Centro');
   });
 
-  it('should show all statuses, services and resources by default', () => {
+  it('should show active statuses and all services and resources by default', () => {
     const component = fixture.componentInstance as unknown as {
       bookingForm: {
         controls: {
@@ -155,7 +155,7 @@ describe('BusinessDashboardPage', () => {
       };
     };
 
-    expect(component.bookingForm.controls.status.value).toBe('ALL');
+    expect(component.bookingForm.controls.status.value).toBe('ACTIVE');
     expect(component.bookingForm.controls.serviceOfferingId.value).toBe('');
     expect(component.bookingForm.controls.resourceId.value).toBe('');
   });
