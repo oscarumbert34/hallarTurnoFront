@@ -39,7 +39,7 @@ body {
   height: 100%;
 }
 
-/* Video de presentación de la landing comercial. Se mantiene aquí para no cargar
+/* Galería de recorridos de la landing comercial. Se mantiene aquí para no cargar
    el presupuesto de estilos aislados del componente. */
 .landing {
   .video-action {
@@ -51,114 +51,168 @@ body {
     font-size: 0.72em;
   }
 
-  .video-demo {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 350px);
-    align-items: center;
-    gap: clamp(42px, 7vw, 100px);
-    padding: 64px max(20px, calc((100vw - 1120px) / 2));
+  .video-gallery {
+    padding: 52px max(20px, calc((100vw - 1240px) / 2));
+    background: linear-gradient(135deg, #eef8ff, #f7fbff 58%, #edf6ff);
+  }
+
+  .agenda-videos {
+    padding-top: 42px;
     background: #fff;
   }
 
-  .video-copy h2 {
-    max-width: 650px;
-    margin: 12px 0 16px;
+  .video-section-heading {
+    margin: 0 auto 26px;
+    text-align: center;
+  }
+
+  .video-section-heading h2 {
+    margin: 8px 0 7px;
     color: #0b2454;
-    font-size: clamp(2rem, 3.4vw, 3rem);
+    font-size: clamp(2rem, 3.4vw, 2.8rem);
     line-height: 1.08;
     letter-spacing: -0.04em;
   }
 
-  .video-copy > p {
-    max-width: 610px;
-    margin: 0;
+  .video-section-heading p {
+    margin: 0 auto;
     color: #456487;
     font-size: 1.05rem;
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
-  .video-copy ul {
+  .video-grid {
     display: grid;
-    gap: 12px;
-    margin: 24px 0 28px;
-    padding: 0;
-    color: #153665;
-    list-style: none;
+    gap: 18px;
+    margin: 0 auto;
   }
 
-  .video-copy li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 700;
+  .video-grid-clients {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 1080px;
   }
 
-  .video-copy li span {
-    display: grid;
-    width: 25px;
-    height: 25px;
-    flex: 0 0 auto;
-    place-items: center;
-    border-radius: 50%;
-    background: #e8f3ff;
-    color: #0876ed;
+  .video-grid-agenda {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 1240px;
   }
 
-  .video-frame {
+  .video-card {
     overflow: hidden;
-    width: min(100%, 350px);
-    justify-self: center;
-    aspect-ratio: 9 / 16;
-    padding: 7px;
-    border-radius: 30px;
-    background: #17273b;
-    box-shadow: 0 24px 55px rgb(24 69 112 / 23%);
+    border: 1px solid #d7e5f3;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 25px rgb(25 62 101 / 10%);
   }
 
-  .video-frame video {
+  .video-player {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #eaf4ff;
+  }
+
+  .video-player video {
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 23px;
-    background: #eef6ff;
-    object-fit: cover;
+    background: #eaf4ff;
+    object-fit: contain;
+  }
+
+  .video-card-copy {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 12px;
+    padding: 17px 18px 19px;
+  }
+
+  .video-card-icon {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 10px;
+    background: #e7f3ff;
+    color: #0876ed;
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+
+  .whatsapp-card-icon {
+    background: #e1f9eb;
+    color: #08a957;
+  }
+
+  .coral-card-icon {
+    background: #fff0eb;
+    color: #ff755b;
+  }
+
+  .video-card h3 {
+    margin: 0 0 5px;
+    color: #0b2454;
+    font-size: 1.14rem;
+    line-height: 1.2;
+  }
+
+  .video-card p {
+    margin: 0;
+    color: #456487;
+    font-size: 0.9rem;
+    line-height: 1.45;
   }
 }
 
 @media (max-width: 900px) {
   .landing {
-    .video-demo {
-      grid-template-columns: 1fr;
-      text-align: center;
+    .video-grid-agenda {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .video-copy > p {
-      margin-inline: auto;
-    }
-
-    .video-copy li {
-      justify-content: center;
+    .video-grid-agenda .video-card:last-child {
+      grid-column: 1 / -1;
+      width: calc(50% - 9px);
+      justify-self: center;
     }
   }
 }
 
 @media (max-width: 600px) {
   .landing {
-    .video-demo {
-      gap: 34px;
-      padding: 46px 18px;
+    .video-gallery,
+    .agenda-videos {
+      padding: 40px 14px;
     }
 
-    .video-copy h2 {
-      font-size: 2rem;
+    .video-section-heading {
+      margin-bottom: 20px;
     }
 
-    .video-copy > p {
+    .video-section-heading h2 {
+      font-size: 1.9rem;
+    }
+
+    .video-section-heading p {
       font-size: 0.96rem;
     }
 
-    .video-frame {
-      width: min(100%, 320px);
+    .video-grid-clients,
+    .video-grid-agenda {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .video-grid-agenda .video-card:last-child {
+      grid-column: auto;
+      width: 100%;
+    }
+
+    .video-card-copy {
+      padding: 15px;
+    }
+
+    .video-card h3 {
+      font-size: 1.05rem;
     }
   }
 }

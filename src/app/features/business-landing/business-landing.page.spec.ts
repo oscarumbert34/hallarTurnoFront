@@ -97,24 +97,32 @@ describe('BusinessLandingPage', () => {
     );
     const pricing = fixture.nativeElement.querySelector('#planes');
     expect(
-      pricing.querySelector('.trial-card').compareDocumentPosition(pricing.querySelector('.plan-grid')) &
+      pricing
+        .querySelector('.trial-card')
+        .compareDocumentPosition(pricing.querySelector('.plan-grid')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
-  it('links the hero to the product video and renders the demo', () => {
+  it('links the hero to the product videos and renders every walkthrough', () => {
     const fixture = TestBed.createComponent(BusinessLandingPage);
     fixture.detectChanges();
     const videoLink = fixture.nativeElement.querySelector(
       '.hero-actions a[href="#video-demo"]',
     ) as HTMLAnchorElement;
-    const video = fixture.nativeElement.querySelector('#video-demo video') as HTMLVideoElement;
-    const webmSource = video.querySelector('source[type="video/webm"]');
-    const mp4Source = video.querySelector('source[type="video/mp4"]');
+    const videos = [...fixture.nativeElement.querySelectorAll('.video-gallery video')];
+    const sources = videos.map((video) => video.querySelector('source')?.getAttribute('src'));
     expect(videoLink.textContent).toContain('Ver cómo funciona');
-    expect(video).toBeTruthy();
-    expect(webmSource?.getAttribute('src')).toBe('hallarturno-demo-mobile.webm?v=20261003-2');
-    expect(mp4Source?.getAttribute('src')).toBe('hallarturno-demo-mobile.mp4?v=20261003-4');
+    expect(videos).toHaveLength(5);
+    expect(sources).toEqual([
+      'videos/reserva-por-whatsapp.mp4',
+      'videos/reserva-pagina-publica.mp4',
+      'videos/consultar-agenda.mp4',
+      'videos/reprogramar-turno.mp4',
+      'videos/cancelar-turno.mp4',
+    ]);
+    expect(fixture.nativeElement.textContent).toContain('Así reservan tus clientes');
+    expect(fixture.nativeElement.textContent).toContain('Gestioná tu agenda fácilmente');
   });
 
   it('offers a direct mobile link to the benefits section', () => {

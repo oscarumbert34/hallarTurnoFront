@@ -103,29 +103,117 @@
         </div>
       </div>
     </section>
-    <section id="video-demo" class="section video-demo" aria-labelledby="video-demo-title">
-      <div class="video-copy">
-        <span class="eyebrow">HallarTurno en acción</span>
-        <h2 id="video-demo-title">Mirá cómo funciona en menos de dos minutos</h2>
-        <p>Conocé la experiencia de tus clientes y cómo administrás la agenda desde el negocio.</p>
-        <ul>
-          <li><span aria-hidden="true">✓</span> Reservas desde la página pública</li>
-          <li><span aria-hidden="true">✓</span> Agenda diaria y semanal</li>
-          <li><span aria-hidden="true">✓</span> Gestión de turnos, panel y correos</li>
-        </ul>
+    <section id="video-demo" class="section video-gallery" aria-labelledby="video-demo-title">
+      <div class="video-section-heading">
+        <span class="eyebrow">Simple para tus clientes</span>
+        <h2 id="video-demo-title">Así reservan tus clientes</h2>
+        <p>Conocé las dos formas simples de reservar un turno con HallarTurno.</p>
       </div>
-      <div class="video-frame">
-        <video
-          controls
-          playsinline
-          preload="metadata"
-          poster="landing-mobile.png"
-          aria-label="Demostración de HallarTurno en un teléfono"
-        >
-          <source src="hallarturno-demo-mobile.webm?v=20261003-2" type="video/webm" />
-          <source src="hallarturno-demo-mobile.mp4?v=20261003-4" type="video/mp4" />
-          Tu navegador no puede reproducir este video.
-        </video>
+      <div class="video-grid video-grid-clients">
+        <article class="video-card">
+          <div class="video-player">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              aria-label="Reserva de turno por WhatsApp"
+            >
+              <source src="videos/reserva-por-whatsapp.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+          <div class="video-card-copy">
+            <span class="video-card-icon whatsapp-card-icon" aria-hidden="true">◉</span>
+            <div>
+              <h3>Reserva por WhatsApp</h3>
+              <p>El cliente elige un horario disponible y envía la solicitud por WhatsApp.</p>
+            </div>
+          </div>
+        </article>
+        <article class="video-card">
+          <div class="video-player">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              aria-label="Reserva desde la página pública"
+            >
+              <source src="videos/reserva-pagina-publica.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+          <div class="video-card-copy">
+            <span class="video-card-icon" aria-hidden="true">▣</span>
+            <div>
+              <h3>Reserva directa del cliente</h3>
+              <p>El cliente reserva desde tu página pública, de forma rápida y simple.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+    <section class="section video-gallery agenda-videos" aria-labelledby="agenda-videos-title">
+      <div class="video-section-heading">
+        <span class="eyebrow">Simple para tu negocio</span>
+        <h2 id="agenda-videos-title">Gestioná tu agenda fácilmente</h2>
+        <p>Mirá cómo administrar tus reservas en HallarTurno en pocos minutos.</p>
+      </div>
+      <div class="video-grid video-grid-agenda">
+        <article class="video-card">
+          <div class="video-player">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              aria-label="Consultar reservas en la agenda"
+            >
+              <source src="videos/consultar-agenda.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+          <div class="video-card-copy">
+            <span class="video-card-icon coral-card-icon" aria-hidden="true">▣</span>
+            <div>
+              <h3>Ver reservas</h3>
+              <p>Consultá todas las reservas de tu negocio desde la agenda.</p>
+            </div>
+          </div>
+        </article>
+        <article class="video-card">
+          <div class="video-player">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              aria-label="Editar o reprogramar un turno"
+            >
+              <source src="videos/reprogramar-turno.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+          <div class="video-card-copy">
+            <span class="video-card-icon coral-card-icon" aria-hidden="true">✎</span>
+            <div>
+              <h3>Editar o reprogramar turnos</h3>
+              <p>Cambiá la fecha u horario de una reserva en segundos.</p>
+            </div>
+          </div>
+        </article>
+        <article class="video-card">
+          <div class="video-player">
+            <video controls playsinline preload="metadata" aria-label="Cancelar un turno">
+              <source src="videos/cancelar-turno.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+          <div class="video-card-copy">
+            <span class="video-card-icon coral-card-icon" aria-hidden="true">▱</span>
+            <div>
+              <h3>Cancelar turnos</h3>
+              <p>Cancelá una reserva y mantené tu agenda siempre actualizada.</p>
+            </div>
+          </div>
+        </article>
       </div>
     </section>
     <section id="beneficios" class="section benefits" aria-labelledby="benefits-title">
@@ -276,7 +364,6 @@
           </div>
         </article>
       </div>
-
     </section>
     <section id="comercios" class="section demos" aria-labelledby="demos-title">
       <div class="section-heading">
