@@ -146,6 +146,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'availability',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/availability/availability.page').then((m) => m.AvailabilityPage),
+  },
+  {
     path: 'emails',
     canActivate: [authGuard],
     data: { roles: ['ADMIN', 'BUSINESS'] },
@@ -175,6 +182,13 @@ export const routes: Routes = [
       import('./features/business-dashboard/business-dashboard.page').then(
         (m) => m.BusinessDashboardPage,
       ),
+  },
+  {
+    path: ':slug/availability',
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN', 'BUSINESS'] },
+    loadComponent: () =>
+      import('./features/availability/availability.page').then((m) => m.AvailabilityPage),
   },
   {
     path: ':slug/emails',

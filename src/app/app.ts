@@ -46,6 +46,7 @@ export class App {
   protected readonly navItems = computed(() => [
     { label: 'Busqueda', path: '/search' },
     { label: 'Reservas', path: '/bookings' },
+    { label: 'Disponibilidad', path: '/availability' },
     { label: 'Mis correos', path: '/emails' },
     ...(this.virtualQueueAvailability.enabled() ? [{ label: 'Fila', path: '/admin/fila' }] : []),
     ...(this.platformAdmin.allowed() ? [{ label: 'Administración', path: '/platform-admin' }] : []),

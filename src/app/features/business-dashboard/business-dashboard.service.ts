@@ -28,6 +28,12 @@ export class BusinessDashboardService {
   private readonly apiUrl = inject(ApiUrlService);
   private readonly authService = inject(AuthService);
 
+  getBusinessName(): Observable<string> {
+    return this.http
+      .get<{ name: string }>(this.apiUrl.build(`/businesses/${this.currentBusinessId}`))
+      .pipe(map((business) => business.name));
+  }
+
   listBranches(): Observable<Branch[]> {
     return this.http
       .get<EntityListResponse<BranchResponse>>(
