@@ -17,6 +17,7 @@ describe('BusinessDashboardPage', () => {
     bookingService = { listAvailabilitySlots: vi.fn(() => of({ slots: [] })) };
     route = { snapshot: { data: {} } };
     dashboardService = {
+      getBusinessName: vi.fn(() => of('Negocio de prueba')),
       listBranches: vi.fn(() =>
         of([
           {

@@ -118,6 +118,16 @@ Con backend local en `http://localhost:8081`:
 9. Cancelar una reserva y confirmar que la lista se refresca.
 10. Forzar casos `403` y `409` desde backend para validar mensajes claros.
 
+## Flujo Manual De Disponibilidad
+
+1. Iniciar backend y frontend, ingresar como owner o admin y abrir `/availability`.
+2. Verificar la selección automática cuando existe una sola sucursal, servicio o profesional.
+3. Cambiar de semana y confirmar los estados disponible, sin disponibilidad y cerrado.
+4. Cambiar el servicio y comprobar que los horarios se recalculan según su duración.
+5. Elegir un día y descargar `Historia del día`; el PNG debe medir 1080 por 1920.
+6. Descargar `Historia semanal` y comprobar que contiene únicamente horarios de la semana visible.
+7. Repetir en viewport móvil para validar las tarjetas verticales.
+
 ## Flujo Manual E2E De Reserva
 
 1. Ejecutar `npm start`.

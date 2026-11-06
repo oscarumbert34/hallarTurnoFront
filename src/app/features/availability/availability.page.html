@@ -1,0 +1,141 @@
+<section class="availability-page turnero-screen">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Agenda libre</span>
+      <h1>Disponibilidad</h1>
+      <p>Consultá qué horarios podés ofrecer sin revisar turno por turno.</p>
+    </div>
+    <div class="story-actions">
+      <button mat-stroked-button type="button" [disabled]="!selectedDay()" (click)="downloadDay()">
+        <mat-icon>download</mat-icon> Historia del día
+      </button>
+      <button mat-flat-button type="button" [disabled]="!overview()" (click)="downloadWeek()">
+        <mat-icon>download</mat-icon> Historia semanal
+      </button>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Filtros de disponibilidad">
+    <mat-form-field appearance="outline">
+      <mat-label>Sucursal</mat-label>
+      <mat-select [ngModel]="selectedBranchId()" (ngModelChange)="branchChanged($event)">
+        @for (branch of branches(); track branch.id) {
+        <mat-option [value]="branch.id">{{ branch.name }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Servicio</mat-label>
+      <mat-select [ngModel]="selectedServiceId()" (ngModelChange)="serviceChanged($event)">
+        @for (service of compatibleServices(); track service.id) {
+        <mat-option [value]="service.id">{{ service.name }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    @if (compatibleResources().length > 1) {
+    <mat-form-field appearance="outline">
+      <mat-label>Profesional</mat-label>
+      <mat-select [ngModel]="selectedResourceId()" (ngModelChange)="resourceChanged($event)">
+        <mat-option value="">Todos</mat-option>
+        @for (resource of compatibleResources(); track resource.id) {
+        <mat-option [value]="resource.id">{{ resource.name }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    }
+  </section>
+
+  <nav class="week-navigation" aria-label="Navegación semanal">
+    <button mat-icon-button type="button" aria-label="Semana anterior" (click)="moveWeek(-7)">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <strong>{{ weekLabel() }}</strong>
+    <button mat-icon-button type="button" aria-label="Semana siguiente" (click)="moveWeek(7)">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <button mat-stroked-button type="button" (click)="currentWeek()">Hoy</button>
+  </nav>
+
+  @if (!branches().length) {
+  <section class="empty-state">
+    <mat-icon>location_off</mat-icon>
+    <h2>Primero creá una sucursal activa</h2>
+    <p>La disponibilidad necesita horarios de atención configurados.</p>
+  </section>
+  } @else if (!compatibleServices().length) {
+  <section class="empty-state">
+    <mat-icon>content_cut</mat-icon>
+    <h2>No hay servicios activos para esta sucursal</h2>
+    <p>Creá o activá un servicio para calcular horarios reservables.</p>
+  </section>
+  } @else if (!compatibleResources().length) {
+  <section class="empty-state">
+    <mat-icon>person_off</mat-icon>
+    <h2>No hay profesionales compatibles</h2>
+    <p>Asigná el servicio a un profesional con agenda activa.</p>
+  </section>
+  } @else if (loading()) {
+  <div class="loading-state" role="status">
+    <mat-spinner diameter="40" /><span>Calculando disponibilidad real…</span>
+  </div>
+  } @else if (error()) {
+  <section class="empty-state error-state">
+    <mat-icon>cloud_off</mat-icon>
+    <h2>No se pudo cargar</h2>
+    <p>{{ error() }}</p>
+    <button mat-flat-button type="button" (click)="currentWeek()">Reintentar</button>
+  </section>
+  } @else if (overview(); as result) {
+  <section class="week-grid" aria-label="Disponibilidad de la semana">
+    @for (day of result.days; track day.date) {
+    <article
+      class="day-card"
+      [class.available]="day.status === 'AVAILABLE'"
+      [class.unavailable]="day.status === 'NO_AVAILABILITY'"
+      [class.closed]="day.status === 'CLOSED'"
+      [class.selected]="selectedDate() === day.date"
+      (click)="selectedDate.set(day.date)"
+    >
+      <header>
+        <h2>{{ dayName(day.date) }}</h2>
+        <span>{{ dayNumber(day.date) }}</span>
+      </header>
+      @if (day.status === 'AVAILABLE') {
+      <strong class="slot-count"
+        ><span aria-hidden="true"></span>{{ day.slots.length }} {{ day.slots.length === 1 ?
+        'horario' : 'horarios' }}</strong
+      >
+      <div class="slots">
+        @for (slot of visibleSlots(day); track slot.startsAt + slot.resourceId) {
+        <button
+          type="button"
+          title="Crear turno en este horario"
+          (click)="createBooking(day, slot.startsAt); $event.stopPropagation()"
+        >
+          {{ time(slot.startsAt) }}
+        </button>
+        }
+      </div>
+      @if (day.slots.length > 4) {
+      <button
+        class="expand-button"
+        type="button"
+        (click)="toggleDay(day.date); $event.stopPropagation()"
+      >
+        {{ expandedDates().has(day.date) ? 'Ver menos' : 'Ver todos los horarios' }}
+      </button>
+      } } @else {
+      <div class="day-message">
+        <mat-icon>{{ day.status === 'CLOSED' ? 'storefront' : 'event_busy' }}</mat-icon
+        ><span
+          >{{ day.status === 'CLOSED' ? 'No atendés ese día' : 'Sin horarios disponibles' }}</span
+        >
+      </div>
+      }
+    </article>
+    }
+  </section>
+  <footer class="legend" aria-label="Referencias">
+    <span><i class="available-dot"></i> Disponible</span
+    ><span><i class="unavailable-dot"></i> Sin disponibilidad</span
+    ><span><i class="closed-dot"></i> Cerrado</span>
+  </footer>
+  }
+</section>
