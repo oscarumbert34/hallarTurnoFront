@@ -7,7 +7,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { BusinessDashboardService } from '../business-dashboard/business-dashboard.service';
-import { Branch, Resource, ServiceCatalogItem } from '../business-dashboard/dashboard.models';
+import {
+  Branch,
+  PublicProfile,
+  Resource,
+  ServiceCatalogItem,
+} from '../business-dashboard/dashboard.models';
 import { AvailabilityDayOverview, AvailabilityOverview } from './availability.models';
 import { AvailabilityOverviewService } from './availability.service';
 import { AvailabilityStoryService } from './availability-story.service';
@@ -27,6 +32,7 @@ export class AvailabilityPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly businessName = signal('Mi negocio');
+  protected readonly publicProfile = signal<PublicProfile | null>(null);
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
   protected readonly resources = signal<Resource[]>([]);
@@ -72,12 +78,14 @@ export class AvailabilityPage implements OnInit {
       services: this.dashboard.listServices(),
       resources: this.dashboard.listResources(),
       businessName: this.dashboard.getBusinessName(),
+      publicProfile: this.dashboard.getPublicProfile(),
     }).subscribe({
-      next: ({ branches, services, resources, businessName }) => {
+      next: ({ branches, services, resources, businessName, publicProfile }) => {
         this.branches.set(branches.filter((branch) => branch.active));
         this.services.set(services.filter((service) => service.active));
         this.resources.set(resources);
         this.businessName.set(businessName);
+        this.publicProfile.set(publicProfile);
         this.selectedBranchId.set(this.branches()[0]?.id ?? '');
         this.applyServiceDefault();
         this.applyResourceDefault();
@@ -158,12 +166,12 @@ export class AvailabilityPage implements OnInit {
 
   protected downloadDay(): void {
     const day = this.selectedDay();
-    if (day) this.stories.downloadDay(day, this.storyContext());
+    if (day) void this.stories.downloadDay(day, this.storyContext());
   }
 
   protected downloadWeek(): void {
     const overview = this.overview();
-    if (overview) this.stories.downloadWeek(overview, this.storyContext());
+    if (overview) void this.stories.downloadWeek(overview, this.storyContext());
   }
 
   private load(): void {
@@ -223,6 +231,8 @@ export class AvailabilityPage implements OnInit {
         this.branches().find((branch) => branch.id === this.selectedBranchId())?.name ?? '',
       serviceName:
         this.services().find((service) => service.id === this.selectedServiceId())?.name ?? '',
+      logoUrl: this.publicProfile()?.logoUrl,
+      coverImageUrl: this.publicProfile()?.coverImageUrl,
     };
   }
 
