@@ -5,6 +5,9 @@ import { ApiUrlService } from '../../shared/api-url.service';
 import { AuthService } from '../auth/auth.service';
 import {
   Booking,
+  BookingImportAnalysis,
+  BookingImportConfirmResponse,
+  BookingImportRow,
   BookingListPage,
   Branch,
   BranchScheduleException,
@@ -299,6 +302,40 @@ export class BusinessDashboardService {
 
   listBookings(date: string): Observable<Booking[]> {
     return this.listBookingsPage(date).pipe(map((page) => page.results));
+  }
+
+  analyzeBookingImage(branchId: string, file: File): Observable<BookingImportAnalysis> {
+    const body = new FormData();
+    body.append('file', file);
+    const params = new HttpParams().set('branchId', branchId);
+    return this.http.post<BookingImportAnalysis>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/booking-imports/analyze`),
+      body,
+      { params },
+    );
+  }
+
+  confirmBookingImport(
+    analysisId: string,
+    branchId: string,
+    rows: BookingImportRow[],
+  ): Observable<BookingImportConfirmResponse> {
+    return this.http.post<BookingImportConfirmResponse>(
+      this.apiUrl.build(`/businesses/${this.currentBusinessId}/booking-imports/confirm`),
+      {
+        analysisId,
+        rows: rows.map((row) => ({
+          rowNumber: row.rowNumber,
+          branchId,
+          serviceOfferingId: row.serviceOfferingId,
+          resourceId: row.resourceId,
+          date: row.date,
+          time: row.time,
+          customerName: row.customerName,
+          phone: row.phone,
+        })),
+      },
+    );
   }
 
   listBookingsPage(

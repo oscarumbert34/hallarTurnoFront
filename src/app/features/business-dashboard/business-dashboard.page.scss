@@ -614,3 +614,32 @@ p {
     grid-template-columns: 1fr;
   }
 }
+/* Booking image import */
+.booking-panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.booking-panel-actions h2,
+.booking-panel-actions p {
+  margin: 0;
+}
+
+.booking-panel-actions p {
+  margin-top: 4px;
+  color: #53647c;
+}
+
+@media (max-width: 640px) {
+  .booking-panel-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .booking-panel-actions button {
+    width: 100%;
+  }
+}

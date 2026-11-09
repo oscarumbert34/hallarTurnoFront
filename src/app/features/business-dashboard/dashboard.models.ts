@@ -139,6 +139,37 @@ export interface BookingListPage {
   results: Booking[];
 }
 
+export type BookingImportStatus = 'READY' | 'REVIEW' | 'CONFLICT';
+
+export interface BookingImportRow {
+  rowNumber: number;
+  date: string | null;
+  time: string | null;
+  customerName: string | null;
+  phone: string | null;
+  serviceName: string | null;
+  resourceName: string | null;
+  serviceOfferingId: string | null;
+  resourceId: string | null;
+  status: BookingImportStatus;
+  issues: string[];
+  selected?: boolean;
+}
+
+export interface BookingImportAnalysis {
+  analysisId: string;
+  total: number;
+  valid: number;
+  pending: number;
+  rows: BookingImportRow[];
+}
+
+export interface BookingImportConfirmResponse {
+  created: number;
+  rejected: number;
+  results: { rowNumber: number; created: boolean; message: string }[];
+}
+
 export type EntityCollection = 'branches' | 'services' | 'resources';
 
 export interface PublicProfile {

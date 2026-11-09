@@ -1,0 +1,129 @@
+<section class="booking-import">
+  <h2 mat-dialog-title>Importar turnos desde una imagen</h2>
+  <mat-dialog-content>
+    @if (!analysis()) {
+      <div class="upload-step">
+        <p>Fotografiá tu agenda o subí una captura JPG, PNG o WEBP.</p>
+        <mat-form-field appearance="outline">
+          <mat-label>Sucursal</mat-label>
+          <mat-select [(ngModel)]="branchId">
+            @for (branch of data.branches; track branch.id) {
+              <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <label class="file-picker">
+          <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>
+          <span>{{ file?.name || 'Seleccionar imagen' }}</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            (change)="chooseFile($event)"
+          />
+        </label>
+        @if (previewUrl) {
+          <img class="image-preview" [src]="previewUrl" alt="Vista previa de la agenda" />
+        }
+      </div>
+    } @else {
+      <div class="analysis-summary" aria-live="polite">
+        <strong>{{ analysis()!.total }} detectados</strong>
+        <span class="ready">{{ analysis()!.valid }} listos</span>
+        <span class="pending">{{ analysis()!.pending }} para revisar</span>
+      </div>
+      <div class="bulk-actions">
+        <mat-form-field appearance="outline">
+          <mat-label>Completar servicios faltantes</mat-label>
+          <mat-select (selectionChange)="applyService($event.value)">
+            @for (service of servicesForBranch(); track service.id) {
+              <mat-option [value]="service.id">{{ service.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Completar profesionales faltantes</mat-label>
+          <mat-select (selectionChange)="applyResource($event.value)">
+            @for (resource of resourcesForBranch(); track resource.id) {
+              <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="rows">
+        @for (row of analysis()!.rows; track row.rowNumber) {
+          <article class="import-row" [class.needs-review]="row.status !== 'READY'">
+            <mat-checkbox
+              [(ngModel)]="row.selected"
+              [disabled]="!isComplete(row)"
+              [attr.aria-label]="'Importar fila ' + row.rowNumber"
+            />
+            <div class="row-fields">
+              <strong>Turno {{ row.rowNumber }}</strong>
+              <label>Fecha <input type="date" [(ngModel)]="row.date" /></label>
+              <label>Hora <input type="time" [(ngModel)]="row.time" /></label>
+              <label class="wide"
+                >Cliente <input type="text" maxlength="120" [(ngModel)]="row.customerName"
+              /></label>
+              <label class="wide"
+                >Teléfono opcional <input type="tel" maxlength="40" [(ngModel)]="row.phone"
+              /></label>
+              <mat-form-field appearance="outline">
+                <mat-label>Servicio</mat-label>
+                <mat-select
+                  [(ngModel)]="row.serviceOfferingId"
+                  (selectionChange)="row.resourceId = null"
+                >
+                  @for (service of servicesForBranch(); track service.id) {
+                    <mat-option [value]="service.id">{{ service.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Profesional</mat-label>
+                <mat-select [(ngModel)]="row.resourceId">
+                  @for (resource of resourcesForRow(row); track resource.id) {
+                    <mat-option [value]="resource.id">{{ resource.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              @if (row.issues.length) {
+                <p class="row-issues">{{ row.issues.join(' · ') }}</p>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+    @if (error()) {
+      <p class="dialog-error" role="alert">{{ error() }}</p>
+    }
+    @if (result()) {
+      <p class="dialog-result" role="status">{{ result() }}</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancelar</button>
+    @if (!analysis()) {
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="!branchId || !file || processing()"
+        (click)="analyze()"
+      >
+        <mat-icon aria-hidden="true">document_scanner</mat-icon>
+        {{ processing() ? 'Reconociendo…' : 'Reconocer turnos' }}
+      </button>
+    } @else {
+      <button mat-button type="button" (click)="analysis.set(null)">Cambiar imagen</button>
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="!selectedRows().length || confirming()"
+        (click)="confirm()"
+      >
+        Importar {{ selectedRows().length }} turnos
+      </button>
+    }
+  </mat-dialog-actions>
+</section>

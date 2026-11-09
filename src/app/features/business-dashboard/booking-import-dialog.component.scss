@@ -1,0 +1,137 @@
+.booking-import {
+  width: min(1050px, 92vw);
+}
+mat-dialog-content {
+  max-height: 72vh;
+}
+.upload-step {
+  display: grid;
+  gap: 16px;
+  max-width: 620px;
+  margin: auto;
+}
+.upload-step > p {
+  margin: 0;
+  color: #53647c;
+}
+.file-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 90px;
+  border: 2px dashed #8ab8e8;
+  border-radius: 14px;
+  background: #f3f9ff;
+  color: #0b63c7;
+  font-weight: 800;
+  cursor: pointer;
+}
+.file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.image-preview {
+  width: 100%;
+  max-height: 330px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #edf4fa;
+}
+.analysis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.analysis-summary span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.ready {
+  background: #dff5e8;
+  color: #116836;
+}
+.pending {
+  background: #fff2cf;
+  color: #8a5d00;
+}
+.bulk-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.rows {
+  display: grid;
+  gap: 12px;
+}
+.import-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+}
+.import-row.needs-review {
+  border-color: #e9ba59;
+  background: #fffbf1;
+}
+.row-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.row-fields > strong,
+.row-issues {
+  grid-column: 1 / -1;
+}
+.row-fields label {
+  display: grid;
+  gap: 5px;
+  color: #53647c;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.row-fields input {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #b7c5d6;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
+.row-issues {
+  margin: 0;
+  color: #8a5d00;
+  font-size: 0.84rem;
+}
+.dialog-error {
+  color: #b42318;
+}
+.dialog-result {
+  color: #116836;
+  font-weight: 800;
+}
+@media (max-width: 700px) {
+  .booking-import {
+    width: 100%;
+  }
+  .bulk-actions,
+  .row-fields {
+    grid-template-columns: 1fr;
+  }
+  .row-fields > strong,
+  .row-issues {
+    grid-column: 1;
+  }
+  mat-dialog-content {
+    max-height: 75vh;
+    padding-inline: 12px;
+  }
+}

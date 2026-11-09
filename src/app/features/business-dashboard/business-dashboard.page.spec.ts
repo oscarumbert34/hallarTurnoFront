@@ -75,6 +75,8 @@ describe('BusinessDashboardPage', () => {
       updateConfiguration: vi.fn(),
       updatePublicProfile: vi.fn(),
       listBookings: vi.fn(() => of([])),
+      analyzeBookingImage: vi.fn(),
+      confirmBookingImport: vi.fn(),
       listBookingsPage: vi.fn(() =>
         of({
           page: 0,
