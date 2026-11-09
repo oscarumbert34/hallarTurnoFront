@@ -18,6 +18,9 @@ describe('BusinessDashboardPage', () => {
     route = { snapshot: { data: {} } };
     dashboardService = {
       getBusinessName: vi.fn(() => of('Negocio de prueba')),
+      getBusinessIdentity: vi.fn(() =>
+        of({ name: 'Negocio de prueba', category: 'BARBERSHOP' as const }),
+      ),
       listBranches: vi.fn(() =>
         of([
           {
@@ -71,6 +74,9 @@ describe('BusinessDashboardPage', () => {
           logoUrl: 'https://storage.test/logo',
           coverImageUrl: 'https://storage.test/cover',
         }),
+      ),
+      getPublicProfileImageUrl: vi.fn(
+        (type: 'logo' | 'cover') => `https://api.test/profile/${type}`,
       ),
       updateConfiguration: vi.fn(),
       updatePublicProfile: vi.fn(),

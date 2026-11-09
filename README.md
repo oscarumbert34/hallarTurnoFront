@@ -126,9 +126,9 @@ Con backend local en `http://localhost:8081`:
 4. Cambiar el servicio y comprobar que los horarios se recalculan según su duración.
 5. Elegir un día y descargar `Historia del día`; cada PNG debe medir 1080 por 1920. Cuando
    existen más de diez horarios se descargan varias partes numeradas, con hasta diez por imagen.
-6. Descargar `Historia semanal` y comprobar que contiene únicamente horarios de la semana visible.
-   Se muestran hasta cuatro por día y el resto se resume como `+N más`. Si el negocio tiene imagen
-   de portada, se usa como fondo suavizado; el logo se muestra junto al nombre del negocio.
+6. Descargar `Historia semanal` y comprobar que genera una sola imagen con siete bloques diarios.
+   Cada día admite hasta diez horarios distribuidos en dos columnas de cinco. Si cualquier día supera
+   ese límite, la aplicación muestra un error y no descarga la imagen.
 7. Repetir en viewport móvil para validar las tarjetas verticales.
 
 ## Flujo Manual E2E De Reserva

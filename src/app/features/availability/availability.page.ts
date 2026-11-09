@@ -16,6 +16,7 @@ import {
 import { AvailabilityDayOverview, AvailabilityOverview } from './availability.models';
 import { AvailabilityOverviewService } from './availability.service';
 import { AvailabilityStoryService } from './availability-story.service';
+import { BusinessCategory } from '../public-business/public-business.models';
 
 @Component({
   selector: 'app-availability-page',
@@ -31,7 +32,9 @@ export class AvailabilityPage implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
+  protected readonly storyError = signal('');
   protected readonly businessName = signal('Mi negocio');
+  protected readonly businessCategory = signal<BusinessCategory>('OTHERS');
   protected readonly publicProfile = signal<PublicProfile | null>(null);
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
@@ -77,14 +80,15 @@ export class AvailabilityPage implements OnInit {
       branches: this.dashboard.listBranches(),
       services: this.dashboard.listServices(),
       resources: this.dashboard.listResources(),
-      businessName: this.dashboard.getBusinessName(),
+      businessIdentity: this.dashboard.getBusinessIdentity(),
       publicProfile: this.dashboard.getPublicProfile(),
     }).subscribe({
-      next: ({ branches, services, resources, businessName, publicProfile }) => {
+      next: ({ branches, services, resources, businessIdentity, publicProfile }) => {
         this.branches.set(branches.filter((branch) => branch.active));
         this.services.set(services.filter((service) => service.active));
         this.resources.set(resources);
-        this.businessName.set(businessName);
+        this.businessName.set(businessIdentity.name);
+        this.businessCategory.set(businessIdentity.category);
         this.publicProfile.set(publicProfile);
         this.selectedBranchId.set(this.branches()[0]?.id ?? '');
         this.applyServiceDefault();
@@ -171,7 +175,15 @@ export class AvailabilityPage implements OnInit {
 
   protected downloadWeek(): void {
     const overview = this.overview();
-    if (overview) void this.stories.downloadWeek(overview, this.storyContext());
+    if (!overview) return;
+    this.storyError.set('');
+    void this.stories
+      .downloadWeek(overview, this.storyContext())
+      .catch((error: unknown) =>
+        this.storyError.set(
+          error instanceof Error ? error.message : 'No se pudo generar la historia semanal.',
+        ),
+      );
   }
 
   private load(): void {
@@ -231,8 +243,13 @@ export class AvailabilityPage implements OnInit {
         this.branches().find((branch) => branch.id === this.selectedBranchId())?.name ?? '',
       serviceName:
         this.services().find((service) => service.id === this.selectedServiceId())?.name ?? '',
-      logoUrl: this.publicProfile()?.logoUrl,
-      coverImageUrl: this.publicProfile()?.coverImageUrl,
+      businessCategory: this.businessCategory(),
+      logoUrl: this.publicProfile()?.logoUrl
+        ? this.dashboard.getPublicProfileImageUrl('logo')
+        : null,
+      coverImageUrl: this.publicProfile()?.coverImageUrl
+        ? this.dashboard.getPublicProfileImageUrl('cover')
+        : null,
     };
   }
 

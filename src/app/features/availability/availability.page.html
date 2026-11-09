@@ -15,6 +15,13 @@
     </div>
   </header>
 
+  @if (storyError()) {
+  <div class="story-error" role="alert">
+    <mat-icon>warning</mat-icon>
+    <span>{{ storyError() }}</span>
+  </div>
+  }
+
   <section class="filters" aria-label="Filtros de disponibilidad">
     <mat-form-field appearance="outline">
       <mat-label>Sucursal</mat-label>
