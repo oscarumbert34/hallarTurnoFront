@@ -10,6 +10,7 @@ describe('AvailabilityStoryService', () => {
   let drawImage: ReturnType<typeof vi.fn>;
   let httpGet: ReturnType<typeof vi.fn>;
   let addColorStop: ReturnType<typeof vi.fn>;
+  let fillRect: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     httpGet = vi.fn();
@@ -21,9 +22,10 @@ describe('AvailabilityStoryService', () => {
     const gradient = { addColorStop };
     fillText = vi.fn();
     drawImage = vi.fn();
+    fillRect = vi.fn();
     const context = {
       createLinearGradient: vi.fn(() => gradient),
-      fillRect: vi.fn(),
+      fillRect,
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
@@ -34,6 +36,7 @@ describe('AvailabilityStoryService', () => {
       fill: vi.fn(),
       roundRect: vi.fn(),
       fillText,
+      measureText: vi.fn((value: string) => ({ width: value.length * 24 })),
       drawImage,
       save: vi.fn(),
       restore: vi.fn(),
@@ -99,7 +102,11 @@ describe('AvailabilityStoryService', () => {
       expect.anything(),
       expect.anything(),
     );
-    expect(fillText).toHaveBeenCalledWith('Agenda online con HallarTurno', 540, 1882);
+    expect(fillText).toHaveBeenCalledWith(
+      'Agenda online con HallarTurno',
+      540,
+      expect.any(Number),
+    );
     expect(fillText).not.toHaveBeenCalledWith('HallarTurno', expect.anything(), expect.anything());
   });
 
@@ -116,6 +123,33 @@ describe('AvailabilityStoryService', () => {
 
     expect(addColorStop).toHaveBeenCalledWith(expect.any(Number), '#8b5cf6');
     expect(addColorStop).toHaveBeenCalledWith(expect.any(Number), '#6941c6');
+  });
+
+  it('compacts sparse daily stories and keeps decorative lines away from long service names', async () => {
+    await service.downloadDay(
+      {
+        date: '2026-11-10',
+        status: 'AVAILABLE',
+        slots: [
+          {
+            startsAt: '08:00:00',
+            endsAt: '09:00:00',
+            resourceId: 'r1',
+            resourceName: 'Ana',
+          },
+        ],
+      },
+      {
+        businessName: 'Roxx studioo',
+        branchName: 'Centro',
+        serviceName: 'Tratamientos capilares',
+        theme: 'PINK',
+      },
+    );
+
+    expect(fillText).toHaveBeenCalledWith('RESERVÁ TU TURNO', 292, 1237);
+    expect(fillText).toHaveBeenCalledWith('Agenda online con HallarTurno', 540, 1378);
+    expect(fillRect).not.toHaveBeenCalledWith(788, 882, 188, 3);
   });
 
   it('splits busy days into pages of at most ten slots', async () => {
