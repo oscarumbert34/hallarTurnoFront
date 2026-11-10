@@ -129,7 +129,21 @@ export class AvailabilityStoryService {
     const ctx = this.context(canvas);
     const dateLabel = this.longDate(day.date).toUpperCase();
     const dateSize = dateLabel.length > 27 ? 35 : dateLabel.length > 23 ? 39 : 43;
-    const serviceSize = context.serviceName.length > 24 ? 34 : 42;
+    let serviceSize = context.serviceName.length > 24 ? 34 : 42;
+    ctx.font = `800 ${serviceSize}px Arial, sans-serif`;
+    const measuredServiceWidth = ctx.measureText(context.serviceName).width;
+    if (measuredServiceWidth > 620) {
+      serviceSize = Math.max(30, Math.floor((serviceSize * 620) / measuredServiceWidth));
+    }
+    ctx.font = `800 ${serviceSize}px Arial, sans-serif`;
+    const serviceWidth = Math.min(ctx.measureText(context.serviceName).width, 620);
+    const serviceGroupWidth = 86 + serviceWidth;
+    const serviceGroupLeft = (1080 - serviceGroupWidth) / 2;
+    const serviceGroupRight = serviceGroupLeft + serviceGroupWidth;
+    const slotRows = Math.max(1, Math.ceil(times.length / 2));
+    const callToActionY = 1030 + slotRows * 126;
+    const cardBottom = callToActionY + 178;
+    const footerY = Math.min(cardBottom + 44, 1882);
     const palette = this.palette(context.theme);
     this.dailyBackground(ctx, canvas, assets.cover, palette);
     this.dailyBrand(ctx, context, assets.logo);
@@ -171,11 +185,19 @@ export class AvailabilityStoryService {
     ctx.lineTo(944, 543);
     ctx.stroke();
 
-    this.shadowedPill(ctx, 44, 674, 992, 1168, 'rgba(255, 255, 255, 0.96)', 32);
+    this.shadowedPill(
+      ctx,
+      44,
+      674,
+      992,
+      cardBottom - 674,
+      'rgba(255, 255, 255, 0.96)',
+      32,
+    );
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.roundRect(48, 678, 984, 1160, 38);
+    ctx.roundRect(48, 678, 984, cardBottom - 682, 38);
     ctx.stroke();
     this.gradientPill(ctx, 112, 720, 856, 104, palette.start, palette.end);
     ctx.strokeStyle = 'rgba(120, 211, 255, 0.9)';
@@ -186,11 +208,14 @@ export class AvailabilityStoryService {
     this.calendarIcon(ctx, 166, 772, 44, '#ffffff');
     this.text(ctx, dateLabel, 218, 789, dateSize, '#ffffff', 800);
     ctx.fillStyle = palette.highlight;
-    ctx.fillRect(104, 882, 188, 3);
-    ctx.fillRect(788, 882, 188, 3);
-    this.pill(ctx, 312, 842, 64, 64, '#dceeff');
-    this.categoryIcon(ctx, context.businessCategory, 344, 874, 37, '#102b52');
-    this.text(ctx, context.serviceName, 398, 890, serviceSize, '#102b52', 800);
+    const leftLineWidth = Math.max(40, serviceGroupLeft - 128);
+    const rightLineX = serviceGroupRight + 24;
+    const rightLineWidth = Math.max(40, 976 - rightLineX);
+    ctx.fillRect(104, 882, leftLineWidth, 3);
+    ctx.fillRect(rightLineX, 882, rightLineWidth, 3);
+    this.pill(ctx, serviceGroupLeft, 842, 64, 64, '#dceeff');
+    this.categoryIcon(ctx, context.businessCategory, serviceGroupLeft + 32, 874, 37, '#102b52');
+    this.text(ctx, context.serviceName, serviceGroupLeft + 86, 890, serviceSize, '#102b52', 800);
 
     if (!times.length) {
       this.centerText(ctx, this.emptyText(day), 1110, 48, '#6b7280', 700);
@@ -208,16 +233,16 @@ export class AvailabilityStoryService {
         this.text(ctx, time, x + 205, y + 63, 48, '#ffffff', 800, 'center');
       });
     }
-    this.shadowedGradientPill(ctx, 98, 1660, 884, 126, palette.start, palette.deep);
-    this.calendarIcon(ctx, 174, 1723, 50, '#ffffff');
+    this.shadowedGradientPill(ctx, 98, callToActionY, 884, 126, palette.start, palette.deep);
+    this.calendarIcon(ctx, 174, callToActionY + 63, 50, '#ffffff');
     ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
-    ctx.fillRect(238, 1685, 3, 76);
-    this.text(ctx, 'RESERVÁ TU TURNO', 292, 1741, 45, '#ffffff', 900);
-    this.text(ctx, '›', 910, 1744, 64, '#ffffff', 700, 'center');
+    ctx.fillRect(238, callToActionY + 25, 3, 76);
+    this.text(ctx, 'RESERVÁ TU TURNO', 292, callToActionY + 81, 45, '#ffffff', 900);
+    this.text(ctx, '›', 910, callToActionY + 84, 64, '#ffffff', 700, 'center');
     ctx.fillStyle = '#91a9c4';
-    ctx.fillRect(170, 1872, 170, 2);
-    ctx.fillRect(740, 1872, 170, 2);
-    this.centerText(ctx, 'Agenda online con HallarTurno', 1882, 25, '#52647e', 600);
+    ctx.fillRect(170, footerY - 10, 170, 2);
+    ctx.fillRect(740, footerY - 10, 170, 2);
+    this.centerText(ctx, 'Agenda online con HallarTurno', footerY, 25, '#52647e', 600);
     const pageSuffix = pageCount > 1 ? `-${pageIndex + 1}-de-${pageCount}` : '';
     this.download(canvas, `${filenameBase}${pageSuffix}.png`);
   }
