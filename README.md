@@ -129,7 +129,9 @@ Con backend local en `http://localhost:8081`:
 6. Descargar `Historia semanal` y comprobar que genera una sola imagen con siete bloques diarios.
    Cada día admite hasta diez horarios distribuidos en dos columnas de cinco. Si cualquier día supera
    ese límite, la aplicación muestra un error y no descarga la imagen.
-7. Repetir en viewport móvil para validar las tarjetas verticales.
+7. Cambiar `Color de la historia` y comprobar que el tema elegido se aplica a ambas exportaciones. La
+   única referencia a la plataforma debe ser la firma inferior `Agenda online con HallarTurno`.
+8. Repetir en viewport móvil para validar las tarjetas verticales.
 
 ## Flujo Manual E2E De Reserva
 

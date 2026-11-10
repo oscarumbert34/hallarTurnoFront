@@ -11,7 +11,79 @@ export interface AvailabilityStoryContext {
   businessCategory?: BusinessCategory | null;
   logoUrl?: string | null;
   coverImageUrl?: string | null;
+  theme?: AvailabilityStoryTheme;
 }
+
+export type AvailabilityStoryTheme =
+  'BLUE' | 'TURQUOISE' | 'GREEN' | 'PURPLE' | 'PINK' | 'ORANGE' | 'GRAPHITE';
+
+interface StoryPalette {
+  highlight: string;
+  dark: string;
+  start: string;
+  end: string;
+  deep: string;
+  soft: string;
+}
+
+const STORY_PALETTES: Record<AvailabilityStoryTheme, StoryPalette> = {
+  BLUE: {
+    highlight: '#37b6ff',
+    dark: '#072f68',
+    start: '#1187ed',
+    end: '#0758bd',
+    deep: '#064aa9',
+    soft: '#e0efff',
+  },
+  TURQUOISE: {
+    highlight: '#35d6c7',
+    dark: '#064e55',
+    start: '#10afaf',
+    end: '#087d86',
+    deep: '#045f69',
+    soft: '#ddf8f5',
+  },
+  GREEN: {
+    highlight: '#68d391',
+    dark: '#123f2b',
+    start: '#2ead67',
+    end: '#16834b',
+    deep: '#0f6438',
+    soft: '#e3f6ea',
+  },
+  PURPLE: {
+    highlight: '#b794f4',
+    dark: '#2f1b69',
+    start: '#8b5cf6',
+    end: '#6941c6',
+    deep: '#4c2b9e',
+    soft: '#eee8ff',
+  },
+  PINK: {
+    highlight: '#f68bb7',
+    dark: '#6f1d43',
+    start: '#e45791',
+    end: '#c43d78',
+    deep: '#9e2e60',
+    soft: '#fce7f1',
+  },
+  ORANGE: {
+    highlight: '#ffb267',
+    dark: '#6b2d0b',
+    start: '#f47b32',
+    end: '#d95d16',
+    deep: '#aa410c',
+    soft: '#fff0e5',
+  },
+  GRAPHITE: {
+    highlight: '#8491a4',
+    dark: '#161b24',
+    start: '#3f4856',
+    end: '#252b36',
+    deep: '#151a22',
+    soft: '#e9edf2',
+  },
+};
 
 @Injectable({ providedIn: 'root' })
 export class AvailabilityStoryService {
@@ -40,15 +112,7 @@ export class AvailabilityStoryService {
     const times = day.slots.map((slot) => this.time(slot.startsAt));
     const pages = times.length ? this.pages(times, 10) : [[]];
     pages.forEach((pageTimes, pageIndex) =>
-      this.downloadDayPage(
-        day,
-        context,
-        assets,
-        pageTimes,
-        pageIndex,
-        pages.length,
-        filenameBase,
-      ),
+      this.downloadDayPage(day, context, assets, pageTimes, pageIndex, pages.length, filenameBase),
     );
   }
 
@@ -66,10 +130,11 @@ export class AvailabilityStoryService {
     const dateLabel = this.longDate(day.date).toUpperCase();
     const dateSize = dateLabel.length > 27 ? 35 : dateLabel.length > 23 ? 39 : 43;
     const serviceSize = context.serviceName.length > 24 ? 34 : 42;
-    this.dailyBackground(ctx, canvas, assets.cover);
+    const palette = this.palette(context.theme);
+    this.dailyBackground(ctx, canvas, assets.cover, palette);
     this.dailyBrand(ctx, context, assets.logo);
 
-    ctx.fillStyle = '#37b6ff';
+    ctx.fillStyle = palette.highlight;
     ctx.beginPath();
     ctx.moveTo(0, 514);
     ctx.bezierCurveTo(260, 428, 720, 484, 1080, 424);
@@ -78,9 +143,9 @@ export class AvailabilityStoryService {
     ctx.closePath();
     ctx.fill();
     const titleGradient = ctx.createLinearGradient(0, 450, 1080, 700);
-    titleGradient.addColorStop(0, '#072f68');
-    titleGradient.addColorStop(0.55, '#064b9d');
-    titleGradient.addColorStop(1, '#087ee7');
+    titleGradient.addColorStop(0, palette.dark);
+    titleGradient.addColorStop(0.55, palette.deep);
+    titleGradient.addColorStop(1, palette.start);
     ctx.fillStyle = titleGradient;
     ctx.beginPath();
     ctx.moveTo(0, 512);
@@ -94,7 +159,7 @@ export class AvailabilityStoryService {
     ctx.fillRect(284, 516, 4, 132);
     this.text(ctx, 'TURNOS', 330, 557, 66, '#ffffff', 900);
     this.text(ctx, 'DISPONIBLES', 330, 635, 66, '#ffffff', 900);
-    ctx.strokeStyle = '#31c0ff';
+    ctx.strokeStyle = palette.highlight;
     ctx.lineWidth = 8;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -112,23 +177,15 @@ export class AvailabilityStoryService {
     ctx.beginPath();
     ctx.roundRect(48, 678, 984, 1160, 38);
     ctx.stroke();
-    this.gradientPill(ctx, 112, 720, 856, 104, '#1187ed', '#0758bd');
+    this.gradientPill(ctx, 112, 720, 856, 104, palette.start, palette.end);
     ctx.strokeStyle = 'rgba(120, 211, 255, 0.9)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(114, 722, 852, 100, 36);
     ctx.stroke();
     this.calendarIcon(ctx, 166, 772, 44, '#ffffff');
-    this.text(
-      ctx,
-      dateLabel,
-      218,
-      789,
-      dateSize,
-      '#ffffff',
-      800,
-    );
-    ctx.fillStyle = '#72b7ff';
+    this.text(ctx, dateLabel, 218, 789, dateSize, '#ffffff', 800);
+    ctx.fillStyle = palette.highlight;
     ctx.fillRect(104, 882, 188, 3);
     ctx.fillRect(788, 882, 188, 3);
     this.pill(ctx, 312, 842, 64, 64, '#dceeff');
@@ -147,11 +204,11 @@ export class AvailabilityStoryService {
         const row = Math.floor(index / 2);
         const x = 116 + column * 438;
         const y = 996 + row * 126;
-        this.shadowedGradientPill(ctx, x, y, 410, 96, '#1187ed', '#0754b8');
+        this.shadowedGradientPill(ctx, x, y, 410, 96, palette.start, palette.end);
         this.text(ctx, time, x + 205, y + 63, 48, '#ffffff', 800, 'center');
       });
     }
-    this.shadowedGradientPill(ctx, 98, 1660, 884, 126, '#1394f2', '#064aa9');
+    this.shadowedGradientPill(ctx, 98, 1660, 884, 126, palette.start, palette.deep);
     this.calendarIcon(ctx, 174, 1723, 50, '#ffffff');
     ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
     ctx.fillRect(238, 1685, 3, 76);
@@ -160,7 +217,7 @@ export class AvailabilityStoryService {
     ctx.fillStyle = '#91a9c4';
     ctx.fillRect(170, 1872, 170, 2);
     ctx.fillRect(740, 1872, 170, 2);
-    this.centerText(ctx, 'Generado con HallarTurno', 1882, 25, '#52647e', 600);
+    this.centerText(ctx, 'Agenda online con HallarTurno', 1882, 25, '#52647e', 600);
     const pageSuffix = pageCount > 1 ? `-${pageIndex + 1}-de-${pageCount}` : '';
     this.download(canvas, `${filenameBase}${pageSuffix}.png`);
   }
@@ -182,12 +239,13 @@ export class AvailabilityStoryService {
     try {
       const canvas = this.canvas();
       const ctx = this.context(canvas);
-      this.dailyBackground(ctx, canvas, assets.cover);
+      const palette = this.palette(context.theme);
+      this.dailyBackground(ctx, canvas, assets.cover, palette);
       this.dailyBrand(ctx, context, assets.logo);
 
       const titleGradient = ctx.createLinearGradient(0, 450, 1080, 690);
-      titleGradient.addColorStop(0, '#072f68');
-      titleGradient.addColorStop(1, '#087ee7');
+      titleGradient.addColorStop(0, palette.dark);
+      titleGradient.addColorStop(1, palette.start);
       ctx.fillStyle = titleGradient;
       ctx.beginPath();
       ctx.moveTo(0, 500);
@@ -201,7 +259,7 @@ export class AvailabilityStoryService {
       this.text(ctx, 'SEMANAL', 245, 635, 58, '#ffffff', 900);
 
       this.shadowedPill(ctx, 34, 670, 1012, 1170, 'rgba(255, 255, 255, 0.96)', 30);
-      this.gradientPill(ctx, 110, 716, 860, 98, '#1187ed', '#0758bd');
+      this.gradientPill(ctx, 110, 716, 860, 98, palette.start, palette.end);
       this.centerText(ctx, this.weekLabel(overview).toUpperCase(), 780, 38, '#ffffff', 800);
       this.centerText(ctx, context.serviceName, 875, 38, '#102b52', 800);
 
@@ -211,7 +269,7 @@ export class AvailabilityStoryService {
         const x = 58 + column * 246;
         const y = 930 + row * 350;
         this.shadowedPill(ctx, x, y, 226, 322, '#f5faff', 12);
-        this.gradientPill(ctx, x + 8, y + 8, 210, 58, '#1187ed', '#0758bd');
+        this.gradientPill(ctx, x + 8, y + 8, 210, 58, palette.start, palette.end);
         this.text(ctx, this.shortDate(day.date), x + 113, y + 47, 25, '#ffffff', 900, 'center');
 
         if (!day.slots.length) {
@@ -224,14 +282,23 @@ export class AvailabilityStoryService {
           const slotRow = slotIndex % 5;
           const slotX = x + 10 + slotColumn * 104;
           const slotY = y + 82 + slotRow * 45;
-          this.pill(ctx, slotX, slotY, 98, 36, '#e0efff');
-          this.text(ctx, this.time(slot.startsAt), slotX + 49, slotY + 26, 20, '#0758bd', 800, 'center');
+          this.pill(ctx, slotX, slotY, 98, 36, palette.soft);
+          this.text(
+            ctx,
+            this.time(slot.startsAt),
+            slotX + 49,
+            slotY + 26,
+            20,
+            palette.end,
+            800,
+            'center',
+          );
         });
       });
 
-      this.shadowedGradientPill(ctx, 98, 1660, 884, 126, '#1394f2', '#064aa9');
+      this.shadowedGradientPill(ctx, 98, 1660, 884, 126, palette.start, palette.deep);
       this.centerText(ctx, 'RESERVÁ TU TURNO  ›', 1741, 44, '#ffffff', 900);
-      this.centerText(ctx, 'Generado con HallarTurno', 1882, 25, '#52647e', 600);
+      this.centerText(ctx, 'Agenda online con HallarTurno', 1882, 25, '#52647e', 600);
       this.download(canvas, `disponibilidad-semana-${overview.from}.png`);
     } finally {
       this.closeAssets(assets);
@@ -277,10 +344,11 @@ export class AvailabilityStoryService {
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
     cover: ImageBitmap | null,
+    palette: StoryPalette,
   ): void {
     const page = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    page.addColorStop(0, '#dceeff');
-    page.addColorStop(1, '#eef7ff');
+    page.addColorStop(0, palette.soft);
+    page.addColorStop(1, '#f8fbff');
     ctx.fillStyle = page;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -288,8 +356,8 @@ export class AvailabilityStoryService {
       this.coverImage(ctx, cover, 0, 0, canvas.width, 590);
     } else {
       const fallback = ctx.createLinearGradient(0, 0, canvas.width, 590);
-      fallback.addColorStop(0, '#0b2545');
-      fallback.addColorStop(1, '#0967d8');
+      fallback.addColorStop(0, palette.dark);
+      fallback.addColorStop(1, palette.start);
       ctx.fillStyle = fallback;
       ctx.fillRect(0, 0, canvas.width, 590);
     }
@@ -301,19 +369,22 @@ export class AvailabilityStoryService {
     ctx.fillStyle = shade;
     ctx.fillRect(0, 0, canvas.width, 590);
 
-    ctx.fillStyle = 'rgba(9, 103, 216, 0.12)';
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = palette.start;
     ctx.beginPath();
     ctx.arc(1080, 1920, 300, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
-    ctx.fillStyle = 'rgba(14, 142, 242, 0.92)';
+    ctx.fillStyle = palette.start;
     ctx.beginPath();
     ctx.moveTo(940, 0);
     ctx.lineTo(1080, 0);
     ctx.lineTo(1080, 190);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = 'rgba(122, 209, 255, 0.72)';
+    ctx.fillStyle = palette.highlight;
     ctx.beginPath();
     ctx.moveTo(1000, 0);
     ctx.lineTo(1080, 0);
@@ -327,10 +398,6 @@ export class AvailabilityStoryService {
     context: AvailabilityStoryContext,
     logo: ImageBitmap | null,
   ): void {
-    this.pill(ctx, 706, 36, 430, 102, 'rgba(255, 255, 255, 0.94)');
-    this.calendarIcon(ctx, 758, 87, 40, '#0967d8');
-    this.text(ctx, 'HallarTurno', 1044, 101, 33, '#0967d8', 900, 'right');
-
     const textX = logo ? 218 : 72;
     if (logo) {
       ctx.fillStyle = '#ffffff';
@@ -377,6 +444,10 @@ export class AvailabilityStoryService {
     return Array.from({ length: Math.ceil(values.length / size) }, (_, index) =>
       values.slice(index * size, (index + 1) * size),
     );
+  }
+
+  private palette(theme: AvailabilityStoryTheme | undefined): StoryPalette {
+    return STORY_PALETTES[theme ?? 'BLUE'];
   }
 
   private async loadAssets(context: AvailabilityStoryContext): Promise<StoryAssets> {

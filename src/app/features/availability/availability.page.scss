@@ -33,6 +33,21 @@ h1 {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+}
+.story-theme-field {
+  width: 190px;
+}
+.theme-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.theme-dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  border-radius: 50%;
 }
 .filters {
   display: grid;
