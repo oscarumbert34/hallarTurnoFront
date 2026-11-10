@@ -9,6 +9,7 @@ describe('AvailabilityStoryService', () => {
   let fillText: ReturnType<typeof vi.fn>;
   let drawImage: ReturnType<typeof vi.fn>;
   let httpGet: ReturnType<typeof vi.fn>;
+  let addColorStop: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     httpGet = vi.fn();
@@ -16,7 +17,8 @@ describe('AvailabilityStoryService', () => {
       providers: [AvailabilityStoryService, { provide: HttpClient, useValue: { get: httpGet } }],
     });
     service = TestBed.inject(AvailabilityStoryService);
-    const gradient = { addColorStop: vi.fn() };
+    addColorStop = vi.fn();
+    const gradient = { addColorStop };
     fillText = vi.fn();
     drawImage = vi.fn();
     const context = {
@@ -97,6 +99,23 @@ describe('AvailabilityStoryService', () => {
       expect.anything(),
       expect.anything(),
     );
+    expect(fillText).toHaveBeenCalledWith('Agenda online con HallarTurno', 540, 1882);
+    expect(fillText).not.toHaveBeenCalledWith('HallarTurno', expect.anything(), expect.anything());
+  });
+
+  it('uses the selected color theme', async () => {
+    await service.downloadDay(
+      { date: '2026-11-09', status: 'NO_AVAILABILITY', slots: [] },
+      {
+        businessName: 'Espacio Calma',
+        branchName: 'Centro',
+        serviceName: 'Masajes',
+        theme: 'PURPLE',
+      },
+    );
+
+    expect(addColorStop).toHaveBeenCalledWith(expect.any(Number), '#8b5cf6');
+    expect(addColorStop).toHaveBeenCalledWith(expect.any(Number), '#6941c6');
   });
 
   it('splits busy days into pages of at most ten slots', async () => {

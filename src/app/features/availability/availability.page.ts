@@ -15,7 +15,7 @@ import {
 } from '../business-dashboard/dashboard.models';
 import { AvailabilityDayOverview, AvailabilityOverview } from './availability.models';
 import { AvailabilityOverviewService } from './availability.service';
-import { AvailabilityStoryService } from './availability-story.service';
+import { AvailabilityStoryService, AvailabilityStoryTheme } from './availability-story.service';
 import { BusinessCategory } from '../public-business/public-business.models';
 
 @Component({
@@ -33,6 +33,20 @@ export class AvailabilityPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly storyError = signal('');
+  protected readonly selectedStoryTheme = signal<AvailabilityStoryTheme>('BLUE');
+  protected readonly storyThemes: ReadonlyArray<{
+    value: AvailabilityStoryTheme;
+    label: string;
+    color: string;
+  }> = [
+    { value: 'BLUE', label: 'Azul', color: '#0967d8' },
+    { value: 'TURQUOISE', label: 'Turquesa', color: '#008c95' },
+    { value: 'GREEN', label: 'Verde', color: '#16834b' },
+    { value: 'PURPLE', label: 'Violeta', color: '#6941c6' },
+    { value: 'PINK', label: 'Rosa', color: '#c43d78' },
+    { value: 'ORANGE', label: 'Naranja', color: '#d95d16' },
+    { value: 'GRAPHITE', label: 'Grafito', color: '#252b36' },
+  ];
   protected readonly businessName = signal('Mi negocio');
   protected readonly businessCategory = signal<BusinessCategory>('OTHERS');
   protected readonly publicProfile = signal<PublicProfile | null>(null);
@@ -244,6 +258,7 @@ export class AvailabilityPage implements OnInit {
       serviceName:
         this.services().find((service) => service.id === this.selectedServiceId())?.name ?? '',
       businessCategory: this.businessCategory(),
+      theme: this.selectedStoryTheme(),
       logoUrl: this.publicProfile()?.logoUrl
         ? this.dashboard.getPublicProfileImageUrl('logo')
         : null,
