@@ -13,7 +13,11 @@ import {
   Resource,
   ServiceCatalogItem,
 } from '../business-dashboard/dashboard.models';
-import { AvailabilityDayOverview, AvailabilityOverview } from './availability.models';
+import {
+  AvailabilityDayOverview,
+  AvailabilityOverview,
+  AvailabilitySlotOverview,
+} from './availability.models';
 import { AvailabilityOverviewService } from './availability.service';
 import { AvailabilityStoryService, AvailabilityStoryTheme } from './availability-story.service';
 import { BusinessCategory } from '../public-business/public-business.models';
@@ -170,16 +174,39 @@ export class AvailabilityPage implements OnInit {
     return value.slice(0, 5);
   }
 
-  protected createBooking(day: AvailabilityDayOverview, startsAt: string): void {
-    void this.router.navigate(['/bookings'], {
+  protected createBooking(day: AvailabilityDayOverview, slot: AvailabilitySlotOverview): void {
+    const overview = this.overview();
+    const branch = this.branches().find((item) => item.id === this.selectedBranchId());
+    const service = this.services().find((item) => item.id === this.selectedServiceId());
+
+    if (!overview || !branch || !service) return;
+
+    const startsAt = this.slotDateTime(day.date, slot.startsAt);
+    const endsAt = this.slotDateTime(day.date, slot.endsAt);
+    void this.router.navigate(['/booking'], {
       queryParams: {
-        date: day.date,
-        startTime: this.time(startsAt),
+        businessId: overview.businessId,
+        businessName: this.businessName(),
         branchId: this.selectedBranchId(),
-        serviceOfferingId: this.selectedServiceId(),
-        resourceId: this.selectedResourceId() || undefined,
+        branchName: branch.name,
+        serviceId: service.id,
+        serviceName: service.name,
+        slotId: `${day.date}-${this.time(slot.startsAt)}-${slot.resourceId}`,
+        startsAt,
+        endsAt,
+        resourceId: slot.resourceId || undefined,
+        resourceName: slot.resourceName || undefined,
+        price: service.price,
+        businessCategory: this.businessCategory(),
+        source: 'DIRECT_LINK',
       },
     });
+  }
+
+  private slotDateTime(date: string, value: string): string {
+    if (value.includes('T')) return value;
+    const time = value.length === 5 ? `${value}:00` : value;
+    return `${date}T${time}`;
   }
 
   protected downloadDay(): void {

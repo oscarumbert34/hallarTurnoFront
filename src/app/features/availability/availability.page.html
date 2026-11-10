@@ -133,7 +133,7 @@
                 <button
                   type="button"
                   title="Crear turno en este horario"
-                  (click)="createBooking(day, slot.startsAt); $event.stopPropagation()"
+                  (click)="createBooking(day, slot); $event.stopPropagation()"
                 >
                   {{ time(slot.startsAt) }}
                 </button>
