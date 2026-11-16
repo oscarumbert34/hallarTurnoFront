@@ -149,6 +149,7 @@ describe('BookingPage', () => {
       serviceName: 'Corte',
       slotId: 'slot-1',
       startsAt: '2026-08-17T10:00:00',
+      depositEnabled: 'true',
       source: 'PUBLIC',
     });
     bookingService.getPublicBusiness.mockReturnValue(
@@ -222,6 +223,14 @@ describe('BookingPage', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Tratamientos de belleza y cuidado personal.',
     );
+    expect(fixture.nativeElement.textContent).not.toContain('Seña pagada');
+
+    const component = fixture.componentInstance as unknown as {
+      emailRequired: { set: (value: boolean) => void };
+    };
+    component.emailRequired.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Continuar sin ingresar mi email');
   });
 
   it('shows branding and keeps the booking form for an authenticated user without a slug route', () => {

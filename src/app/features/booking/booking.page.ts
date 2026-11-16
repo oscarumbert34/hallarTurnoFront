@@ -154,7 +154,7 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
                   }
                 </mat-form-field>
 
-                @if (selectedSlot.depositEnabled) {
+                @if (canManageDeposit(selectedSlot)) {
                   <mat-checkbox formControlName="depositPaid">Seña pagada</mat-checkbox>
                 }
 
@@ -164,7 +164,7 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
 
                 @if (emailRequired()) {
                   <mat-checkbox class="customer-skip-contact" formControlName="skipCustomerContact">
-                    No tengo el email del cliente
+                    {{ skipEmailLabel() }}
                   </mat-checkbox>
 
                   @if (!skipCustomerContact()) {
@@ -368,7 +368,7 @@ export class BookingPage implements OnInit {
           customerName: customer.customerName.trim(),
           customerPhone: customer.customerPhone.trim(),
           skipCustomerContact: skipCustomerContact ? true : null,
-          ...(selectedSlot.depositEnabled ? { depositPaid: customer.depositPaid } : {}),
+          ...(this.canManageDeposit(selectedSlot) ? { depositPaid: customer.depositPaid } : {}),
           ...(this.emailRequired() && !skipCustomerContact && customerEmail
             ? { customerEmail }
             : {}),
@@ -500,6 +500,16 @@ export class BookingPage implements OnInit {
       return 'El cliente deberá confirmarla desde el email.';
     }
     return 'La reserva quedó registrada correctamente.';
+  }
+
+  protected canManageDeposit(slot: SelectedSlot): boolean {
+    return slot.depositEnabled === true && !this.isPublicCustomerFlow();
+  }
+
+  protected skipEmailLabel(): string {
+    return this.isPublicCustomerFlow()
+      ? 'Continuar sin ingresar mi email'
+      : 'No tengo el email del cliente';
   }
 
   protected dateLabel(value: string): string {
