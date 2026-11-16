@@ -597,7 +597,8 @@ export class PublicSearchPage implements OnInit {
       business,
       slot,
       this.availabilitySearch(),
-      this.isPublicCustomerFlow() ? this.businessSlug : undefined,
+      this.businessSlug || this.authService.businessSlug || undefined,
+      this.isPublicCustomerFlow() ? 'PUBLIC' : 'DIRECT_LINK',
     );
   }
 

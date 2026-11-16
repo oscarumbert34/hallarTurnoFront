@@ -3,6 +3,77 @@
   gap: 18px;
 }
 
+.booking-brand {
+  overflow: hidden;
+  border: 1px solid #dce9f5;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgb(31 80 126 / 10%);
+}
+
+.booking-cover {
+  height: clamp(150px, 24vw, 250px);
+  overflow: hidden;
+  background: #dfeefa;
+}
+
+.booking-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.booking-cover--empty {
+  background:
+    radial-gradient(circle at 76% 22%, rgb(255 255 255 / 28%), transparent 25%),
+    linear-gradient(135deg, #143f70, #0783ec 58%, #4fc6d7);
+}
+
+.booking-business {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 0 24px 20px;
+}
+
+.booking-business h1 {
+  margin-bottom: 3px;
+  overflow-wrap: anywhere;
+}
+
+.booking-business p {
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.4;
+}
+
+.booking-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  margin-top: -34px;
+  overflow: hidden;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(14 61 108 / 18%);
+}
+
+.booking-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.booking-logo--empty {
+  color: #0875e7;
+  background: #f0f7ff;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
 h1,
 h2 {
   margin: 0 0 4px;
@@ -59,10 +130,54 @@ dd {
   overflow-wrap: anywhere;
 }
 
-.success {
-  margin-top: 16px;
-  color: var(--mat-sys-primary);
-  font-weight: 700;
+.booking-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #a8dfbd;
+  border-radius: 16px;
+  color: #174b2b;
+  background: linear-gradient(135deg, #f1fff6, #e8f8ef);
+}
+
+.booking-confirmed__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  color: #fff;
+  background: #159447;
+  box-shadow: 0 7px 18px rgb(21 148 71 / 24%);
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.booking-confirmed h2 {
+  margin: 0 0 4px;
+  color: #123d23;
+  font-size: 1.35rem;
+}
+
+.booking-confirmed p {
+  line-height: 1.45;
+}
+
+.booking-confirmed__customer {
+  margin-top: 8px;
+  color: #326344;
+}
+
+.confirmed-actions {
+  padding-top: 16px;
+}
+
+.whatsapp-action {
+  --mat-button-filled-container-color: #159447;
+  --mat-button-filled-label-text-color: #fff;
 }
 
 .empty {
@@ -84,6 +199,62 @@ dd {
 }
 
 @media (max-width: 699px) {
+  .booking-page {
+    gap: 14px;
+  }
+
+  .booking-brand {
+    border-radius: 16px;
+  }
+
+  .booking-cover {
+    height: 145px;
+  }
+
+  .booking-business {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0 16px 16px;
+  }
+
+  .booking-logo {
+    flex-basis: 72px;
+    width: 72px;
+    height: 72px;
+    margin-top: -24px;
+  }
+
+  .booking-business > div:last-child {
+    padding-top: 10px;
+  }
+
+  .booking-business h1 {
+    font-size: 1.3rem;
+    line-height: 1.15;
+  }
+
+  .booking-business p {
+    font-size: 0.86rem;
+  }
+
+  .booking-confirmed {
+    align-items: flex-start;
+    gap: 13px;
+    margin-top: 18px;
+    padding: 17px;
+  }
+
+  .booking-confirmed__icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+    font-size: 1.35rem;
+  }
+
+  .booking-confirmed h2 {
+    font-size: 1.18rem;
+  }
+
   mat-card-header,
   mat-card-content {
     padding-inline: 14px;
