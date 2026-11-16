@@ -80,18 +80,25 @@ describe('PublicSearchPage', () => {
     expect(bookingService.listServiceOfferings).toHaveBeenCalledWith('business-1');
   });
 
-  it('does not query all businesses when a scoped search has no business id', () => {
+  it('redirects to login when a session-scoped search has no active session', () => {
     authService.businessId = null;
+    authService.isAuthenticated = false;
+    bookingService.listBranches.mockClear();
+    bookingService.listServiceOfferings.mockClear();
+    bookingService.searchAvailability.mockClear();
+    router.navigate.mockClear();
     route.snapshot.data = { businessScoped: true };
     fixture = TestBed.createComponent(PublicSearchPage);
     fixture.detectChanges();
-    const component = fixture.componentInstance as any;
 
-    component.form.patchValue({ service: 'Corte', date: '2026-08-17' });
-    component.search();
-
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: {
+        returnUrl: `${window.location.pathname}${window.location.search}`,
+      },
+    });
+    expect(bookingService.listBranches).not.toHaveBeenCalled();
+    expect(bookingService.listServiceOfferings).not.toHaveBeenCalled();
     expect(bookingService.searchAvailability).not.toHaveBeenCalled();
-    expect(component.errorMessage()).toContain('No pudimos identificar el comercio');
   });
 
   it('resolves the business id from the slug on a direct scoped navigation', () => {

@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { ApiUrlService } from '../../shared/api-url.service';
 import { AuthService } from '../auth/auth.service';
+import { BusinessCategory } from '../public-business/public-business.models';
 import {
   Booking,
   BookingListPage,
@@ -27,6 +28,25 @@ export class BusinessDashboardService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
   private readonly authService = inject(AuthService);
+
+  getBusinessName(): Observable<string> {
+    return this.http
+      .get<{ name: string }>(this.apiUrl.build(`/businesses/${this.currentBusinessId}`))
+      .pipe(map((business) => business.name));
+  }
+
+  getBusinessIdentity(): Observable<{ name: string; category: BusinessCategory }> {
+    return this.http
+      .get<{ name: string; category?: BusinessCategory | null }>(
+        this.apiUrl.build(`/businesses/${this.currentBusinessId}`),
+      )
+      .pipe(
+        map((business) => ({
+          name: business.name,
+          category: business.category ?? 'OTHERS',
+        })),
+      );
+  }
 
   listBranches(): Observable<Branch[]> {
     return this.http
@@ -237,6 +257,12 @@ export class BusinessDashboardService {
           coverImageUrl: profile.coverImageUrl ?? null,
         })),
       );
+  }
+
+  getPublicProfileImageUrl(type: 'logo' | 'cover'): string {
+    return this.apiUrl.build(
+      `/businesses/${this.currentBusinessId}/public-profile/images/${type}`,
+    );
   }
 
   updateConfiguration(

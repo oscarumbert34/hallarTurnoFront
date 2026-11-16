@@ -17,6 +17,10 @@ describe('BusinessDashboardPage', () => {
     bookingService = { listAvailabilitySlots: vi.fn(() => of({ slots: [] })) };
     route = { snapshot: { data: {} } };
     dashboardService = {
+      getBusinessName: vi.fn(() => of('Negocio de prueba')),
+      getBusinessIdentity: vi.fn(() =>
+        of({ name: 'Negocio de prueba', category: 'BARBERSHOP' as const }),
+      ),
       listBranches: vi.fn(() =>
         of([
           {
@@ -70,6 +74,9 @@ describe('BusinessDashboardPage', () => {
           logoUrl: 'https://storage.test/logo',
           coverImageUrl: 'https://storage.test/cover',
         }),
+      ),
+      getPublicProfileImageUrl: vi.fn(
+        (type: 'logo' | 'cover') => `https://api.test/profile/${type}`,
       ),
       updateConfiguration: vi.fn(),
       updatePublicProfile: vi.fn(),
@@ -142,6 +149,45 @@ describe('BusinessDashboardPage', () => {
     expect(dashboardService.listBookingsPage).toHaveBeenCalled();
     expect(dashboardService.getPublicProfile).toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Centro');
+  });
+
+  it('should show active statuses and all services and resources by default', () => {
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: {
+        controls: {
+          status: { value: string };
+          serviceOfferingId: { value: string };
+          resourceId: { value: string };
+        };
+      };
+    };
+
+    expect(component.bookingForm.controls.status.value).toBe('ACTIVE');
+    expect(component.bookingForm.controls.serviceOfferingId.value).toBe('');
+    expect(component.bookingForm.controls.resourceId.value).toBe('');
+  });
+
+  it('should keep all resources selected after resources are loaded', () => {
+    dashboardService.listResources.mockReturnValue(
+      of([
+        {
+          id: 'resource-1',
+          name: 'Sandra',
+          branchId: 'branch-1',
+          serviceOfferingIds: ['service-1'],
+          weeklySchedule: [],
+          active: true,
+        },
+      ]),
+    );
+
+    fixture = TestBed.createComponent(BusinessDashboardPage);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      bookingForm: { controls: { resourceId: { value: string } } };
+    };
+
+    expect(component.bookingForm.controls.resourceId.value).toBe('');
   });
 
   it('should open the booking date received from the approval email', () => {
@@ -1550,6 +1596,8 @@ describe('BusinessDashboardPage', () => {
         status: 'CANCELLED',
       },
     ]);
+
+    component.bookingForm.controls.status.setValue('ACTIVE');
 
     expect(component.filteredBookings().map((booking) => booking.id)).toEqual([
       'booking-active',

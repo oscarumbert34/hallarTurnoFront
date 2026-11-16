@@ -599,18 +599,27 @@ h2 {
 .today-filters {
   display: grid;
   gap: 10px;
+  min-width: 0;
   margin-top: 12px;
 }
 .today-filters label {
   display: grid;
   gap: 5px;
+  min-width: 0;
   font-weight: 700;
 }
 .today-filters select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding: 10px 12px;
   border: 1px solid #d7e3ef;
   border-radius: 10px;
   background: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .today-summary {
   display: flex;

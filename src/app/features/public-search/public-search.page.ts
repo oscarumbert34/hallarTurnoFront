@@ -325,7 +325,10 @@ export class PublicSearchPage implements OnInit {
     timeTo: ['20:00'],
   });
   ngOnInit(): void {
-    if (this.ownerBookingLink && !this.authService.isAuthenticated) {
+    const requiresAuthenticatedBusiness =
+      this.businessScoped && !this.businessSlug && !this.publicBusinessId;
+
+    if ((this.ownerBookingLink || requiresAuthenticatedBusiness) && !this.authService.isAuthenticated) {
       void this.router.navigate(['/auth/login'], {
         queryParams: { returnUrl: `${window.location.pathname}${window.location.search}` },
       });

@@ -5,7 +5,7 @@ const mode = process.argv[2] ?? 'production';
 const fallback =
   mode === 'development'
     ? 'http://localhost:8081/api/v1'
-    : 'https://hallarturno-production.up.railway.app/api/v1';
+    : 'https://hallarturno-api-prod-fvfzhkeuhbcmcmfx.westcentralus-01.azurewebsites.net/api/v1';
 const apiBaseUrl = (process.env.API_BASE_URL || fallback).replace(/\/$/, '');
 const googleClientId =
   process.env.GOOGLE_CLIENT_ID ||
