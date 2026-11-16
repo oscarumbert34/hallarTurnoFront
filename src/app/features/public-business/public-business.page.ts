@@ -124,7 +124,7 @@ export class PublicBusinessPageComponent implements OnInit {
             this.analytics.event('business_page_view', this.businessAnalyticsParams(business));
             this.loading.set(false);
             this.loadOpenQueues(business);
-            this.loadProducts(business.id);
+            if (business.productsEnabled) this.loadProducts(business.id);
             if (business.branches[0]) this.selectBranch(business.branches[0]);
           },
           error: (error) => {

@@ -807,6 +807,7 @@ interface BusinessConfiguration {
   appointmentConfirmationEnabled?: boolean;
   internalBookingCreation?: boolean;
   virtualQueueEnabled?: boolean;
+  productsEnabled?: boolean;
 }
 
 interface ImageUploadResponse {
