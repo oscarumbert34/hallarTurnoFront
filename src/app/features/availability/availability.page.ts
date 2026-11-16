@@ -56,6 +56,7 @@ export class AvailabilityPage implements OnInit {
   protected readonly businessName = signal('Mi negocio');
   protected readonly businessCategory = signal<BusinessCategory>('OTHERS');
   protected readonly publicProfile = signal<PublicProfile | null>(null);
+  protected readonly depositEnabled = signal(false);
   protected readonly branches = signal<Branch[]>([]);
   protected readonly services = signal<ServiceCatalogItem[]>([]);
   protected readonly resources = signal<Resource[]>([]);
@@ -102,14 +103,16 @@ export class AvailabilityPage implements OnInit {
       resources: this.dashboard.listResources(),
       businessIdentity: this.dashboard.getBusinessIdentity(),
       publicProfile: this.dashboard.getPublicProfile(),
+      configuration: this.dashboard.getConfiguration(),
     }).subscribe({
-      next: ({ branches, services, resources, businessIdentity, publicProfile }) => {
+      next: ({ branches, services, resources, businessIdentity, publicProfile, configuration }) => {
         this.branches.set(branches.filter((branch) => branch.active));
         this.services.set(services.filter((service) => service.active));
         this.resources.set(resources);
         this.businessName.set(businessIdentity.name);
         this.businessCategory.set(businessIdentity.category);
         this.publicProfile.set(publicProfile);
+        this.depositEnabled.set(configuration.depositEnabled ?? false);
         this.selectedBranchId.set(this.branches()[0]?.id ?? '');
         this.applyServiceDefault();
         this.applyResourceDefault();
@@ -203,6 +206,7 @@ export class AvailabilityPage implements OnInit {
         resourceName: slot.resourceName || undefined,
         price: service.price,
         businessCategory: this.businessCategory(),
+        depositEnabled: this.depositEnabled(),
         source: 'DIRECT_LINK',
       },
     });

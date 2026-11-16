@@ -59,6 +59,9 @@ describe('AvailabilityPage', () => {
             getPublicProfile: vi.fn(() =>
               of({ publicDescription: '', aboutUs: '', whatsapp: '', instagram: '' }),
             ),
+            getConfiguration: vi.fn(() =>
+              of({ businessId: 'business-1', weeklyBookingCopyEnabled: false, depositEnabled: true }),
+            ),
           },
         },
         {
@@ -123,6 +126,7 @@ describe('AvailabilityPage', () => {
         resourceName: 'Juan',
         price: 15000,
         businessCategory: 'BARBERSHOP',
+        depositEnabled: true,
         source: 'DIRECT_LINK',
       },
     });
