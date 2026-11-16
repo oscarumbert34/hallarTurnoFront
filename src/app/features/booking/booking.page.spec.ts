@@ -236,6 +236,18 @@ describe('BookingPage', () => {
   it('shows branding and keeps the booking form for an authenticated user without a slug route', () => {
     authService.isAuthenticated = true;
     authService.businessSlug = 'turnos-sa';
+    route.snapshot.queryParamMap = convertToParamMap({
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      slotId: 'slot-1',
+      startsAt: '2026-08-17T10:00:00',
+      depositEnabled: 'true',
+      source: 'DIRECT_LINK',
+    });
     bookingService.getPublicBusiness.mockReturnValue(
       of({
         id: 'business-1',
@@ -263,7 +275,15 @@ describe('BookingPage', () => {
       'https://images.test/logo.png',
     );
     expect(fixture.nativeElement.textContent).toContain('Confirmar turno');
+    expect(fixture.nativeElement.textContent).toContain('Seña pagada');
     expect(fixture.nativeElement.textContent).not.toContain('confirma los turnos por WhatsApp');
+
+    const component = fixture.componentInstance as unknown as {
+      emailRequired: { set: (value: boolean) => void };
+    };
+    component.emailRequired.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No tengo el email del cliente');
   });
 
   it('should normalize a phone copied from WhatsApp when it is pasted', () => {
