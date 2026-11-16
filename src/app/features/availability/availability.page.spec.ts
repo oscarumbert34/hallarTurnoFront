@@ -6,6 +6,7 @@ import { BusinessDashboardService } from '../business-dashboard/business-dashboa
 import { AvailabilityPage } from './availability.page';
 import { AvailabilityOverviewService } from './availability.service';
 import { AvailabilityStoryService } from './availability-story.service';
+import { AuthService } from '../auth/auth.service';
 
 describe('AvailabilityPage', () => {
   const navigate = vi.fn();
@@ -58,6 +59,9 @@ describe('AvailabilityPage', () => {
             getPublicProfile: vi.fn(() =>
               of({ publicDescription: '', aboutUs: '', whatsapp: '', instagram: '' }),
             ),
+            getConfiguration: vi.fn(() =>
+              of({ businessId: 'business-1', weeklyBookingCopyEnabled: false, depositEnabled: true }),
+            ),
           },
         },
         {
@@ -91,6 +95,7 @@ describe('AvailabilityPage', () => {
           },
         },
         { provide: AvailabilityStoryService, useValue: {} },
+        { provide: AuthService, useValue: { businessSlug: 'barberia-1981' } },
         { provide: Router, useValue: { navigate } },
       ],
     });
@@ -106,7 +111,7 @@ describe('AvailabilityPage', () => {
     expect(slot).toBeTruthy();
     slot.click();
 
-    expect(navigate).toHaveBeenCalledWith(['/booking'], {
+    expect(navigate).toHaveBeenCalledWith(['/', 'barberia-1981', 'booking'], {
       queryParams: {
         businessId: 'business-1',
         businessName: 'Barbería 1981',
@@ -121,6 +126,7 @@ describe('AvailabilityPage', () => {
         resourceName: 'Juan',
         price: 15000,
         businessCategory: 'BARBERSHOP',
+        depositEnabled: true,
         source: 'DIRECT_LINK',
       },
     });

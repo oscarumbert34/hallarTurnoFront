@@ -7,6 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { UiStateComponent } from '../../shared/ui-state.component';
 import { dashboardErrorMessage } from '../business-dashboard/dashboard-error';
 import { PlatformAdminService, PlatformBusiness } from './platform-admin.service';
@@ -20,6 +21,7 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatSlideToggleModule,
     ReactiveFormsModule,
     UiStateComponent,
   ],
@@ -63,6 +65,23 @@ import { PlatformAdminService, PlatformBusiness } from './platform-admin.service
                     Bloqueado temporalmente hasta {{ business.ownerLockedUntil | date: 'dd/MM/yyyy HH:mm' }}
                   </small>
                 }
+              </div>
+
+              <div class="feature-flags" aria-label="Funcionalidades habilitadas">
+                <div>
+                  <strong>Funcionalidades</strong>
+                  <small>Controlá qué módulos puede utilizar este comercio.</small>
+                </div>
+                <mat-slide-toggle
+                  [checked]="business.features.productsEnabled"
+                  [disabled]="saving()"
+                  (change)="saveFeatures(business, $event.checked, business.features.virtualQueueEnabled)"
+                >Productos</mat-slide-toggle>
+                <mat-slide-toggle
+                  [checked]="business.features.virtualQueueEnabled"
+                  [disabled]="saving()"
+                  (change)="saveFeatures(business, business.features.productsEnabled, $event.checked)"
+                >Fila virtual</mat-slide-toggle>
               </div>
 
               @if (editingId() === business.id) {
@@ -268,6 +287,26 @@ export class PlatformAdminPage implements OnInit {
         },
         error: (error: unknown) => this.error.set(dashboardErrorMessage(error)),
       });
+  }
+
+  protected saveFeatures(
+    business: PlatformBusiness,
+    productsEnabled: boolean,
+    virtualQueueEnabled: boolean,
+  ): void {
+    this.saving.set(true);
+    this.error.set('');
+    this.service
+      .updateBusinessFeatures(business.id, { productsEnabled, virtualQueueEnabled })
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (updated) => this.replaceBusiness(updated),
+        error: (error: unknown) => this.error.set(dashboardErrorMessage(error)),
+      });
+  }
+
+  private replaceBusiness(updated: PlatformBusiness): void {
+    this.businesses.update((items) => items.map((item) => (item.id === updated.id ? updated : item)));
   }
 
   protected isLocked(business: PlatformBusiness): boolean {

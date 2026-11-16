@@ -27,6 +27,7 @@ export interface PublicBusiness {
   depositEnabled?: boolean;
   internalBookingCreation?: boolean;
   virtualQueueEnabled?: boolean;
+  productsEnabled?: boolean;
   branches: PublicBranch[];
   services?: PublicService[];
 }

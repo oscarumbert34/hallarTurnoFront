@@ -36,6 +36,7 @@ import {
   whatsappBookingRescheduleUrl,
 } from '../booking/whatsapp-booking';
 import { BusinessDashboardService } from './business-dashboard.service';
+import { BookingImportDialogComponent } from './booking-import-dialog.component';
 import { ImageUploadComponent } from './image-upload.component';
 import { ProductsAdminComponent } from './products-admin.component';
 import { dashboardErrorMessage } from './dashboard-error';
@@ -515,9 +516,11 @@ import {
             </section>
           </mat-tab>
 
-          <mat-tab label="Productos">
-            <app-products-admin />
-          </mat-tab>
+          @if (productsEnabled()) {
+            <mat-tab label="Productos">
+              <app-products-admin />
+            </mat-tab>
+          }
 
           <mat-tab label="Recursos">
             <section class="tab-panel">
@@ -948,6 +951,15 @@ import {
 
       <ng-template #bookingsPanel>
         <section class="tab-panel">
+          <div class="booking-panel-actions">
+            <div>
+              <h2>Agenda de reservas</h2>
+              <p>Consultá tus turnos o cargá varios desde una foto de tu agenda.</p>
+            </div>
+            <button mat-stroked-button type="button" (click)="openBookingImport()">
+              <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>Importar turnos
+            </button>
+          </div>
           <mat-card appearance="outlined">
             <mat-card-content>
               <form
@@ -1569,6 +1581,7 @@ export class BusinessDashboardPage implements OnInit {
   protected readonly internalBookingCreation = signal(false);
   protected readonly updatingBookingApproval = signal(false);
   protected readonly virtualQueueEnabled = signal(false);
+  protected readonly productsEnabled = signal(false);
   protected readonly savingConfiguration = signal(false);
   protected readonly configurationError = signal('');
   protected readonly savingPublicProfile = signal(false);
@@ -1693,6 +1706,25 @@ export class BusinessDashboardPage implements OnInit {
     this.loadCurrentBookings();
   }
 
+  protected openBookingImport(): void {
+    const dialogRef = this.dialog.open(BookingImportDialogComponent, {
+      data: {
+        branches: this.branches().filter((branch) => branch.active),
+        services: this.services().filter((service) => service.active),
+        resources: this.resources().filter((resource) => resource.active),
+      },
+      maxWidth: '96vw',
+      autoFocus: false,
+    });
+    dialogRef.afterClosed().subscribe((created: number | undefined) => {
+      if (!created) return;
+      this.bookingSuccess.set(
+        `${created} turno${created === 1 ? '' : 's'} importado${created === 1 ? '' : 's'} correctamente.`,
+      );
+      this.loadCurrentBookings(true);
+    });
+  }
+
   protected refreshAll(): void {
     this.loading.set(true);
     this.errorMessage.set('');
@@ -1710,6 +1742,7 @@ export class BusinessDashboardPage implements OnInit {
             appointmentConfirmationEnabled: false,
             internalBookingCreation: false,
             virtualQueueEnabled: false,
+            productsEnabled: false,
           }),
         ),
       ),
@@ -1737,6 +1770,7 @@ export class BusinessDashboardPage implements OnInit {
           );
           this.internalBookingCreation.set(result.configuration.internalBookingCreation ?? false);
           this.virtualQueueEnabled.set(result.configuration.virtualQueueEnabled ?? false);
+          this.productsEnabled.set(result.configuration.productsEnabled ?? false);
           this.virtualQueueAvailability?.setEnabled(
             result.configuration.virtualQueueEnabled ?? false,
           );

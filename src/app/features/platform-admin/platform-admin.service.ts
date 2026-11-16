@@ -11,6 +11,10 @@ export interface PlatformBusiness {
   ownerEmail: string;
   status: string;
   ownerLockedUntil: string | null;
+  features: {
+    productsEnabled: boolean;
+    virtualQueueEnabled: boolean;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +48,16 @@ export class PlatformAdminService {
     return this.http.patch<PlatformBusiness>(
       this.apiUrl.build(`/platform-admin/businesses/${businessId}/password`),
       { password },
+    );
+  }
+
+  updateBusinessFeatures(
+    businessId: string,
+    features: PlatformBusiness['features'],
+  ): Observable<PlatformBusiness> {
+    return this.http.patch<PlatformBusiness>(
+      this.apiUrl.build(`/platform-admin/businesses/${businessId}/features`),
+      features,
     );
   }
 }
