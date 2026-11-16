@@ -12,6 +12,7 @@ export function navigateToBooking(
   slot: AvailabilitySlot,
   search: AvailabilitySearch,
   slug?: string,
+  source: SelectedSlot['source'] = slug ? 'PUBLIC' : 'DIRECT_LINK',
 ): void {
   const selectedSlot: SelectedSlot = {
     businessId: business.businessId,
@@ -28,7 +29,7 @@ export function navigateToBooking(
     price: business.price,
     depositEnabled: business.depositEnabled ?? false,
     businessCategory: business.category ?? 'OTHERS',
-    source: slug ? 'PUBLIC' : 'DIRECT_LINK',
+    source,
   };
   sessionStorage.setItem('turnero.selectedSlot', JSON.stringify(selectedSlot));
   sessionStorage.setItem('turnero.search', JSON.stringify(search));

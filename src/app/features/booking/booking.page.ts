@@ -48,10 +48,37 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
   ],
   template: `
     <section class="booking-page">
-      <header>
-        <h1>Reserva</h1>
-        <p>Revisa el turno seleccionado y confirma cuando estés listo.</p>
-      </header>
+      @if (publicBusiness(); as business) {
+        <header class="booking-brand">
+          <div class="booking-cover" [class.booking-cover--empty]="!business.coverImageUrl">
+            @if (business.coverImageUrl) {
+              <img [src]="business.coverImageUrl" [alt]="'Portada de ' + business.name" />
+            }
+          </div>
+          <div class="booking-business">
+            <div class="booking-logo" [class.booking-logo--empty]="!business.logoUrl">
+              @if (business.logoUrl) {
+                <img [src]="business.logoUrl" [alt]="'Logo de ' + business.name" />
+              } @else {
+                <span aria-hidden="true">{{ businessInitials(business.name) }}</span>
+              }
+            </div>
+            <div>
+              <h1>{{ business.name }}</h1>
+              @if (business.shortDescription) {
+                <p>{{ business.shortDescription }}</p>
+              } @else {
+                <p>Completá tus datos para confirmar el turno.</p>
+              }
+            </div>
+          </div>
+        </header>
+      } @else {
+        <header>
+          <h1>Reserva</h1>
+          <p>Revisa el turno seleccionado y confirma cuando estés listo.</p>
+        </header>
+      }
 
       <app-ui-state [loading]="loading()" [error]="errorMessage()" />
 
@@ -81,7 +108,18 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
               </div>
             </dl>
 
-            @if (internalBookingOnly()) {
+            @if (confirmedBooking(); as confirmedBooking) {
+              <section class="booking-confirmed" aria-live="polite">
+                <span class="booking-confirmed__icon" aria-hidden="true">✓</span>
+                <div>
+                  <h2>{{ confirmationTitle(confirmedBooking) }}</h2>
+                  <p>{{ confirmationMessage(confirmedBooking) }}</p>
+                  <p class="booking-confirmed__customer">
+                    Turno para <strong>{{ customerForm.controls.customerName.value }}</strong>
+                  </p>
+                </div>
+              </section>
+            } @else if (internalBookingOnly()) {
               <p role="status">
                 Este comercio confirma los turnos por WhatsApp. Consultá el horario seleccionado
                 para continuar.
@@ -151,20 +189,8 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
               </form>
             }
 
-            @if (confirmedBooking(); as confirmedBooking) {
-              <p class="success" role="status">
-                @if (confirmedBooking.status === 'PENDING_APPROVAL') {
-                  Solicitud enviada. El negocio debe confirmarla; recibirás un email cuando sea
-                  aprobada.
-                } @else if (confirmedBooking.status === 'PENDING_CONFIRMATION') {
-                  Reserva creada. El cliente deberá confirmarla desde el email.
-                } @else {
-                  Reserva confirmada.
-                }
-              </p>
-            }
           </mat-card-content>
-          <mat-card-actions>
+          <mat-card-actions [class.confirmed-actions]="!!confirmedBooking()">
             @if (!confirmedBooking()) {
               @if (internalBookingOnly()) {
                 <button mat-flat-button type="button" (click)="consultByWhatsapp()">
@@ -184,11 +210,18 @@ import { normalizePhone, PHONE_PATTERN } from '../../shared/phone-validation';
                 </button>
               }
             } @else if (authService.isAuthenticated || ownerBookingCode) {
-              <button mat-flat-button type="button" (click)="sendBookingByWhatsapp()">
+              <button
+                mat-flat-button
+                class="whatsapp-action"
+                type="button"
+                (click)="sendBookingByWhatsapp()"
+              >
                 Enviar turno por WhatsApp
               </button>
             }
-            <a mat-button [routerLink]="searchRoute">Buscar otro</a>
+            <a mat-button [routerLink]="searchRoute">
+              {{ confirmedBooking() ? 'Crear otro turno' : 'Buscar otro' }}
+            </a>
           </mat-card-actions>
         </mat-card>
       } @else {
@@ -212,7 +245,8 @@ export class BookingPage implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly analytics = inject(AnalyticsService);
-  private readonly businessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
+  private readonly routeBusinessSlug = this.route.snapshot.paramMap?.get('slug') ?? '';
+  private businessSlug = this.routeBusinessSlug || this.authService.businessSlug || '';
   protected readonly ownerBookingCode =
     this.route.snapshot.queryParamMap.get('ownerBookingCode') ?? '';
   protected readonly searchRoute = this.businessSlug
@@ -285,22 +319,17 @@ export class BookingPage implements OnInit {
       this.analytics.event('booking_checkout_view', this.bookingAnalyticsParams(selectedSlot));
       this.watchCustomerPhone(selectedSlot.businessId);
     }
-    if (this.isPublicCustomerFlow()) {
-      this.loading.set(true);
-      this.bookingService
-        .getPublicBusiness(this.businessSlug)
-        .pipe(
-          finalize(() => this.loading.set(false)),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe({
-          next: (business) => {
-            this.publicBusiness.set(business);
-            this.internalBookingOnly.set(business.internalBookingCreation === true);
-          },
-          error: () => {
-            this.errorMessage.set('No pudimos validar la configuración del negocio.');
-          },
+    if (this.businessSlug) {
+      this.loadPublicBusiness(this.businessSlug);
+    } else if (this.authService.isAuthenticated) {
+      this.authService
+        .ensureBusinessSlug()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((slug) => {
+          if (slug) {
+            this.businessSlug = slug;
+            this.loadPublicBusiness(slug);
+          }
         });
     }
   }
@@ -436,11 +465,41 @@ export class BookingPage implements OnInit {
   }
 
   protected isPublicCustomerFlow(): boolean {
-    return !!this.businessSlug && this.selectedSlot()?.source === 'PUBLIC';
+    return !!this.routeBusinessSlug && this.selectedSlot()?.source === 'PUBLIC';
   }
 
   protected priceLabel(price: number | undefined): string {
     return price === undefined || price === null ? 'Precio a consultar' : `$ ${price}`;
+  }
+
+  protected businessInitials(name: string): string {
+    return name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word.charAt(0))
+      .join('')
+      .toUpperCase();
+  }
+
+  protected confirmationTitle(booking: CustomerBooking): string {
+    if (booking.status === 'PENDING_APPROVAL') {
+      return 'Solicitud enviada';
+    }
+    if (booking.status === 'PENDING_CONFIRMATION') {
+      return 'Reserva creada';
+    }
+    return '¡Turno confirmado!';
+  }
+
+  protected confirmationMessage(booking: CustomerBooking): string {
+    if (booking.status === 'PENDING_APPROVAL') {
+      return 'El negocio debe confirmarla. Recibirás un email cuando sea aprobada.';
+    }
+    if (booking.status === 'PENDING_CONFIRMATION') {
+      return 'El cliente deberá confirmarla desde el email.';
+    }
+    return 'La reserva quedó registrada correctamente.';
   }
 
   protected dateLabel(value: string): string {
@@ -499,6 +558,27 @@ export class BookingPage implements OnInit {
             'No pudimos consultar si se requiere email. Intenta de nuevo en unos segundos.',
           );
         }
+      });
+  }
+
+  private loadPublicBusiness(slug: string): void {
+    this.loading.set(true);
+    this.bookingService
+      .getPublicBusiness(slug)
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (business) => {
+          this.publicBusiness.set(business);
+          this.internalBookingOnly.set(
+            this.isPublicCustomerFlow() && business.internalBookingCreation === true,
+          );
+        },
+        error: () => {
+          this.errorMessage.set('No pudimos validar la configuración del negocio.');
+        },
       });
   }
 

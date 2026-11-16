@@ -19,6 +19,8 @@ describe('BookingPage', () => {
   };
   let authService: {
     isAuthenticated: boolean;
+    businessSlug: string | null;
+    ensureBusinessSlug: ReturnType<typeof vi.fn>;
   };
   let route: {
     snapshot: {
@@ -52,6 +54,8 @@ describe('BookingPage', () => {
     };
     authService = {
       isAuthenticated: false,
+      businessSlug: null,
+      ensureBusinessSlug: vi.fn(() => of(null)),
     };
     route = {
       snapshot: {
@@ -179,15 +183,58 @@ describe('BookingPage', () => {
     expect(fixture.nativeElement.textContent).toContain('confirma los turnos por WhatsApp');
   });
 
-  it('keeps the booking form for an authenticated user on a slug route', () => {
-    authService.isAuthenticated = true;
+  it('shows the public business cover and logo on the customer booking screen', () => {
     route.snapshot.paramMap = convertToParamMap({ slug: 'turnos-sa' });
+    route.snapshot.queryParamMap = convertToParamMap({
+      businessId: 'business-1',
+      businessName: 'Turnos SA',
+      branchId: 'branch-1',
+      branchName: 'Centro',
+      serviceId: 'service-1',
+      serviceName: 'Corte',
+      slotId: 'slot-1',
+      startsAt: '2026-08-17T10:00:00',
+      source: 'PUBLIC',
+    });
+    bookingService.getPublicBusiness.mockReturnValue(
+      of({
+        id: 'business-1',
+        name: 'Bella Studio',
+        slug: 'turnos-sa',
+        shortDescription: 'Tratamientos de belleza y cuidado personal.',
+        logoUrl: 'https://images.test/logo.png',
+        coverImageUrl: 'https://images.test/cover.jpg',
+        phone: null,
+        email: null,
+        internalBookingCreation: false,
+        branches: [],
+      }),
+    );
+
+    fixture = TestBed.createComponent(BookingPage);
+    fixture.detectChanges();
+
+    const cover = fixture.nativeElement.querySelector('.booking-cover img') as HTMLImageElement;
+    const logo = fixture.nativeElement.querySelector('.booking-logo img') as HTMLImageElement;
+    expect(cover.src).toBe('https://images.test/cover.jpg');
+    expect(logo.src).toBe('https://images.test/logo.png');
+    expect(fixture.nativeElement.textContent).toContain('Bella Studio');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Tratamientos de belleza y cuidado personal.',
+    );
+  });
+
+  it('shows branding and keeps the booking form for an authenticated user without a slug route', () => {
+    authService.isAuthenticated = true;
+    authService.businessSlug = 'turnos-sa';
     bookingService.getPublicBusiness.mockReturnValue(
       of({
         id: 'business-1',
         name: 'Turnos SA',
         slug: 'turnos-sa',
         shortDescription: null,
+        logoUrl: 'https://images.test/logo.png',
+        coverImageUrl: 'https://images.test/cover.jpg',
         whatsapp: '5491112345678',
         phone: null,
         email: null,
@@ -199,7 +246,13 @@ describe('BookingPage', () => {
     fixture = TestBed.createComponent(BookingPage);
     fixture.detectChanges();
 
-    expect(bookingService.getPublicBusiness).not.toHaveBeenCalled();
+    expect(bookingService.getPublicBusiness).toHaveBeenCalledWith('turnos-sa');
+    expect(fixture.nativeElement.querySelector('.booking-cover img').src).toBe(
+      'https://images.test/cover.jpg',
+    );
+    expect(fixture.nativeElement.querySelector('.booking-logo img').src).toBe(
+      'https://images.test/logo.png',
+    );
     expect(fixture.nativeElement.textContent).toContain('Confirmar turno');
     expect(fixture.nativeElement.textContent).not.toContain('confirma los turnos por WhatsApp');
   });
@@ -245,9 +298,14 @@ describe('BookingPage', () => {
     component.confirmBooking();
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.querySelector('.customer-form')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain(
-      'Reserva creada. El cliente deberá confirmarla desde el email.',
+      'Reserva creada',
     );
+    expect(fixture.nativeElement.textContent).toContain(
+      'El cliente deberá confirmarla desde el email.',
+    );
+    expect(fixture.nativeElement.textContent).toContain('Crear otro turno');
   });
 
   it('should leave an already valid phone unchanged when it is pasted', () => {

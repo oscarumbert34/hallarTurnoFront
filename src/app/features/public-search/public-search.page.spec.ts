@@ -271,8 +271,10 @@ describe('PublicSearchPage', () => {
     component.selectSlot(business, business.slots[0]);
 
     expect(router.navigate).toHaveBeenCalledWith(
-      ['/booking'],
-      expect.objectContaining({ queryParams: expect.objectContaining({ slotId: 'slot-1' }) }),
+      ['/', 'barberia-1981', 'booking'],
+      expect.objectContaining({
+        queryParams: expect.objectContaining({ slotId: 'slot-1', source: 'DIRECT_LINK' }),
+      }),
     );
   });
 
