@@ -21,6 +21,7 @@ import {
 import { AvailabilityOverviewService } from './availability.service';
 import { AvailabilityStoryService, AvailabilityStoryTheme } from './availability-story.service';
 import { BusinessCategory } from '../public-business/public-business.models';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-availability-page',
@@ -33,6 +34,7 @@ export class AvailabilityPage implements OnInit {
   private readonly availability = inject(AvailabilityOverviewService);
   private readonly stories = inject(AvailabilityStoryService);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -183,7 +185,10 @@ export class AvailabilityPage implements OnInit {
 
     const startsAt = this.slotDateTime(day.date, slot.startsAt);
     const endsAt = this.slotDateTime(day.date, slot.endsAt);
-    void this.router.navigate(['/booking'], {
+    const bookingRoute = this.authService.businessSlug
+      ? ['/', this.authService.businessSlug, 'booking']
+      : ['/booking'];
+    void this.router.navigate(bookingRoute, {
       queryParams: {
         businessId: overview.businessId,
         businessName: this.businessName(),
