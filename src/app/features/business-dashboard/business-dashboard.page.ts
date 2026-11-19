@@ -954,11 +954,8 @@ import {
           <div class="booking-panel-actions">
             <div>
               <h2>Agenda de reservas</h2>
-              <p>Consultá tus turnos o cargá varios desde una foto de tu agenda.</p>
+              <p>Consultá y administrá los turnos de tu negocio.</p>
             </div>
-            <button mat-stroked-button type="button" (click)="openBookingImport()">
-              <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>Importar turnos
-            </button>
           </div>
           <mat-card appearance="outlined">
             <mat-card-content>
