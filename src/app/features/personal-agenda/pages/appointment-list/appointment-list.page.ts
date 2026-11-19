@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
@@ -20,13 +20,13 @@ interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
         <div class="heading"><div><h1>Mi agenda</h1><p>Mis próximos turnos</p></div><span class="hero-icon"><mat-icon>calendar_month</mat-icon></span></div>
       </header>
 
-      @if (loading) { <section class="state">Cargando tu agenda…</section> }
-      @else if (errorMessage) { <section class="state error">{{ errorMessage }}<button mat-button (click)="load()">Reintentar</button></section> }
-      @else if (!groups.length) {
+      @if (loading()) { <section class="state">Cargando tu agenda…</section> }
+      @else if (errorMessage()) { <section class="state error">{{ errorMessage() }}<button mat-button (click)="load()">Reintentar</button></section> }
+      @else if (!groups().length) {
         <section class="state empty"><mat-icon>event_note</mat-icon><h2>Tu agenda está vacía</h2><p>Agregá tu primer turno para tenerlo siempre a mano.</p></section>
       } @else {
         <section class="groups">
-          @for (group of groups; track group.day.toISOString()) {
+          @for (group of groups(); track group.day.toISOString()) {
             <div class="group"><h2>{{ group.day | date: "EEEE d 'de' MMMM" }}</h2>
               @for (appointment of group.appointments; track appointment.id) {
                 <app-personal-appointment-card [appointment]="appointment" (edit)="edit($event)" (remove)="remove($event)" />
@@ -60,24 +60,25 @@ interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 export class AppointmentListPage implements OnInit {
   private readonly service = inject(PersonalAppointmentService);
   private readonly router = inject(Router);
-  protected groups: AppointmentGroup[] = [];
-  protected loading = true;
-  protected errorMessage = '';
+  protected readonly groups = signal<AppointmentGroup[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly errorMessage = signal('');
 
   ngOnInit(): void { this.load(); }
 
   protected load(): void {
-    this.loading = true; this.errorMessage = '';
-    this.service.list().pipe(finalize(() => (this.loading = false))).subscribe({
-      next: (items) => (this.groups = this.group(items)),
-      error: () => (this.errorMessage = 'No pudimos cargar tus turnos.'),
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.service.list().pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: (items) => this.groups.set(this.group(items)),
+      error: () => this.errorMessage.set('No pudimos cargar tus turnos.'),
     });
   }
 
   protected edit(item: PersonalAppointment): void { void this.router.navigate(['customer', 'agenda', item.id, 'edit']); }
   protected remove(item: PersonalAppointment): void {
     if (!confirm(`¿Eliminar el turno ${item.title || item.type.name}?`)) return;
-    this.service.delete(item.id).subscribe({ next: () => this.load(), error: () => (this.errorMessage = 'No pudimos eliminar el turno.') });
+    this.service.delete(item.id).subscribe({ next: () => this.load(), error: () => this.errorMessage.set('No pudimos eliminar el turno.') });
   }
 
   private group(items: PersonalAppointment[]): AppointmentGroup[] {
