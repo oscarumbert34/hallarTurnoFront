@@ -17,6 +17,9 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
         @if (appointment().title || appointment().notes) {
           <span>{{ appointment().title || appointment().notes }}</span>
         }
+        @if (appointment().recurring) {
+          <small><mat-icon>repeat</mat-icon>{{ appointment().modified ? 'Horario modificado' : appointment().recurrenceLabel }}</small>
+        }
       </div>
       <button mat-icon-button [matMenuTriggerFor]="actions" aria-label="Acciones del turno">
         <mat-icon>more_vert</mat-icon>
@@ -35,6 +38,8 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
     .copy { display: grid; min-width: 0; gap: 2px; }
     strong { color: #0b1739; font-size: 1.02rem; }
     span { overflow: hidden; color: #56627a; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
+    small { display:flex;align-items:center;gap:3px;color:#1565c0;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    small mat-icon { width:14px;height:14px;font-size:14px; }
   `,
 })
 export class AppointmentCardComponent {

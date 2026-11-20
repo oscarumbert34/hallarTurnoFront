@@ -10,8 +10,10 @@ export class PersonalAppointmentService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly endpoint = `${this.apiBaseUrl}/personal-appointments`;
 
-  list(): Observable<PersonalAppointment[]> {
-    return this.http.get<PersonalAppointment[]>(this.endpoint);
+  list(from?: string, to?: string): Observable<PersonalAppointment[]> {
+    return this.http.get<PersonalAppointment[]>(this.endpoint, {
+      params: from && to ? { from, to } : {},
+    });
   }
 
   get(id: number): Observable<PersonalAppointment> {

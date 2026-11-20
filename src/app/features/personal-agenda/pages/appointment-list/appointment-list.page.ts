@@ -6,6 +6,9 @@ import { finalize } from 'rxjs';
 import { AppointmentCardComponent } from '../../components/appointment-card/appointment-card.component';
 import { PersonalAppointment } from '../../models/personal-appointment.model';
 import { PersonalAppointmentService } from '../../services/personal-appointment.service';
+import { AppointmentRecurrenceService } from '../../services/appointment-recurrence.service';
+import { MatDialog } from '@angular/material/dialog';
+import { RecurrenceScope, RecurrenceScopeDialogComponent } from '../../components/recurrence-scope-dialog/recurrence-scope-dialog.component';
 
 interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 type AgendaFilter = 'upcoming' | 'week' | 'all';
@@ -77,6 +80,8 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
 export class AppointmentListPage implements OnInit {
   private readonly service = inject(PersonalAppointmentService);
   private readonly router = inject(Router);
+  private readonly recurrenceService = inject(AppointmentRecurrenceService);
+  private readonly dialog = inject(MatDialog);
   protected readonly groups = signal<AppointmentGroup[]>([]);
   protected readonly filter = signal<AgendaFilter>('upcoming');
   protected readonly loading = signal(true);
@@ -111,10 +116,25 @@ export class AppointmentListPage implements OnInit {
     });
   }
 
-  protected edit(item: PersonalAppointment): void { void this.router.navigate(['customer', 'agenda', item.id, 'edit']); }
+  protected edit(item: PersonalAppointment): void {
+    if (item.recurring && item.recurrenceId && item.originalOccurrenceDate) {
+      this.dialog.open(RecurrenceScopeDialogComponent,{data:{operation:'edit'}}).afterClosed().subscribe((scope:RecurrenceScope|undefined)=>{
+        if (scope === 'ONLY' || scope === 'FUTURE') void this.router.navigate(['customer','agenda','new'], { queryParams: { recurrenceId:item.recurrenceId, originalDate:item.originalOccurrenceDate, scope, at:item.appointmentAt, typeId:item.type.id, title:item.title ?? '', notes:item.notes ?? '' } });
+        else if (scope === 'ALL') void this.router.navigate(['customer','agenda','new'], {queryParams:{seriesId:item.recurrenceId}});
+      });
+      return;
+    }
+    void this.router.navigate(['customer', 'agenda', Number(item.id), 'edit']);
+  }
   protected remove(item: PersonalAppointment): void {
+    if (item.recurring && item.recurrenceId && item.originalOccurrenceDate) {
+      this.dialog.open(RecurrenceScopeDialogComponent,{data:{operation:'delete'}}).afterClosed().subscribe((scope:RecurrenceScope|undefined)=>{
+        if (!scope) return; const request=scope==='ALL'?this.recurrenceService.end(item.recurrenceId!):this.recurrenceService.skipOccurrence(item.recurrenceId!,item.originalOccurrenceDate!,scope);
+        request.subscribe({next:()=>this.load(),error:()=>this.errorMessage.set('No pudimos cancelar el turno.')});
+      }); return;
+    }
     if (!confirm(`¿Eliminar el turno ${item.title || item.type.name}?`)) return;
-    this.service.delete(item.id).subscribe({ next: () => this.load(), error: () => this.errorMessage.set('No pudimos eliminar el turno.') });
+    this.service.delete(Number(item.id)).subscribe({ next: () => this.load(), error: () => this.errorMessage.set('No pudimos eliminar el turno.') });
   }
 
   protected dayLabel(day: Date): string {
