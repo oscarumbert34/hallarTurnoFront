@@ -7,7 +7,7 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  role: 'BUSINESS';
+  role: 'BUSINESS' | 'CUSTOMER';
 }
 
 export type BusinessCategory =
