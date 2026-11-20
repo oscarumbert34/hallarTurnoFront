@@ -43,10 +43,10 @@ export class AppointmentCardComponent {
   readonly remove = output<PersonalAppointment>();
 
   protected icon(): string {
-    return ({ MEDICAL: 'stethoscope', DENTAL: 'dentistry', PSYCHOLOGY: 'psychology', HAIRDRESSER: 'content_cut', BEAUTY: 'spa', VETERINARY: 'pets', PROCEDURE: 'biotech', OTHER: 'event' } as Record<string, string>)[this.appointment().type.code] ?? 'event';
+    return ({ MEDICAL: 'stethoscope', DENTAL: 'dentistry', PSYCHOLOGY: 'psychology', HAIRDRESSER: 'content_cut', BEAUTY: 'spa', VETERINARY: 'pets', PROCEDURE: 'biotech', MATCH: 'sports_soccer', MEETING: 'groups', REIKI: 'self_improvement', OTHER: 'event' } as Record<string, string>)[this.appointment().type.code] ?? 'event';
   }
 
   protected accent(): string {
-    return ({ MEDICAL: '#1976d2', DENTAL: '#00a878', PSYCHOLOGY: '#7856d8', HAIRDRESSER: '#ec4f8a', BEAUTY: '#b552d1', VETERINARY: '#e58424', PROCEDURE: '#168da3', OTHER: '#607d8b' } as Record<string, string>)[this.appointment().type.code] ?? '#1976d2';
+    return ({ MEDICAL: '#1976d2', DENTAL: '#00a878', PSYCHOLOGY: '#7856d8', HAIRDRESSER: '#ec4f8a', BEAUTY: '#b552d1', VETERINARY: '#e58424', PROCEDURE: '#168da3', MATCH: '#16a05d', MEETING: '#3867d6', REIKI: '#8e5cc7', OTHER: '#607d8b' } as Record<string, string>)[this.appointment().type.code] ?? '#1976d2';
   }
 }
