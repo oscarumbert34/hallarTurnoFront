@@ -39,7 +39,7 @@ import { PersonalAppointmentService } from '../../services/personal-appointment.
             <mat-label>Hora</mat-label>
             <input matInput [matTimepicker]="timePicker" formControlName="time" readonly [matTimepickerOpenOnClick]="true" />
             <mat-timepicker-toggle matIconSuffix [for]="timePicker" />
-            <mat-timepicker #timePicker [interval]="15" />
+            <mat-timepicker #timePicker interval="15m" />
             <mat-error>Elegí una hora.</mat-error>
           </mat-form-field>
         </div>
