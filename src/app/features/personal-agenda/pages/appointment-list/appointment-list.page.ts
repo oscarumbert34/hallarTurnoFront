@@ -9,13 +9,14 @@ import { PersonalAppointmentService } from '../../services/personal-appointment.
 import { AppointmentRecurrenceService } from '../../services/appointment-recurrence.service';
 import { MatDialog } from '@angular/material/dialog';
 import { RecurrenceScope, RecurrenceScopeDialogComponent } from '../../components/recurrence-scope-dialog/recurrence-scope-dialog.component';
+import { NotificationSettingsComponent } from '../../notifications/components/notification-settings/notification-settings.component';
 
 interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 type AgendaFilter = 'upcoming' | 'week' | 'all';
 
 @Component({
   selector: 'app-appointment-list-page',
-  imports: [AppointmentCardComponent, MatButtonModule, MatIconModule, RouterLink],
+  imports: [AppointmentCardComponent, MatButtonModule, MatIconModule, NotificationSettingsComponent, RouterLink],
   template: `
     <main class="agenda-shell">
       <header>
@@ -30,6 +31,8 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
           <button [class.active]="filter() === 'all'" (click)="filter.set('all')">Todos</button>
         </nav>
       </header>
+
+      <app-personal-notification-settings />
 
       @if (loading()) { <section class="state">Cargando tu agenda…</section> }
       @else if (errorMessage()) { <section class="state error">{{ errorMessage() }}<button mat-button (click)="load()">Reintentar</button></section> }
