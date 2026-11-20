@@ -1,10 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, finalize } from 'rxjs';
 import { AppointmentType } from '../../models/appointment-type.model';
@@ -13,7 +16,8 @@ import { PersonalAppointmentService } from '../../services/personal-appointment.
 
 @Component({
   selector: 'app-appointment-form-page',
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, ReactiveFormsModule, RouterLink],
+  imports: [MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatTimepickerModule, ReactiveFormsModule, RouterLink],
+  providers: [provideNativeDateAdapter()],
   template: `
     <main class="form-shell">
       <nav><a mat-icon-button routerLink="/customer/agenda"><mat-icon>arrow_back</mat-icon></a><strong>{{ appointmentId ? 'Editar turno' : 'Nuevo turno' }}</strong></nav>
@@ -24,8 +28,20 @@ import { PersonalAppointmentService } from '../../services/personal-appointment.
         </mat-select><mat-error>Elegí un tipo de turno.</mat-error></mat-form-field>
         <mat-form-field appearance="outline"><mat-label>Título (opcional)</mat-label><input matInput formControlName="title" placeholder="Ej: Control anual" maxlength="150" /></mat-form-field>
         <div class="date-row">
-          <mat-form-field appearance="outline"><mat-label>Fecha</mat-label><input matInput type="date" formControlName="date" /><mat-error>Elegí una fecha.</mat-error></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>Hora</mat-label><input matInput type="time" formControlName="time" /><mat-error>Elegí una hora.</mat-error></mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha</mat-label>
+            <input matInput [matDatepicker]="datePicker" formControlName="date" readonly (click)="datePicker.open()" />
+            <mat-datepicker-toggle matIconSuffix [for]="datePicker" />
+            <mat-datepicker #datePicker />
+            <mat-error>Elegí una fecha.</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Hora</mat-label>
+            <input matInput [matTimepicker]="timePicker" formControlName="time" readonly [matTimepickerOpenOnClick]="true" />
+            <mat-timepicker-toggle matIconSuffix [for]="timePicker" />
+            <mat-timepicker #timePicker [interval]="15" />
+            <mat-error>Elegí una hora.</mat-error>
+          </mat-form-field>
         </div>
         <mat-form-field appearance="outline"><mat-label>Notas</mat-label><textarea matInput rows="3" formControlName="notes" placeholder="Opcional"></textarea></mat-form-field>
         @if (errorMessage) { <p class="error" role="alert">{{ errorMessage }}</p> }
@@ -56,7 +72,7 @@ export class AppointmentFormPage implements OnInit {
   protected appointmentId: number | null = null;
   protected saving = false;
   protected errorMessage = '';
-  protected readonly form = this.formBuilder.group({ appointmentTypeId: [0, [Validators.required, Validators.min(1)]], title: [''], date: ['', Validators.required], time: ['', Validators.required], notes: [''] });
+  protected readonly form = this.formBuilder.group({ appointmentTypeId: [0, [Validators.required, Validators.min(1)]], title: [''], date: [this.initialDate(), Validators.required], time: [this.initialTime(), Validators.required], notes: [''] });
 
   ngOnInit(): void {
     const rawId = this.route.snapshot.paramMap.get('id'); this.appointmentId = rawId ? Number(rawId) : null;
@@ -67,14 +83,27 @@ export class AppointmentFormPage implements OnInit {
 
   protected submit(): void {
     if (this.form.invalid || this.saving) { this.form.markAllAsTouched(); return; }
-    const value = this.form.getRawValue(); const payload = { appointmentTypeId: value.appointmentTypeId, appointmentAt: new Date(`${value.date}T${value.time}:00`).toISOString(), title: value.title.trim() || null, notes: value.notes.trim() || null };
+    const value = this.form.getRawValue();
+    const appointmentAt = new Date(value.date);
+    appointmentAt.setHours(value.time.getHours(), value.time.getMinutes(), 0, 0);
+    const payload = { appointmentTypeId: value.appointmentTypeId, appointmentAt: appointmentAt.toISOString(), title: value.title.trim() || null, notes: value.notes.trim() || null };
     this.saving = true; this.errorMessage = '';
     const request = this.appointmentId ? this.service.update(this.appointmentId, payload) : this.service.create(payload);
     request.pipe(finalize(() => (this.saving = false))).subscribe({ next: () => void this.router.navigateByUrl('/customer/agenda'), error: () => (this.errorMessage = 'No pudimos guardar el turno. Revisá los datos e intentá de nuevo.') });
   }
 
-  private localParts(value: string): { date: string; time: string } {
-    const date = new Date(value); const pad = (part: number) => String(part).padStart(2, '0');
-    return { date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`, time: `${pad(date.getHours())}:${pad(date.getMinutes())}` };
+  private localParts(value: string): { date: Date; time: Date } {
+    const appointment = new Date(value);
+    return { date: new Date(appointment), time: new Date(appointment) };
+  }
+
+  private initialDate(): Date {
+    return new Date();
+  }
+
+  private initialTime(): Date {
+    const time = new Date();
+    time.setMinutes(Math.ceil(time.getMinutes() / 15) * 15, 0, 0);
+    return time;
   }
 }
