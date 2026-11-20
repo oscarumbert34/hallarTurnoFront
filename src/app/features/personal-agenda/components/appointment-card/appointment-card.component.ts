@@ -13,9 +13,10 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
       <time>{{ appointment().appointmentAt | date: 'HH:mm' }}</time>
       <span class="type-icon"><mat-icon>{{ icon() }}</mat-icon></span>
       <div class="copy">
-        <strong>{{ appointment().title || appointment().type.name }}</strong>
-        @if (appointment().title) { <span>{{ appointment().type.name }}</span> }
-        @if (appointment().notes) { <small>{{ appointment().notes }}</small> }
+        <strong>{{ appointment().type.name }}</strong>
+        @if (appointment().title || appointment().notes) {
+          <span>{{ appointment().title || appointment().notes }}</span>
+        }
       </div>
       <button mat-icon-button [matMenuTriggerFor]="actions" aria-label="Acciones del turno">
         <mat-icon>more_vert</mat-icon>
@@ -28,12 +29,12 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
   `,
   styles: `
     :host { display: block; }
-    .appointment-card { --accent: #1769e0; display: grid; grid-template-columns: auto 48px 1fr auto; align-items: center; gap: 12px; min-height: 82px; padding: 12px 8px 12px 16px; background: #fff; border: 1px solid #e2e8f3; border-left: 5px solid var(--accent); border-radius: 18px; box-shadow: 0 8px 24px rgba(17, 42, 89, .07); }
-    time { min-width: 52px; font-size: 1.15rem; font-weight: 800; color: #0b1739; }
-    .type-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, white); }
+    .appointment-card { --accent: #1769e0; display: grid; grid-template-columns: 66px 46px 1fr auto; align-items: center; gap: 10px; min-height: 68px; padding: 8px 4px 8px 10px; background: #fff; border: 1px solid #dce5f2; border-left: 5px solid var(--accent); border-radius: 13px; box-shadow: 0 5px 14px rgba(17, 42, 89, .13); }
+    time { box-sizing: border-box; min-width: 62px; padding: 10px 8px; border-radius: 11px; background: #edf4ff; color: #0b1739; font-size: 1.12rem; font-weight: 800; text-align: center; }
+    .type-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 11px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, white); }
     .copy { display: grid; min-width: 0; gap: 2px; }
-    strong { color: #0b1739; font-size: 1.05rem; }
-    span, small { overflow: hidden; color: #56627a; text-overflow: ellipsis; white-space: nowrap; }
+    strong { color: #0b1739; font-size: 1.02rem; }
+    span { overflow: hidden; color: #56627a; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
   `,
 })
 export class AppointmentCardComponent {
