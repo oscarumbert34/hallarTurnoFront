@@ -1,8 +1,9 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, switchMap, timer } from 'rxjs';
 import { AppointmentCardComponent } from '../../components/appointment-card/appointment-card.component';
 import { PersonalAppointment } from '../../models/personal-appointment.model';
 import { PersonalAppointmentService } from '../../services/personal-appointment.service';
@@ -10,6 +11,7 @@ import { AppointmentRecurrenceService } from '../../services/appointment-recurre
 import { MatDialog } from '@angular/material/dialog';
 import { RecurrenceScope, RecurrenceScopeDialogComponent } from '../../components/recurrence-scope-dialog/recurrence-scope-dialog.component';
 import { NotificationSettingsComponent } from '../../notifications/components/notification-settings/notification-settings.component';
+import { PersonalPushNotificationService } from '../../notifications/services/personal-push-notification.service';
 
 interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 type AgendaFilter = 'upcoming' | 'week' | 'all';
@@ -22,7 +24,13 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
       <header>
         <div class="topbar">
           <a class="brand" routerLink="/customer/agenda"><mat-icon>event_available</mat-icon>HallarTurno</a>
-          <button mat-icon-button aria-label="Mi perfil"><mat-icon>account_circle</mat-icon></button>
+          <div class="topbar-actions">
+            <button mat-icon-button class="notification-bell" aria-label="Notificaciones" title="Marcar notificaciones como leídas" (click)="markNotificationsRead()">
+              <mat-icon>notifications</mat-icon>
+              @if (unreadNotifications() > 0) { <span class="notification-badge">{{ notificationLabel() }}</span> }
+            </button>
+            <button mat-icon-button aria-label="Mi perfil"><mat-icon>account_circle</mat-icon></button>
+          </div>
         </div>
         <div class="heading"><div><h1>Mi agenda</h1><p>Mis próximos turnos</p></div><span class="hero-icon"><mat-icon>calendar_month</mat-icon></span></div>
         <nav class="filters" aria-label="Filtrar agenda">
@@ -58,6 +66,9 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
     .agenda-shell { box-sizing: border-box; width: min(100%, 560px); min-height: 100dvh; margin: auto; padding: 20px 24px 112px; background: linear-gradient(155deg, #fff 0%, #f4f8ff 55%, #edf5ff 100%); box-shadow: 0 0 34px rgba(26, 72, 135, .16); }
     .topbar { display: flex; align-items: center; justify-content: space-between; }
     .topbar button { color: #075ecf; }
+    .topbar-actions { display: flex; align-items: center; gap: 2px; }
+    .notification-bell { position: relative; }
+    .notification-badge { position: absolute; top: 1px; right: 0; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 10px; background: #e11d48; color: #fff; font-size: .65rem; font-weight: 800; line-height: 1; box-sizing: border-box; }
     .brand { display: inline-flex; align-items: center; gap: 8px; color: #0d3272; font-size: 1.22rem; font-weight: 800; text-decoration: none; }
     .brand mat-icon { color: #0877ed; }
     .heading { display: flex; align-items: center; justify-content: space-between; margin: 20px 8px 18px; }
@@ -85,10 +96,14 @@ export class AppointmentListPage implements OnInit {
   private readonly router = inject(Router);
   private readonly recurrenceService = inject(AppointmentRecurrenceService);
   private readonly dialog = inject(MatDialog);
+  private readonly notifications = inject(PersonalPushNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly groups = signal<AppointmentGroup[]>([]);
   protected readonly filter = signal<AgendaFilter>('upcoming');
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal('');
+  protected readonly unreadNotifications = signal(0);
+  protected readonly notificationLabel = computed(() => this.unreadNotifications() > 99 ? '99+' : String(this.unreadNotifications()));
   protected readonly filteredGroups = computed(() => {
     const filter = this.filter();
     const now = new Date();
@@ -108,7 +123,12 @@ export class AppointmentListPage implements OnInit {
       .filter((group) => group.appointments.length > 0);
   });
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void { this.load();this.pollUnreadNotifications(); }
+
+  protected markNotificationsRead(): void {
+    if (!this.unreadNotifications()) return;
+    this.notifications.markAllRead().subscribe({next:()=>this.unreadNotifications.set(0)});
+  }
 
   protected load(): void {
     this.loading.set(true);
@@ -154,5 +174,9 @@ export class AppointmentListPage implements OnInit {
       grouped.set(key, [...(grouped.get(key) ?? []), item]);
     }
     return [...grouped.values()].map((appointments) => ({ day: new Date(appointments[0].appointmentAt), appointments }));
+  }
+
+  private pollUnreadNotifications(): void {
+    timer(0,30000).pipe(switchMap(()=>this.notifications.unreadCount().pipe(catchError(()=>of({count:0})))),takeUntilDestroyed(this.destroyRef)).subscribe(result=>this.unreadNotifications.set(result.count));
   }
 }
