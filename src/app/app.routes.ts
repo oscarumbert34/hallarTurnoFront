@@ -108,6 +108,40 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'customer',
+    data: { standalone: true },
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'login',
+      },
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/customer-auth/customer-login.page').then(
+            (m) => m.CustomerLoginPage,
+          ),
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./features/customer-auth/customer-register.page').then(
+            (m) => m.CustomerRegisterPage,
+          ),
+      },
+      {
+        path: 'agenda',
+        canActivate: [authGuard],
+        data: { roles: ['CUSTOMER'] },
+        loadChildren: () =>
+          import('./features/personal-agenda/personal-agenda.routes').then(
+            (m) => m.PERSONAL_AGENDA_ROUTES,
+          ),
+      },
+    ],
+  },
+  {
     path: 'search',
     data: { businessScoped: true },
     loadComponent: () =>
