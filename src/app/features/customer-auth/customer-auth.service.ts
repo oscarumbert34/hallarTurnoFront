@@ -16,16 +16,13 @@ export class CustomerAuthService {
   private readonly auth = inject(AuthService);
 
   login(credentials: CustomerCredentials): Observable<AuthSession> {
-    return this.auth.login(credentials).pipe(
-      map((session) => {
-        if (!session.user.roles.includes('CUSTOMER')) {
-          this.auth.logout();
-          throw new Error('La cuenta no corresponde a un cliente.');
-        }
+    return this.auth.login(credentials).pipe(map((session) => this.requireCustomer(session)));
+  }
 
-        return session;
-      }),
-    );
+  loginWithGoogle(credential: string): Observable<AuthSession> {
+    return this.auth
+      .loginWithGoogle(credential)
+      .pipe(map((session) => this.requireCustomer(session)));
   }
 
   register(registration: CustomerRegistration): Observable<AuthSession> {
@@ -39,5 +36,14 @@ export class CustomerAuthService {
           this.login({ email: registration.email, password: registration.password }),
         ),
       );
+  }
+
+  private requireCustomer(session: AuthSession): AuthSession {
+    if (!session.user.roles.includes('CUSTOMER')) {
+      this.auth.logout();
+      throw new Error('La cuenta no corresponde a un cliente.');
+    }
+
+    return session;
   }
 }

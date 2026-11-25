@@ -10,6 +10,7 @@ describe('CustomerAuthService', () => {
   };
   let auth: {
     login: ReturnType<typeof vi.fn>;
+    loginWithGoogle: ReturnType<typeof vi.fn>;
     register: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
   };
@@ -18,6 +19,7 @@ describe('CustomerAuthService', () => {
   beforeEach(() => {
     auth = {
       login: vi.fn().mockReturnValue(of(customerSession)),
+      loginWithGoogle: vi.fn().mockReturnValue(of(customerSession)),
       register: vi.fn().mockReturnValue(of(undefined)),
       logout: vi.fn(),
     };
@@ -29,6 +31,14 @@ describe('CustomerAuthService', () => {
       ],
     });
     service = TestBed.inject(CustomerAuthService);
+  });
+
+  it('starts a customer session with a Google credential', () => {
+    service
+      .loginWithGoogle('google-id-token')
+      .subscribe((session) => expect(session).toEqual(customerSession));
+
+    expect(auth.loginWithGoogle).toHaveBeenCalledWith('google-id-token');
   });
 
   it('registers exclusively with the CUSTOMER role and starts a session', () => {
