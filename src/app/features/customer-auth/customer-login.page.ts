@@ -160,7 +160,12 @@ export class CustomerLoginPage implements AfterViewInit {
       .loginWithGoogle(credential)
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
-        next: () => this.router.navigateByUrl(this.destination()),
+        next: (session) =>
+          this.router.navigateByUrl(
+            session.user.roles.includes('CUSTOMER')
+              ? this.destination()
+              : this.customerAuth.nextUrlForRole(),
+          ),
         error: (error) => (this.googleErrorMessage = customerAuthErrorMessage(error)),
       });
   }

@@ -20,9 +20,11 @@ export class CustomerAuthService {
   }
 
   loginWithGoogle(credential: string): Observable<AuthSession> {
-    return this.auth
-      .loginWithGoogle(credential)
-      .pipe(map((session) => this.requireCustomer(session)));
+    return this.auth.loginWithGoogle(credential);
+  }
+
+  nextUrlForRole(): string {
+    return this.auth.nextUrlForRole();
   }
 
   register(registration: CustomerRegistration): Observable<AuthSession> {

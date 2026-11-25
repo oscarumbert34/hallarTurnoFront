@@ -11,6 +11,7 @@ describe('CustomerAuthService', () => {
   let auth: {
     login: ReturnType<typeof vi.fn>;
     loginWithGoogle: ReturnType<typeof vi.fn>;
+    nextUrlForRole: ReturnType<typeof vi.fn>;
     register: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
   };
@@ -20,6 +21,7 @@ describe('CustomerAuthService', () => {
     auth = {
       login: vi.fn().mockReturnValue(of(customerSession)),
       loginWithGoogle: vi.fn().mockReturnValue(of(customerSession)),
+      nextUrlForRole: vi.fn().mockReturnValue('/business-slug/bookings'),
       register: vi.fn().mockReturnValue(of(undefined)),
       logout: vi.fn(),
     };
@@ -39,6 +41,21 @@ describe('CustomerAuthService', () => {
       .subscribe((session) => expect(session).toEqual(customerSession));
 
     expect(auth.loginWithGoogle).toHaveBeenCalledWith('google-id-token');
+  });
+
+  it('keeps a business Google session and exposes its role destination', () => {
+    const businessSession = {
+      token: 'business-token',
+      user: { email: 'owner@example.com', roles: ['BUSINESS'] },
+    };
+    auth.loginWithGoogle.mockReturnValue(of(businessSession));
+
+    service
+      .loginWithGoogle('business-google-token')
+      .subscribe((session) => expect(session).toEqual(businessSession));
+
+    expect(auth.logout).not.toHaveBeenCalled();
+    expect(service.nextUrlForRole()).toBe('/business-slug/bookings');
   });
 
   it('registers exclusively with the CUSTOMER role and starts a session', () => {
