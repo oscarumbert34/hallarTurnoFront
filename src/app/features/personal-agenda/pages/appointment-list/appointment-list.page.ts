@@ -11,7 +11,7 @@ import { AppointmentRecurrenceService } from '../../services/appointment-recurre
 import { MatDialog } from '@angular/material/dialog';
 import { RecurrenceScope, RecurrenceScopeDialogComponent } from '../../components/recurrence-scope-dialog/recurrence-scope-dialog.component';
 import { NotificationSettingsComponent } from '../../notifications/components/notification-settings/notification-settings.component';
-import { PersonalPushNotificationService } from '../../notifications/services/personal-push-notification.service';
+import { AgendaNotification, PersonalPushNotificationService } from '../../notifications/services/personal-push-notification.service';
 
 interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 type AgendaFilter = 'upcoming' | 'week' | 'all';
@@ -25,11 +25,27 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
         <div class="topbar">
           <a class="brand" routerLink="/customer/agenda"><mat-icon>event_available</mat-icon>HallarTurno</a>
           <div class="topbar-actions">
-            <button mat-icon-button class="notification-bell" aria-label="Notificaciones" title="Marcar notificaciones como leídas" (click)="markNotificationsRead()">
+            <button mat-icon-button class="notification-bell" aria-label="Notificaciones" title="Ver notificaciones" [attr.aria-expanded]="notificationsOpen()" (click)="toggleNotifications()">
               <mat-icon>notifications</mat-icon>
               @if (unreadNotifications() > 0) { <span class="notification-badge">{{ notificationLabel() }}</span> }
             </button>
             <button mat-icon-button aria-label="Mi perfil"><mat-icon>account_circle</mat-icon></button>
+            @if (notificationsOpen()) {
+              <section class="notification-panel" aria-label="Notificaciones de Mi agenda">
+                <div class="notification-panel-header"><strong>Notificaciones</strong>@if (inboxNotifications().length) { <button type="button" (click)="markNotificationsRead()">Marcar todas</button> }</div>
+                @if (notificationsLoading()) { <p class="notification-empty">Cargando…</p> }
+                @else if (!inboxNotifications().length) { <p class="notification-empty">No tenés notificaciones nuevas.</p> }
+                @else {
+                  <div class="notification-list">
+                    @for (notification of inboxNotifications(); track notification.occurrenceKey + notification.reminderType) {
+                      <button type="button" class="notification-item" (click)="readNotification(notification)">
+                        <mat-icon>notifications_active</mat-icon><span><strong>{{ notification.title }}</strong><small>{{ notification.body }}</small><time>{{ notificationTime(notification.sentAt) }}</time></span>
+                      </button>
+                    }
+                  </div>
+                }
+              </section>
+            }
           </div>
         </div>
         <div class="heading"><div><h1>Mi agenda</h1><p>Mis próximos turnos</p></div><span class="hero-icon"><mat-icon>calendar_month</mat-icon></span></div>
@@ -66,9 +82,16 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
     .agenda-shell { box-sizing: border-box; width: min(100%, 560px); min-height: 100dvh; margin: auto; padding: 20px 24px 112px; background: linear-gradient(155deg, #fff 0%, #f4f8ff 55%, #edf5ff 100%); box-shadow: 0 0 34px rgba(26, 72, 135, .16); }
     .topbar { display: flex; align-items: center; justify-content: space-between; }
     .topbar button { color: #075ecf; }
-    .topbar-actions { display: flex; align-items: center; gap: 2px; }
+    .topbar-actions { position: relative; display: flex; align-items: center; gap: 2px; }
     .notification-bell { position: relative; }
     .notification-badge { position: absolute; top: 1px; right: 0; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 10px; background: #e11d48; color: #fff; font-size: .65rem; font-weight: 800; line-height: 1; box-sizing: border-box; }
+    .notification-panel { position: absolute; z-index: 10; top: 48px; right: 0; width: min(340px, calc(100vw - 40px)); overflow: hidden; border: 1px solid #d5e4f8; border-radius: 16px; background: #fff; box-shadow: 0 16px 40px rgba(12, 48, 99, .22); }
+    .notification-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; color: #102a56; }
+    .notification-panel-header button { border: 0; background: transparent; color: #086ddc; font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+    .notification-list { display: grid; max-height: 330px; overflow: auto; }
+    .notification-item { display: grid; grid-template-columns: 28px 1fr; gap: 10px; width: 100%; padding: 13px 16px; border: 0; border-top: 1px solid #edf2f8; background: #f8fbff; color: #152747; text-align: left; cursor: pointer; }
+    .notification-item:hover { background: #edf6ff; }.notification-item mat-icon { color: #0877ed; font-size: 22px; }.notification-item span { display: grid; gap: 3px; }.notification-item strong { font-size: .88rem; }.notification-item small { color: #526078; font-size: .82rem; }.notification-item time { color: #758197; font-size: .7rem; }
+    .notification-empty { margin: 0; padding: 24px 16px; color: #657086; text-align: center; font-size: .85rem; }
     .brand { display: inline-flex; align-items: center; gap: 8px; color: #0d3272; font-size: 1.22rem; font-weight: 800; text-decoration: none; }
     .brand mat-icon { color: #0877ed; }
     .heading { display: flex; align-items: center; justify-content: space-between; margin: 20px 8px 18px; }
@@ -103,6 +126,9 @@ export class AppointmentListPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal('');
   protected readonly unreadNotifications = signal(0);
+  protected readonly notificationsOpen = signal(false);
+  protected readonly notificationsLoading = signal(false);
+  protected readonly inboxNotifications = signal<AgendaNotification[]>([]);
   protected readonly notificationLabel = computed(() => this.unreadNotifications() > 99 ? '99+' : String(this.unreadNotifications()));
   protected readonly filteredGroups = computed(() => {
     const filter = this.filter();
@@ -127,8 +153,12 @@ export class AppointmentListPage implements OnInit {
 
   protected markNotificationsRead(): void {
     if (!this.unreadNotifications()) return;
-    this.notifications.markAllRead().subscribe({next:()=>this.unreadNotifications.set(0)});
+    this.notifications.markAllRead().subscribe({next:()=>{this.unreadNotifications.set(0);this.inboxNotifications.set([]);}});
   }
+
+  protected toggleNotifications(): void {const open=!this.notificationsOpen();this.notificationsOpen.set(open);if(open)this.loadNotifications();}
+  protected readNotification(notification:AgendaNotification):void{this.notifications.markRead(notification).subscribe({next:()=>{const remaining=this.inboxNotifications().filter(item=>item.occurrenceKey!==notification.occurrenceKey||item.reminderType!==notification.reminderType);this.inboxNotifications.set(remaining);this.unreadNotifications.set(remaining.length);}});}
+  protected notificationTime(value:string):string{return new Intl.DateTimeFormat('es-AR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}
 
   protected load(): void {
     this.loading.set(true);
@@ -177,6 +207,7 @@ export class AppointmentListPage implements OnInit {
   }
 
   private pollUnreadNotifications(): void {
-    timer(0,30000).pipe(switchMap(()=>this.notifications.unreadCount().pipe(catchError(()=>of({count:0})))),takeUntilDestroyed(this.destroyRef)).subscribe(result=>this.unreadNotifications.set(result.count));
+    timer(0,30000).pipe(switchMap(()=>this.notifications.unreadCount().pipe(catchError(()=>of({count:0})))),takeUntilDestroyed(this.destroyRef)).subscribe(result=>{this.unreadNotifications.set(result.count);if(this.notificationsOpen())this.loadNotifications();});
   }
+  private loadNotifications():void{this.notificationsLoading.set(true);this.notifications.notifications().pipe(finalize(()=>this.notificationsLoading.set(false))).subscribe({next:items=>this.inboxNotifications.set(items),error:()=>this.inboxNotifications.set([])});}
 }
