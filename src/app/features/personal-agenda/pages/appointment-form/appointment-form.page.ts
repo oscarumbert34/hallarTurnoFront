@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { provideNativeDateAdapter } from '@angular/material/core';
+import { MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,7 +19,7 @@ import { RecurrenceFrequency } from '../../models/appointment-recurrence.model';
 @Component({
   selector: 'app-appointment-form-page',
   imports: [MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatTimepickerModule, ReactiveFormsModule, RouterLink],
-  providers: [provideNativeDateAdapter()],
+  providers: [{ provide: MAT_DATE_LOCALE, useValue: 'es-AR' }, provideNativeDateAdapter()],
   template: `
     <main class="form-shell">
       <nav><a mat-icon-button routerLink="/customer/agenda"><mat-icon>arrow_back</mat-icon></a><strong>{{ isEditing() ? 'Editar turno' : 'Nuevo turno' }}</strong></nav>
@@ -47,7 +47,7 @@ import { RecurrenceFrequency } from '../../models/appointment-recurrence.model';
               [matTimepickerOpenOnClick]="false"
             />
             <mat-timepicker-toggle matIconSuffix [for]="timePicker" />
-            <mat-timepicker #timePicker interval="15m" />
+            <mat-timepicker #timePicker interval="1m" aria-label="Seleccionar hora y minutos" />
             <mat-error>Elegí una hora.</mat-error>
           </mat-form-field>
         </div>
@@ -166,7 +166,7 @@ export class AppointmentFormPage implements OnInit {
 
   private initialTime(): Date {
     const time = new Date();
-    time.setMinutes(Math.ceil(time.getMinutes() / 15) * 15, 0, 0);
+    time.setSeconds(0, 0);
     return time;
   }
 
