@@ -14,6 +14,9 @@ export interface PersonalAppointment {
   materialized?: boolean;
   recurrenceLabel?: string | null;
   modified?: boolean;
+  ownerId: string;
+  ownerEmail: string;
+  ownedByCurrentUser: boolean;
 }
 
 export interface PersonalAppointmentInput {

@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
 import { PersonalAppointment } from '../../models/personal-appointment.model';
+import { agendaOwnerColor, agendaOwnerLabel } from '../../sharing/agenda-owner.util';
 
 @Component({
   selector: 'app-personal-appointment-card',
@@ -13,7 +14,7 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
       <time>{{ appointment().appointmentAt | date: 'HH:mm' }}</time>
       <span class="type-icon"><mat-icon>{{ icon() }}</mat-icon></span>
       <div class="copy">
-        <strong>{{ appointment().type.name }}</strong>
+        <strong>{{ appointment().type.name }} @if (!appointment().ownedByCurrentUser) { <em>{{ ownerLabel() }}</em> }</strong>
         @if (appointment().title || appointment().notes) {
           <span>{{ appointment().title || appointment().notes }}</span>
         }
@@ -21,9 +22,9 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
           <small><mat-icon>repeat</mat-icon>{{ appointment().modified ? 'Horario modificado' : appointment().recurrenceLabel }}</small>
         }
       </div>
-      <button mat-icon-button [matMenuTriggerFor]="actions" aria-label="Acciones del turno">
-        <mat-icon>more_vert</mat-icon>
-      </button>
+      @if (appointment().ownedByCurrentUser) {
+        <button mat-icon-button [matMenuTriggerFor]="actions" aria-label="Acciones del turno"><mat-icon>more_vert</mat-icon></button>
+      }
       <mat-menu #actions="matMenu">
         <button mat-menu-item (click)="edit.emit(appointment())"><mat-icon>edit</mat-icon>Editar</button>
         <button mat-menu-item (click)="remove.emit(appointment())"><mat-icon>delete</mat-icon>Eliminar</button>
@@ -37,6 +38,7 @@ import { PersonalAppointment } from '../../models/personal-appointment.model';
     .type-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 11px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, white); }
     .copy { display: grid; min-width: 0; gap: 2px; }
     strong { color: #0b1739; font-size: 1.02rem; }
+    strong em { display:inline-block;padding:2px 6px;border-radius:8px;background:color-mix(in srgb,var(--accent) 13%,white);color:var(--accent);font-size:.7rem;font-style:normal;vertical-align:middle; }
     span { overflow: hidden; color: #56627a; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
     small { display:flex;align-items:center;gap:3px;color:#1565c0;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
     small mat-icon { width:14px;height:14px;font-size:14px; }
@@ -52,6 +54,10 @@ export class AppointmentCardComponent {
   }
 
   protected accent(): string {
+    if (!this.appointment().ownedByCurrentUser) return this.ownerColor();
     return ({ MEDICAL: '#1976d2', DENTAL: '#00a878', PSYCHOLOGY: '#7856d8', HAIRDRESSER: '#ec4f8a', BEAUTY: '#b552d1', VETERINARY: '#e58424', PROCEDURE: '#168da3', MATCH: '#16a05d', MEETING: '#3867d6', REIKI: '#8e5cc7', OTHER: '#607d8b' } as Record<string, string>)[this.appointment().type.code] ?? '#1976d2';
   }
+
+  protected ownerLabel(): string { return agendaOwnerLabel(this.appointment().ownerEmail); }
+  private ownerColor(): string { return agendaOwnerColor(this.appointment().ownerId); }
 }
