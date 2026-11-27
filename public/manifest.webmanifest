@@ -2,8 +2,10 @@
   "name": "HallarTurno",
   "short_name": "HallarTurno",
   "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
+  "background_color": "#ffffff",
+  "theme_color": "#073B7A",
+  "scope": "/",
+  "start_url": "/customer/login",
   "icons": [
     {
       "src": "icons/icon-72x72.png",

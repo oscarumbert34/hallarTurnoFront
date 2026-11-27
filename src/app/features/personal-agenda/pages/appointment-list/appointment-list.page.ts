@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, finalize, of, switchMap, timer } from 'rxjs';
+import { catchError, finalize, forkJoin, of, switchMap, timer } from 'rxjs';
 import { AppointmentCardComponent } from '../../components/appointment-card/appointment-card.component';
 import { PersonalAppointment } from '../../models/personal-appointment.model';
 import { PersonalAppointmentService } from '../../services/personal-appointment.service';
@@ -12,13 +12,17 @@ import { MatDialog } from '@angular/material/dialog';
 import { RecurrenceScope, RecurrenceScopeDialogComponent } from '../../components/recurrence-scope-dialog/recurrence-scope-dialog.component';
 import { NotificationSettingsComponent } from '../../notifications/components/notification-settings/notification-settings.component';
 import { AgendaNotification, PersonalPushNotificationService } from '../../notifications/services/personal-push-notification.service';
+import { AgendaSharingComponent } from '../../sharing/components/agenda-sharing.component';
+import { AgendaShare } from '../../sharing/models/agenda-share.model';
+import { AgendaSharingService } from '../../sharing/services/agenda-sharing.service';
+import { agendaOwnerColor, agendaOwnerLabel } from '../../sharing/agenda-owner.util';
 
 interface AppointmentGroup { day: Date; appointments: PersonalAppointment[]; }
 type AgendaFilter = 'upcoming' | 'week' | 'all';
 
 @Component({
   selector: 'app-appointment-list-page',
-  imports: [AppointmentCardComponent, MatButtonModule, MatIconModule, NotificationSettingsComponent, RouterLink],
+  imports: [AgendaSharingComponent, AppointmentCardComponent, MatButtonModule, MatIconModule, NotificationSettingsComponent, RouterLink],
   template: `
     <main class="agenda-shell">
       <header>
@@ -57,6 +61,17 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
       </header>
 
       <app-personal-notification-settings />
+      <app-agenda-sharing [shares]="shares()" (changed)="load()" />
+
+      @if (acceptedShares().length) {
+        <nav class="owner-filters" aria-label="Filtrar por persona">
+          <button [class.active]="ownerFilter() === 'ALL'" (click)="ownerFilter.set('ALL')">Todos</button>
+          <button [class.active]="ownerFilter() === 'MINE'" (click)="ownerFilter.set('MINE')">Mis turnos</button>
+          @for (share of acceptedShares(); track share.userId) {
+            <button [class.active]="ownerFilter() === share.userId" (click)="ownerFilter.set(share.userId)"><i [style.background]="ownerColor(share.userId)"></i>{{ shortEmail(share.email) }}</button>
+          }
+        </nav>
+      }
 
       @if (loading()) { <section class="state">Cargando tu agenda…</section> }
       @else if (errorMessage()) { <section class="state error">{{ errorMessage() }}<button mat-button (click)="load()">Reintentar</button></section> }
@@ -103,6 +118,7 @@ type AgendaFilter = 'upcoming' | 'week' | 'all';
     .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
     .filters button { min-height: 38px; border: 0; border-radius: 22px; background: #e8f1fd; color: #17243c; font: inherit; cursor: pointer; }
     .filters button.active { background: linear-gradient(135deg, #087af1, #075cc8); color: white; font-weight: 700; box-shadow: 0 5px 12px rgba(10, 103, 218, .22); }
+    .owner-filters { display:flex;gap:8px;margin:0 0 16px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none }.owner-filters button{display:inline-flex;align-items:center;gap:6px;min-width:max-content;padding:8px 12px;border:1px solid #d5e3f5;border-radius:18px;background:#fff;color:#29405f;font:inherit;font-size:.82rem;cursor:pointer}.owner-filters button.active{border-color:#0877ed;background:#e8f3ff;color:#075cc8;font-weight:800}.owner-filters i{width:9px;height:9px;border-radius:50%}
     .groups, .group { display: grid; gap: 8px; }
     .group { margin-bottom: 8px; }
     .group h2 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 11px; border-radius: 9px; background: linear-gradient(90deg, #e9f3ff, #dcecff); color: #0c3982; font-size: .92rem; }
@@ -120,8 +136,12 @@ export class AppointmentListPage implements OnInit {
   private readonly recurrenceService = inject(AppointmentRecurrenceService);
   private readonly dialog = inject(MatDialog);
   private readonly notifications = inject(PersonalPushNotificationService);
+  private readonly sharing = inject(AgendaSharingService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly groups = signal<AppointmentGroup[]>([]);
+  protected readonly shares = signal<AgendaShare[]>([]);
+  protected readonly acceptedShares = computed(() => this.shares().filter((share) => share.status === 'ACCEPTED'));
+  protected readonly ownerFilter = signal<string>('ALL');
   protected readonly filter = signal<AgendaFilter>('upcoming');
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal('');
@@ -140,6 +160,9 @@ export class AppointmentListPage implements OnInit {
       .map((group) => ({
         ...group,
         appointments: group.appointments.filter((appointment) => {
+          const owner = this.ownerFilter();
+          if (owner === 'MINE' && !appointment.ownedByCurrentUser) return false;
+          if (owner !== 'ALL' && owner !== 'MINE' && appointment.ownerId !== owner) return false;
           const at = new Date(appointment.appointmentAt);
           if (filter === 'all') return true;
           if (filter === 'week') return at >= today && at < weekEnd;
@@ -163,8 +186,8 @@ export class AppointmentListPage implements OnInit {
   protected load(): void {
     this.loading.set(true);
     this.errorMessage.set('');
-    this.service.list().pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: (items) => this.groups.set(this.group(items)),
+    forkJoin({ appointments: this.service.list(), shares: this.sharing.list() }).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: ({appointments, shares}) => { this.groups.set(this.group(appointments));this.shares.set(shares);if(this.ownerFilter()!=='ALL'&&this.ownerFilter()!=='MINE'&&!shares.some(s=>s.status==='ACCEPTED'&&s.userId===this.ownerFilter()))this.ownerFilter.set('ALL'); },
       error: () => this.errorMessage.set('No pudimos cargar tus turnos.'),
     });
   }
@@ -196,6 +219,9 @@ export class AppointmentListPage implements OnInit {
     const formatted = new Intl.DateTimeFormat('es-AR', { weekday: 'short', day: 'numeric', month: 'long' }).format(day).replace('.', '');
     return isToday ? `Hoy, ${formatted}` : formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
+
+  protected shortEmail(email: string): string { return agendaOwnerLabel(email); }
+  protected ownerColor(userId: string): string { return agendaOwnerColor(userId); }
 
   private group(items: PersonalAppointment[]): AppointmentGroup[] {
     const grouped = new Map<string, PersonalAppointment[]>();
